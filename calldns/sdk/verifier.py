@@ -19,18 +19,17 @@ class Verifier:
         self.commitment_manager = CommitmentManager()
         self.traffic_manager = TrafficManager()
     
-    def verify_call_proof(self, proof, caller_public_key):
+    def verify_call_proof(self, proof):
         """
         Verify incoming call proof.
         
         Args:
             proof: The ZK proof to verify
-            caller_public_key: The caller's public key
             
         Returns:
             bool: True if proof is valid, False otherwise
         """
-        return self.zk_verifier.verify_proof(proof, caller_public_key)
+        return self.zk_verifier.verify_proof(proof)
     
     def generate_reception_commitment(self, session_id: str) -> bytes:
         """
@@ -107,7 +106,7 @@ class Verifier:
             # Convert base64 strings back to bytes
             proof = {}
             for key, value in proof_data.items():
-                if isinstance(value, str) and key in ['R', 'Y']:  # These should be bytes
+                if isinstance(value, str) and key in ['R', 'public_key']:  # These should be bytes
                     try:
                         proof[key] = base64.b64decode(value)
                     except:
@@ -116,10 +115,7 @@ class Verifier:
                     proof[key] = value
             
             # Verify proof
-            # In a real implementation, we'd extract the caller's public key from the proof
-            # For this prototype, we'll use a dummy public key
-            dummy_caller_public_key = b"caller_public_key_placeholder"
-            return self.verify_call_proof(proof, dummy_caller_public_key)
+            return self.verify_call_proof(proof)
         except Exception as e:
             print(f"Verification error: {e}")
             return False

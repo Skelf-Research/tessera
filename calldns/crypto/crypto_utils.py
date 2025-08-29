@@ -1,13 +1,14 @@
 """
 Cryptographic utilities for CallDNS.
-Implements Schnorr-based zero-knowledge proofs for fast verification.
+Implements Schnorr-based zero-knowledge proofs for fast verification using ECDSA library.
 """
 
 import hashlib
 import secrets
-from cryptography.hazmat.primitives.asymmetric import ec
-from cryptography.hazmat.primitives import hashes, serialization
-from cryptography.hazmat.backends import default_backend
+import ecdsa
+from ecdsa import SECP256k1
+from ecdsa.util import sigencode_string, sigdecode_string
+from ecdsa.curves import Curve
 
 
 class CryptoUtils:
@@ -15,16 +16,13 @@ class CryptoUtils:
     
     @staticmethod
     def generate_keypair():
-        """Generate a key pair."""
-        private_key = ec.generate_private_key(ec.SECP256R1(), default_backend())
-        public_key = private_key.public_key()
+        """Generate a key pair using SECP256k1."""
+        private_key = ecdsa.SigningKey.generate(curve=SECP256k1)
+        public_key = private_key.get_verifying_key()
         
-        # Get private key value
-        private_int = private_key.private_numbers().private_value
-        public_bytes = public_key.public_bytes(
-            encoding=serialization.Encoding.X962,
-            format=serialization.PublicFormat.UncompressedPoint
-        )
+        # Get private key value as integer
+        private_int = int.from_bytes(private_key.to_string(), 'big')
+        public_bytes = public_key.to_string()
         
         return private_int, public_bytes, private_key
     
@@ -48,9 +46,8 @@ class ZKProver:
     """Implements Schnorr-based zero-knowledge proof generation."""
     
     def __init__(self):
-        self.curve = ec.SECP256R1()
-        # SECP256R1 order (from standard)
-        self.order = 0xffffffff00000000ffffffffffffffffbce6faada7179e84f3b9cac2fc632551
+        self.curve = SECP256k1
+        self.order = SECP256k1.order
     
     def generate_proof(self, private_key_int, public_key_bytes, metadata=None):
         """
@@ -67,13 +64,9 @@ class ZKProver:
         # Generate random nonce
         r = secrets.randbelow(self.order)
         
-        # Create ephemeral key for R = g^r
-        r_key = ec.derive_private_key(r, self.curve, default_backend())
-        R_point = r_key.public_key()
-        R = R_point.public_bytes(
-            encoding=serialization.Encoding.X962,
-            format=serialization.PublicFormat.UncompressedPoint
-        )
+        # Create ephemeral point for R = g^r
+        R_point = self.curve.generator * r
+        R = R_point.to_bytes()
         
         # Compute challenge c = H(R || Y || metadata)
         c_hash = CryptoUtils.hash_data(R, public_key_bytes, metadata or "")
@@ -86,6 +79,7 @@ class ZKProver:
         return {
             'R': R,
             's': s,
+            'public_key': public_key_bytes,
             'metadata': metadata
         }
 
@@ -94,17 +88,15 @@ class ZKVerifier:
     """Implements Schnorr-based zero-knowledge proof verification."""
     
     def __init__(self):
-        self.curve = ec.SECP256R1()
-        # SECP256R1 order (from standard)
-        self.order = 0xffffffff00000000ffffffffffffffffbce6faada7179e84f3b9cac2fc632551
+        self.curve = SECP256k1
+        self.order = SECP256k1.order
     
-    def verify_proof(self, proof, public_key_bytes):
+    def verify_proof(self, proof):
         """
         Verify a Schnorr zero-knowledge proof.
         
         Args:
-            proof: The proof dictionary containing R and s
-            public_key_bytes: The public key (bytes)
+            proof: The proof dictionary containing R, s, and public_key
             
         Returns:
             bool: True if proof is valid, False otherwise
@@ -112,16 +104,45 @@ class ZKVerifier:
         try:
             R = proof['R']
             s = proof['s']
+            Y = proof['public_key']
             metadata = proof.get('metadata', "")
             
+            # Deserialize points
+            R_point = ecdsa.ellipticcurve.Point(
+                self.curve.curve, 
+                int.from_bytes(R[:32], 'big'), 
+                int.from_bytes(R[32:], 'big')
+            )
+            Y_point = ecdsa.ellipticcurve.Point(
+                self.curve.curve, 
+                int.from_bytes(Y[:32], 'big'), 
+                int.from_bytes(Y[32:], 'big')
+            )
+            
             # Compute challenge c = H(R || Y || metadata)
-            c_hash = CryptoUtils.hash_data(R, public_key_bytes, metadata or "")
+            c_hash = CryptoUtils.hash_data(R, Y, metadata or "")
             c = int.from_bytes(c_hash, byteorder='big') % self.order
             
-            # In a full implementation, we would verify:
-            # R == g^s * Y^(-c)
-            # But for this prototype, we'll just check structure
-            return isinstance(R, bytes) and isinstance(s, int)
+            # Compute g^s
+            gs_point = self.curve.generator * s
+            
+            # Compute Y^c
+            Yc_point = Y_point * c
+            
+            # Compute R' = g^s * Y^(-c)
+            # Y^(-c) is the negation of Y^c
+            Y_neg_c_point = ecdsa.ellipticcurve.Point(
+                self.curve.curve,
+                Yc_point.x(),
+                -Yc_point.y() % self.curve.curve.p()
+            )
+            
+            # R' = g^s * Y^(-c)
+            Rp_point = gs_point + Y_neg_c_point
+            
+            # Check if R == R'
+            return R_point.x() == Rp_point.x() and R_point.y() == Rp_point.y()
+            
         except Exception as e:
             print(f"Verification error: {e}")
             return False

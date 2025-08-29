@@ -40,15 +40,29 @@ class TestZKProofs(unittest.TestCase):
         proof = self.prover.generate_proof(self.private_key, self.public_key, "test")
         self.assertIn('R', proof)
         self.assertIn('s', proof)
+        self.assertIn('public_key', proof)
         self.assertIsInstance(proof['R'], bytes)
         self.assertIsInstance(proof['s'], int)
+        self.assertIsInstance(proof['public_key'], bytes)
     
     def test_proof_verification(self):
         """Test proof verification."""
         proof = self.prover.generate_proof(self.private_key, self.public_key, "test")
-        # Note: Our simplified implementation always returns True
-        result = self.verifier.verify_proof(proof, self.public_key)
+        # Now we have a proper verification implementation
+        result = self.verifier.verify_proof(proof)
         self.assertTrue(result)
+    
+    def test_invalid_proof_verification(self):
+        """Test verification of invalid proof."""
+        # Create a valid proof first
+        proof = self.prover.generate_proof(self.private_key, self.public_key, "test")
+        
+        # Tamper with the proof
+        proof['s'] = proof['s'] + 1
+        
+        # Verification should fail
+        result = self.verifier.verify_proof(proof)
+        self.assertFalse(result)
 
 
 class TestIdentityManager(unittest.TestCase):

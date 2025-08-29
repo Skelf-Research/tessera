@@ -46,9 +46,12 @@ def main():
         received_proof = message['proof']
         received_public_key = bytes.fromhex(message['public_key'])
         
+        # Add the public key to the proof for verification
+        received_proof['public_key'] = received_public_key
+        
         # Verify the proof
         print("\nVerifying proof...")
-        is_valid = verifier.verify_call_proof(received_proof, received_public_key)
+        is_valid = verifier.verify_call_proof(received_proof)
         
         if is_valid:
             print("✓ Proof verification successful - Call is valid")

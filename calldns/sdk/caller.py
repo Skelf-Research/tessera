@@ -1,6 +1,6 @@
 """
 Caller component for CallDNS.
-Handles ZK proof generation on caller device with commitment-based routing.
+Handles ZK proof generation on caller device with commitment-based routing and traffic privacy.
 """
 
 import hashlib
@@ -8,6 +8,7 @@ import secrets
 import json
 import base64
 from .identity_manager import IdentityManager
+from .traffic_manager import TrafficManager
 from ..crypto.crypto_utils import ZKProver
 
 
@@ -17,6 +18,7 @@ class Caller:
     def __init__(self):
         self.identity_manager = IdentityManager()
         self.zk_prover = ZKProver()
+        self.traffic_manager = TrafficManager()
     
     def generate_call_proof(self, metadata=None):
         """
@@ -82,3 +84,27 @@ class Caller:
             'ephemeral_hint': base64.b64encode(ephemeral_hint).decode('utf-8'),
             'proof_size': len(encrypted_proof)
         }
+    
+    def prepare_proof_for_transmission(self, encrypted_proof: dict) -> dict:
+        """
+        Prepare proof for transmission with traffic padding.
+        
+        Args:
+            encrypted_proof: The encrypted proof
+            
+        Returns:
+            dict: Padded encrypted proof ready for transmission
+        """
+        return self.traffic_manager.pad_proof(encrypted_proof)
+    
+    def schedule_batch_transmission(self, proofs: list) -> list:
+        """
+        Schedule proofs for batch transmission with cover traffic.
+        
+        Args:
+            proofs: List of encrypted proofs
+            
+        Returns:
+            list: Proofs ready for transmission (mixed with cover traffic)
+        """
+        return self.traffic_manager.schedule_transmission(proofs)

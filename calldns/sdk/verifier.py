@@ -1,6 +1,6 @@
 """
 Verifier component for CallDNS.
-Handles proof verification on callee device with commitment management.
+Handles proof verification on callee device with commitment management and traffic privacy.
 """
 
 import hashlib
@@ -8,6 +8,7 @@ import json
 import base64
 from ..crypto.crypto_utils import ZKVerifier
 from .commitment_manager import CommitmentManager
+from .traffic_manager import TrafficManager
 
 
 class Verifier:
@@ -16,6 +17,7 @@ class Verifier:
     def __init__(self):
         self.zk_verifier = ZKVerifier()
         self.commitment_manager = CommitmentManager()
+        self.traffic_manager = TrafficManager()
     
     def verify_call_proof(self, proof, caller_public_key):
         """
@@ -98,6 +100,10 @@ class Verifier:
             proof_str = proof_json_bytes.decode('utf-8')
             proof_data = json.loads(proof_str)
             
+            # Check if this is a dummy proof
+            if proof_data.get('is_dummy', False):
+                return False  # Dummy proof, not a real call
+            
             # Convert base64 strings back to bytes
             proof = {}
             for key, value in proof_data.items():
@@ -117,3 +123,22 @@ class Verifier:
         except Exception as e:
             print(f"Verification error: {e}")
             return False
+    
+    def process_batched_proofs(self, encrypted_proofs: list) -> list:
+        """
+        Process a batch of encrypted proofs, filtering out valid ones.
+        
+        Args:
+            encrypted_proofs: List of encrypted proofs
+            
+        Returns:
+            list: List of valid proof results
+        """
+        valid_proofs = []
+        
+        for proof in encrypted_proofs:
+            is_valid = self.verify_encrypted_call_proof(proof)
+            if is_valid:
+                valid_proofs.append(proof)
+        
+        return valid_proofs

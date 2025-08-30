@@ -1,0 +1,44 @@
+[tool.poetry]
+name = "calldns"
+version = "0.1.0"
+description = "A zero-knowledge caller verification system that works above existing VoIP/communication layers to verify callers while maintaining privacy."
+authors = ["Dipankar Sarkar <me@dipankar.name>"]
+license = "MIT"
+readme = "README.md"
+homepage = "https://github.com/dipankar/calldns"
+repository = "https://github.com/dipankar/calldns"
+documentation = "https://github.com/dipankar/calldns"
+keywords = ["zero-knowledge", "caller-id", "privacy", "authentication", "voip", "security"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Security :: Cryptography",
+    "Topic :: Communications :: Telephony"
+]
+
+[tool.poetry.dependencies]
+python = "^3.8"
+cryptography = "^3.4.8"
+ecdsa = "^0.19.1"
+flask = "^2.0.0"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^7.0.0"
+black = "^22.0.0"
+flake8 = "^4.0.0"
+
+[tool.poetry.scripts]
+calldns = "calldns.cli.main:main"
+calldns-service = "calldns.service:main"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

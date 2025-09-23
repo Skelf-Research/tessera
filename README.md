@@ -17,6 +17,9 @@ CallDNS addresses the challenges of deepfakes and SS7 issues in communications i
 - **Traffic Privacy**: Padding, cover traffic, and timing obfuscation to prevent network analysis
 - **Fast Verification**: Sub-millisecond proof generation and verification
 - **Cross-Platform SDK**: Easy integration with existing communication systems
+- **Production Ready**: Comprehensive logging, monitoring, and key management
+- **Secure Encryption**: AES-GCM authenticated encryption for all sensitive data
+- **Enterprise Features**: Key rotation, backup/recovery, and security monitoring
 
 ## Use Cases
 
@@ -28,12 +31,40 @@ Users can verify if an incoming call is actually from their bank:
 # Website confirms: "Yes, Bank called you 5 minutes ago"
 ```
 
-### 2. User-to-User Verification
-Alice can verify that Bob is actually calling:
-```python
-# Alice calls Bob
-# Bob's app shows: "Verified: Alice Johnson"
-# Bob answers with confidence
+### 2. Mobile App Integration
+Integrate CallDNS verification into any mobile app:
+```kotlin
+// Android - Show verification widget
+CallVerificationWidget(
+    callContext = CallContext(
+        callerId = "+1234567890",
+        callType = CallType.VOICE_CALL
+    )
+)
+```
+
+### 3. WebRTC Call Verification
+Verify browser-based calls automatically:
+```javascript
+// Web - Auto-verify WebRTC calls
+const widget = new CallDNSWidget('#call-interface');
+await widget.show({
+  callerId: 'user@example.com',
+  callType: 'WEBRTC_CALL'
+});
+```
+
+### 4. VoIP Service Integration
+Protect VoIP services from spoofing:
+```swift
+// iOS - Verify WhatsApp/Telegram calls
+CallVerificationView(
+    callContext: CallContext(
+        callerId: "+1234567890",
+        callType: .voipCall,
+        appContext: "WhatsApp"
+    )
+)
 ```
 
 ## Installation
@@ -71,12 +102,21 @@ is_valid = verifier.verify_call_proof(proof)
 
 ## Documentation
 
+For detailed documentation, see the [docs](docs/) directory:
+
+- [Quick Start Guide](docs/quickstart.md)
+- [API Reference](docs/api.md)
+- [Architecture Overview](docs/architecture.md)
+- [Use Cases](docs/use_cases.md)
+
 ### Core Components
 
 1. **Zero-Knowledge Proofs**: Schnorr-based implementation for fast verification
 2. **Privacy Layer**: Traffic padding, cover traffic, and commitment-based routing
 3. **Network Layer**: Scalable proof matching with bloom filters
 4. **Client SDK**: Easy integration for app developers
+5. **Key Management**: Secure key storage, rotation, and backup
+6. **Monitoring**: Comprehensive logging and security monitoring
 
 ### API Reference
 
@@ -111,28 +151,60 @@ CallDNS provides strong security guarantees:
 - **Proof Size**: ~96 bytes
 - **Scalable Matching**: Efficient even with thousands of simultaneous calls
 
+## Project Structure
+
+```
+calldns/
+├── calldns/                # Main package
+│   ├── sdk/               # Client SDK
+│   ├── crypto/            # Cryptographic operations
+│   ├── privacy/           # Privacy-preserving features
+│   ├── network/           # Network layer
+│   ├── service/           # Web service
+│   ├── cli/               # Command-line interface
+│   ├── keystore/          # Key management
+│   ├── logging/           # Logging and monitoring
+│   └── utils/             # Utilities and validation
+├── sdks/                  # Platform-specific SDKs
+│   ├── android/           # Android SDK (Kotlin/Compose)
+│   ├── ios/               # iOS SDK (Swift/SwiftUI)
+│   ├── react-native/      # React Native SDK
+│   ├── web/               # Web SDK (TypeScript)
+│   ├── flutter/           # Flutter SDK (Dart)
+│   └── examples/          # SDK integration examples
+├── docs/                  # Documentation
+├── examples/              # Code examples
+├── scripts/               # Development scripts
+└── tests/                 # Test suite
+```
+
 ## Development
 
 ### Installation
 ```bash
 git clone https://github.com/dipankar/calldns.git
 cd calldns
-poetry install
+./scripts/setup_dev.sh
 ```
 
 ### Running Tests
 ```bash
-poetry run pytest
+./scripts/run_tests.sh
 ```
 
 ### Starting the Service
 ```bash
-poetry run calldns-service
+./scripts/start_service.sh
 ```
 
 ## Contributing
 
-Contributions are welcome! Please read our [Contributing Guide](CONTRIBUTING.md) for details.
+Contributions are welcome! Please read our [Contributing Guide](CONTRIBUTING.md) for details on:
+
+- Setting up the development environment
+- Code style and testing requirements
+- Submitting pull requests
+- Security guidelines
 
 ## License
 

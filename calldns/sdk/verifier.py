@@ -6,9 +6,10 @@ Handles proof verification on callee device with commitment management and traff
 import hashlib
 import json
 import base64
-from ..crypto.crypto_utils import ZKVerifier
+from ..crypto.crypto_utils import ZKVerifier, SecureEncryption
 from .commitment_manager import CommitmentManager
 from .traffic_manager import TrafficManager
+from cryptography.exceptions import InvalidTag
 
 
 class Verifier:
@@ -62,7 +63,9 @@ class Verifier:
         try:
             bloom_fingerprint = base64.b64decode(encrypted_proof_data['bloom_fingerprint'])
             ephemeral_hint = base64.b64decode(encrypted_proof_data['ephemeral_hint'])
-            encrypted_proof = base64.b64decode(encrypted_proof_data['encrypted_proof'])
+            nonce = base64.b64decode(encrypted_proof_data['nonce'])
+            ciphertext = base64.b64decode(encrypted_proof_data['ciphertext'])
+            aad = base64.b64decode(encrypted_proof_data['aad'])
         except Exception as e:
             print(f"Decoding error: {e}")
             return False
@@ -89,16 +92,27 @@ class Verifier:
         # Derive routing key
         routing_key_data = commitment + ephemeral_hint
         routing_key = hashlib.sha256(routing_key_data).digest()
-        
-        # Decrypt proof (using simple XOR for prototype)
-        # Decrypt using the same XOR operation
-        proof_json_bytes = bytes([a ^ b for a, b in zip(encrypted_proof, routing_key * (len(encrypted_proof) // 32 + 1))])
-        
+
+        # Decrypt proof using secure AES-GCM
         try:
+            encrypted_data = {
+                'nonce': nonce,
+                'ciphertext': ciphertext,
+                'additional_data': aad
+            }
+            proof_json_bytes = SecureEncryption.decrypt(encrypted_data, routing_key)
+
             # Deserialize proof
             proof_str = proof_json_bytes.decode('utf-8')
             proof_data = json.loads(proof_str)
-            
+        except InvalidTag:
+            print("Authentication failed: Proof has been tampered with")
+            return False
+        except Exception as e:
+            print(f"Decryption error: {e}")
+            return False
+
+        try:
             # Check if this is a dummy proof
             if proof_data.get('is_dummy', False):
                 return False  # Dummy proof, not a real call

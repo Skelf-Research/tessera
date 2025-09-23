@@ -1,0 +1,30 @@
+name: calldns_flutter
+description: CallDNS Flutter SDK for zero-knowledge caller verification
+version: 0.1.0
+homepage: https://github.com/dipankar/calldns
+
+environment:
+  sdk: '>=2.17.0 <4.0.0'
+  flutter: ">=3.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  http: ^0.13.5
+  crypto: ^3.0.3
+  shared_preferences: ^2.2.0
+  flutter_secure_storage: ^9.0.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^2.0.0
+
+flutter:
+  plugin:
+    platforms:
+      android:
+        package: com.calldns.flutter
+        pluginClass: CallDnsFlutterPlugin
+      ios:
+        pluginClass: CallDnsFlutterPlugin

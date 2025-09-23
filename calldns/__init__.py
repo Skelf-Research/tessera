@@ -17,15 +17,32 @@ __license__ = "MIT"
 
 # Import main components for easy access
 from .sdk import Caller, Verifier
-from .crypto import ZKProver, ZKVerifier
+from .crypto import ZKProver, ZKVerifier, SecureEncryption
 from .privacy import PrivacyPreserver
 from .network import EnhancedBroadcast
+from .utils import InputValidator, ValidationError, CallDNSError, ProofError, EncryptionError
+from .keystore import KeyManager, KeyRotationManager, EncryptedKeyStore
+from .logging import CallDNSLogger, SecurityLogger, MetricsCollector, SecurityMonitor, PerformanceMonitor
 
 __all__ = [
     "Caller",
     "Verifier",
     "ZKProver",
     "ZKVerifier",
+    "SecureEncryption",
     "PrivacyPreserver",
-    "EnhancedBroadcast"
+    "EnhancedBroadcast",
+    "InputValidator",
+    "ValidationError",
+    "CallDNSError",
+    "ProofError",
+    "EncryptionError",
+    "KeyManager",
+    "KeyRotationManager",
+    "EncryptedKeyStore",
+    "CallDNSLogger",
+    "SecurityLogger",
+    "MetricsCollector",
+    "SecurityMonitor",
+    "PerformanceMonitor"
 ]

@@ -5,6 +5,7 @@ Tests for CallDNS cryptographic components.
 import unittest
 from calldns.crypto.crypto_utils import CryptoUtils, ZKProver, ZKVerifier
 from calldns.sdk.identity_manager import IdentityManager
+from calldns.utils.exceptions import ProofError, ValidationError
 
 
 class TestCryptoUtils(unittest.TestCase):
@@ -37,7 +38,8 @@ class TestZKProofs(unittest.TestCase):
     
     def test_proof_generation(self):
         """Test proof generation."""
-        proof = self.prover.generate_proof(self.private_key, self.public_key, "test")
+        metadata = {"test": "data", "call_type": "voice"}
+        proof = self.prover.generate_proof(self.private_key, self.public_key, metadata)
         self.assertIn('R', proof)
         self.assertIn('s', proof)
         self.assertIn('public_key', proof)
@@ -47,7 +49,8 @@ class TestZKProofs(unittest.TestCase):
     
     def test_proof_verification(self):
         """Test proof verification."""
-        proof = self.prover.generate_proof(self.private_key, self.public_key, "test")
+        metadata = {"test": "data", "call_type": "voice"}
+        proof = self.prover.generate_proof(self.private_key, self.public_key, metadata)
         # Now we have a proper verification implementation
         result = self.verifier.verify_proof(proof)
         self.assertTrue(result)
@@ -55,11 +58,12 @@ class TestZKProofs(unittest.TestCase):
     def test_invalid_proof_verification(self):
         """Test verification of invalid proof."""
         # Create a valid proof first
-        proof = self.prover.generate_proof(self.private_key, self.public_key, "test")
-        
+        metadata = {"test": "data", "call_type": "voice"}
+        proof = self.prover.generate_proof(self.private_key, self.public_key, metadata)
+
         # Tamper with the proof
         proof['s'] = proof['s'] + 1
-        
+
         # Verification should fail
         result = self.verifier.verify_proof(proof)
         self.assertFalse(result)

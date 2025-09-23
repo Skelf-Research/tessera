@@ -77,6 +77,45 @@ class EnhancedBroadcast:
             self.broadcast_channels[node].append(broadcast_message)
         
         print(f"Broadcasting encrypted proof with fingerprint: {fingerprint.hex()}")
+        return fingerprint.hex()
+
+    def route_proof(self, proof: Dict[str, Any], recipients: List[str], metadata: Dict[str, Any]) -> str:
+        """
+        Route a proof to specific recipients or broadcast generally.
+
+        Args:
+            proof: The ZK proof to route
+            recipients: List of recipient identifiers
+            metadata: Additional routing metadata
+
+        Returns:
+            str: Proof ID for tracking
+        """
+        import hashlib
+        import time
+
+        # Generate proof ID
+        proof_data = json.dumps(proof, sort_keys=True)
+        proof_id = hashlib.sha256(proof_data.encode()).hexdigest()[:16]
+
+        # Simulate routing to recipients
+        routing_hint = metadata.get('routing_hint', 'default')
+
+        # Create routing record
+        routing_record = {
+            'proof_id': proof_id,
+            'proof': proof,
+            'recipients': recipients,
+            'metadata': metadata,
+            'timestamp': int(time.time()),
+            'routing_hint': routing_hint
+        }
+
+        # Add to broadcast channels
+        for node in self.relay_nodes:
+            self.broadcast_channels[node].append(routing_record)
+
+        return proof_id
     
     def get_relevant_proofs(self, verifier_fingerprints: List[bytes], routing_hint: str = "default") -> List[Dict]:
         """

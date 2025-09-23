@@ -9,7 +9,7 @@ import json
 import base64
 from .identity_manager import IdentityManager
 from .traffic_manager import TrafficManager
-from ..crypto.crypto_utils import ZKProver
+from ..crypto.crypto_utils import ZKProver, SecureEncryption
 
 
 class Caller:
@@ -66,12 +66,15 @@ class Caller:
         # Derive routing key: H(commitment || ephemeral_hint)
         routing_key_data = reception_commitment + ephemeral_hint
         routing_key = hashlib.sha256(routing_key_data).digest()
-        
-        # In a real implementation, we'd use proper AEAD encryption
-        # For this prototype, we'll simulate encryption by obfuscating the proof
+
+        # Use secure AES-GCM encryption for production security
         proof_json = json.dumps(proof_serializable).encode('utf-8')
-        # Simple XOR "encryption" for prototype - NOT FOR PRODUCTION
-        encrypted_proof = bytes([a ^ b for a, b in zip(proof_json, routing_key * (len(proof_json) // 32 + 1))])
+
+        # Additional authenticated data includes routing metadata
+        aad = reception_commitment[:16]  # First 16 bytes of commitment as AAD
+
+        # Encrypt using secure AEAD
+        encrypted_data = SecureEncryption.encrypt(proof_json, routing_key, aad)
         
         # Generate bloom filter fingerprint
         timestamp = metadata.get('timestamp', 0) if metadata else 0
@@ -79,10 +82,12 @@ class Caller:
         bloom_fingerprint = hashlib.sha256(fingerprint_data).digest()[:8]
         
         return {
-            'encrypted_proof': base64.b64encode(encrypted_proof).decode('utf-8'),
+            'nonce': base64.b64encode(encrypted_data['nonce']).decode('utf-8'),
+            'ciphertext': base64.b64encode(encrypted_data['ciphertext']).decode('utf-8'),
+            'aad': base64.b64encode(encrypted_data['additional_data']).decode('utf-8'),
             'bloom_fingerprint': base64.b64encode(bloom_fingerprint).decode('utf-8'),
             'ephemeral_hint': base64.b64encode(ephemeral_hint).decode('utf-8'),
-            'proof_size': len(encrypted_proof)
+            'proof_size': len(encrypted_data['ciphertext'])
         }
     
     def prepare_proof_for_transmission(self, encrypted_proof: dict) -> dict:

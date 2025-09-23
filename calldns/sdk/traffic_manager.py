@@ -76,7 +76,7 @@ class TrafficManager:
                 's': secrets.randbelow(2**256),
                 'metadata': {
                     'timestamp': int(time.time()) - secrets.randbelow(3600),  # Random past time
-                    'call_type': secrets.choice(['voice', 'video', 'text']),
+                    'call_type': ['voice', 'video', 'text'][secrets.randbelow(3)],  # Replace secrets.choice
                     'session_id': secrets.token_hex(16)
                 },
                 'is_dummy': True

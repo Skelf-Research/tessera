@@ -92,6 +92,40 @@ alice_commitment = "example_commitment_hash_for_alice"
 contacts = add_verified_contact("Alice", alice_commitment)
 ```
 
+## Running Nodes
+
+### Start a Core Node
+
+```bash
+# Core nodes are public and handle proof routing
+calldns-node start \
+  --type core \
+  --id core-1 \
+  --port 8100 \
+  --api-port 8101 \
+  --rate-limit 60
+```
+
+### Start an Org Node (Bank/Enterprise)
+
+```bash
+# Org nodes require JWT authentication for customer registration
+export CALLDNS_JWT_SECRET="your-secret-key"
+calldns-node start \
+  --type org \
+  --id mybank-uk \
+  --port 8100 \
+  --api-port 8101 \
+  --peer core-1@localhost:8100
+```
+
+### Check Node Status
+
+```bash
+calldns-node status --port 8100
+calldns-node peers --port 8100
+```
+
 ## Web Service
 
 ### Starting the Service

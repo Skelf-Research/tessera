@@ -1,12 +1,38 @@
 import CryptoJS from 'crypto-js';
 
 // Types
+/**
+ * CallDNS SDK Configuration
+ *
+ * Authentication model:
+ * - Core nodes: Public, no auth required (anonymous for privacy)
+ * - Org nodes: Bank-issued JWT tokens
+ */
 export interface CallDNSConfig {
-  baseUrl?: string;
-  apiKey?: string;
+  coreNodeUrl?: string;
+  orgNodeUrl?: string; // Bank's org node for registration
+  orgAuthToken?: string; // JWT token for org node authentication
   cacheTimeout?: number;
   enableLogging?: boolean;
   maxRetries?: number;
+}
+
+export interface OutboundCallResult {
+  proofId: string;
+  broadcast: {
+    status: string;
+    notified: number;
+    timestamp: number;
+  };
+  dialIntent: string;
+  verificationWindow: number;
+}
+
+export interface VerifiedCallDestination {
+  destinationId: string;
+  destinationName: string;
+  phoneNumber: string;
+  commitment?: string;
 }
 
 export enum CallType {
@@ -117,8 +143,9 @@ export class CallDNSClient {
 
   private constructor(config: CallDNSConfig) {
     this.config = {
-      baseUrl: 'https://api.calldns.com',
-      apiKey: '',
+      coreNodeUrl: 'https://core.calldns.network',
+      orgNodeUrl: undefined,
+      orgAuthToken: undefined,
       cacheTimeout: 5 * 60 * 1000, // 5 minutes
       enableLogging: false,
       maxRetries: 3,
@@ -127,6 +154,99 @@ export class CallDNSClient {
 
     // Initialize WebRTC detection
     this.setupWebRTCDetection();
+  }
+
+  // Prepare and broadcast an outbound verified call
+  public async prepareVerifiedCall(
+    destination: VerifiedCallDestination,
+    metadata?: Record<string, any>
+  ): Promise<OutboundCallResult> {
+    try {
+      const identity = await this.getOrCreateIdentity();
+
+      const callContext: CallContext = {
+        callerId: 'customer',
+        calleeId: destination.destinationId,
+        callType: CallType.VOICE_CALL,
+        timestamp: Date.now(),
+        metadata: {
+          direction: 'outbound',
+          destination: destination.destinationId,
+          destination_name: destination.destinationName,
+          ...metadata,
+        },
+      };
+
+      const proof = await this.createProof(identity, callContext);
+
+      // Broadcast to core network (no auth - public endpoint)
+      const response = await this.fetchWithRetry(
+        `${this.config.coreNodeUrl}/proofs/broadcast`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            proof: {
+              ...proof,
+              commitment_id: destination.commitment,
+            },
+            decoys: 3,
+          }),
+        }
+      );
+
+      const broadcastResult = await response.json();
+
+      this.emit('proof-generated', proof);
+
+      return {
+        proofId: proof.proofId,
+        broadcast: {
+          status: broadcastResult.status || 'broadcast',
+          notified: broadcastResult.notified || 0,
+          timestamp: Date.now(),
+        },
+        dialIntent: `tel:${destination.phoneNumber}`,
+        verificationWindow: 300,
+      };
+
+    } catch (error) {
+      this.log('Error preparing verified call:', error);
+      throw error;
+    }
+  }
+
+  // Register commitment with org node
+  public async registerCommitment(
+    customerId: string,
+    commitment: string,
+    deviceId?: string,
+    metadata?: Record<string, any>
+  ): Promise<any> {
+    if (!this.config.orgNodeUrl) {
+      throw new Error('orgNodeUrl not configured');
+    }
+
+    const response = await this.fetchWithRetry(
+      `${this.config.orgNodeUrl}/customers/register`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(this.config.orgAuthToken && { Authorization: `Bearer ${this.config.orgAuthToken}` }),
+        },
+        body: JSON.stringify({
+          customer_id: customerId,
+          commitment,
+          device_id: deviceId,
+          metadata,
+        }),
+      }
+    );
+
+    return response.json();
   }
 
   public static initialize(config: CallDNSConfig): CallDNSClient {

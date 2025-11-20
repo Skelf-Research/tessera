@@ -111,11 +111,12 @@ Global Traffic (100%)
 
 ### Core Nodes
 
-Run by CallDNS. High-availability nodes that:
+Run by CallDNS or network operators. High-availability nodes that:
 - Route proofs between network participants
 - Manage customer subscriptions
 - Store pending proofs for pull model
 - Gossip proofs to peer core nodes
+- **Cannot identify customers** (only see buckets)
 
 ```python
 from calldns.network.decentralized import DecentralizedNode, NodeType
@@ -126,12 +127,19 @@ core = DecentralizedNode(
 )
 ```
 
+**Core nodes do NOT have:**
+- Customer registration storage
+- Contact center verification endpoints
+- Proof lookup by commitment
+
 ### Organization Nodes
 
 Run by banks, healthcare providers, etc. These nodes:
-- Generate and broadcast proofs
+- Generate and broadcast proofs (bank → customer)
+- Receive and verify proofs (customer → bank)
 - Add cover traffic (decoy proofs)
 - Connect to multiple core nodes
+- **Store customer commitments** for contact center verification
 
 ```python
 from calldns.network.decentralized import DecentralizedNode, NodeType, PrivacyPreservingBroadcaster
@@ -144,12 +152,18 @@ org_node = DecentralizedNode(
 broadcaster = PrivacyPreservingBroadcaster(org_node, num_decoys=3)
 ```
 
+**Org nodes have additional capabilities:**
+- Customer registration (`POST /customers/register`)
+- Contact center verification (`POST /verify/incoming-caller`)
+- Proof lookup by commitment (`GET /proofs/lookup`)
+
 ### Customer Nodes
 
 Lightweight clients for mobile/desktop apps:
 - Subscribe to buckets matching their commitment
 - Provide bloom filter for fine-grained filtering
-- Pull proofs when notified
+- Pull proofs when notified (bank → customer)
+- **Generate and broadcast proofs** (customer → bank)
 - Verify proofs locally
 
 ```python
@@ -163,6 +177,61 @@ client = CustomerNodeClient(
 # Get subscription data to send to core node
 subscription = client.get_subscription_data()
 ```
+
+**For outbound verified calls (customer → bank):**
+```kotlin
+// Android SDK
+VerifiedCallButton(
+    phoneNumber = "+44 800 123 4567",
+    destinationId = "natwest-uk",
+    destinationName = "NatWest"
+)
+```
+
+---
+
+## Bidirectional Verification
+
+CallDNS supports verification in both directions:
+
+### Bank → Customer (Inbound Verification)
+
+Protects customers from vishing/impersonation:
+
+```
+Bank Org Node → Core Network → Customer Device
+     │              │              │
+     │ Generate     │ Route by     │ Decrypt &
+     │ + Broadcast  │ Bucket       │ Verify
+```
+
+### Customer → Bank (Outbound Verification)
+
+Streamlines contact center authentication:
+
+```
+Customer Device → Core Network → Bank Org Node
+     │                │              │
+     │ Generate       │ Route to     │ Contact Center
+     │ + Broadcast    │ Org          │ Verifies
+     │                               │
+     └───────── Phone Call ──────────┘
+```
+
+### API Separation by Node Type
+
+| Endpoint | Core Node | Org Node |
+|----------|-----------|----------|
+| `/subscriptions` | ✅ | ✅ |
+| `/proofs/broadcast` | ✅ | ✅ |
+| `/customers/register` | ❌ | ✅ |
+| `/verify/incoming-caller` | ❌ | ✅ |
+| `/proofs/lookup` | ❌ | ✅ |
+
+This separation ensures:
+- Core nodes cannot identify customers
+- Only org nodes can verify callers
+- Privacy is maintained architecturally
 
 ---
 

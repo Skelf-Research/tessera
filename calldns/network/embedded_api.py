@@ -6,16 +6,90 @@ Provides REST endpoints when a node is started with --api-port.
 import time
 import base64
 import asyncio
+import hashlib
 from typing import Dict, List, Optional
+from collections import defaultdict
 
-from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect, Response
+from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect, Response, Depends, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel
 import uvicorn
 
 from .async_node import AsyncDecentralizedNode
 from .push import PushService
 from .commitment_storage import CommitmentStorage, SQLiteCommitmentStorage
+
+
+# Rate limiting for core nodes
+class RateLimiter:
+    """IP-based rate limiter for core node endpoints."""
+
+    def __init__(self, requests_per_minute: int = 60, burst_size: int = 10):
+        self.requests_per_minute = requests_per_minute
+        self.burst_size = burst_size
+        self.requests: Dict[str, List[float]] = defaultdict(list)
+
+    def is_allowed(self, client_ip: str) -> bool:
+        now = time.time()
+        minute_ago = now - 60
+
+        # Clean old requests
+        self.requests[client_ip] = [
+            t for t in self.requests[client_ip] if t > minute_ago
+        ]
+
+        # Check rate limit
+        if len(self.requests[client_ip]) >= self.requests_per_minute:
+            return False
+
+        # Check burst
+        second_ago = now - 1
+        recent = [t for t in self.requests[client_ip] if t > second_ago]
+        if len(recent) >= self.burst_size:
+            return False
+
+        self.requests[client_ip].append(now)
+        return True
+
+    def get_retry_after(self, client_ip: str) -> int:
+        if not self.requests[client_ip]:
+            return 0
+        oldest = min(self.requests[client_ip])
+        return max(1, int(60 - (time.time() - oldest)))
+
+
+# JWT validation for org nodes
+class JWTValidator:
+    """JWT validator for org node authentication."""
+
+    def __init__(self, secret_key: str, algorithm: str = "HS256"):
+        self.secret_key = secret_key
+        self.algorithm = algorithm
+
+    def validate_token(self, token: str) -> Optional[Dict]:
+        """
+        Validate JWT token and return claims.
+        """
+        try:
+            import jwt
+
+            claims = jwt.decode(
+                token,
+                self.secret_key,
+                algorithms=[self.algorithm]
+            )
+            return claims
+
+        except jwt.ExpiredSignatureError:
+            return None
+        except jwt.InvalidTokenError:
+            return None
+        except Exception:
+            return None
+
+
+security = HTTPBearer(auto_error=False)
 
 
 # Pydantic models
@@ -61,14 +135,24 @@ class CallerVerification(BaseModel):
 def create_embedded_api(
     node: AsyncDecentralizedNode,
     push_service: Optional[PushService] = None,
-    commitment_storage: Optional[CommitmentStorage] = None
+    commitment_storage: Optional[CommitmentStorage] = None,
+    jwt_secret: Optional[str] = None,
+    rate_limit_rpm: int = 60
 ) -> FastAPI:
-    """Create FastAPI app embedded in a node."""
+    """Create FastAPI app embedded in a node.
+
+    Args:
+        node: The decentralized node instance
+        push_service: Optional push notification service
+        commitment_storage: Optional commitment storage (org nodes only)
+        jwt_secret: Secret key for JWT validation (org nodes only)
+        rate_limit_rpm: Requests per minute for rate limiting (core nodes)
+    """
 
     app = FastAPI(
         title=f"CallDNS Node API - {node.node_id}",
         description="Embedded HTTP API for CallDNS node",
-        version="0.3.0"
+        version="0.4.0"
     )
 
     app.add_middleware(
@@ -84,12 +168,51 @@ def create_embedded_api(
     app.state.push = push_service
     app.state.commitment_storage = commitment_storage
 
+    # Rate limiter for core nodes (public endpoints)
+    rate_limiter = RateLimiter(requests_per_minute=rate_limit_rpm)
+
+    # JWT validator for org nodes
+    jwt_validator = JWTValidator(jwt_secret or "default-secret") if jwt_secret else None
+
+    # Helper to check rate limit
+    async def check_rate_limit(request: Request):
+        client_ip = request.client.host if request.client else "unknown"
+        if not rate_limiter.is_allowed(client_ip):
+            retry_after = rate_limiter.get_retry_after(client_ip)
+            raise HTTPException(
+                status_code=429,
+                detail="Rate limit exceeded",
+                headers={"Retry-After": str(retry_after)}
+            )
+
+    # Helper to validate JWT for org endpoints
+    async def validate_jwt(
+        credentials: Optional[HTTPAuthorizationCredentials] = Depends(security)
+    ) -> Optional[Dict]:
+        if not commitment_storage:
+            # Not an org node, no auth needed
+            return None
+
+        if not jwt_validator:
+            # Org node without JWT configured - allow all (dev mode)
+            return {"sub": "anonymous"}
+
+        if not credentials:
+            raise HTTPException(status_code=401, detail="Authorization required")
+
+        claims = jwt_validator.validate_token(credentials.credentials)
+        if not claims:
+            raise HTTPException(status_code=401, detail="Invalid or expired token")
+
+        return claims
+
     # Metrics
     metrics = {
         "requests": 0,
         "proofs_broadcast": 0,
         "subscriptions": 0,
-        "registrations": 0
+        "registrations": 0,
+        "rate_limited": 0
     }
 
     # Health & Stats
@@ -134,9 +257,12 @@ def create_embedded_api(
             media_type="text/plain"
         )
 
-    # Proof endpoints
+    # Proof endpoints (public, rate-limited)
     @app.post("/proofs/broadcast")
-    async def broadcast_proof(request: ProofBroadcast):
+    async def broadcast_proof(request: ProofBroadcast, req: Request):
+        # Rate limit check for core nodes
+        await check_rate_limit(req)
+
         metrics["requests"] += 1
         metrics["proofs_broadcast"] += 1
 
@@ -250,15 +376,20 @@ def create_embedded_api(
         except WebSocketDisconnect:
             pass
 
-    # Customer commitment registration (for org nodes)
+    # Customer commitment registration (for org nodes, JWT required)
     @app.post("/customers/register")
-    async def register_commitment(reg: CommitmentRegistration):
+    async def register_commitment(
+        reg: CommitmentRegistration,
+        claims: Optional[Dict] = Depends(validate_jwt)
+    ):
         """
         Register a customer's commitment with this org node.
 
         This allows the org to broadcast proofs to this customer.
         The customer should have already subscribed to the network
         with a matching bucket/bloom filter.
+
+        Requires JWT authentication.
         """
         metrics["requests"] += 1
         metrics["registrations"] += 1
@@ -474,10 +605,28 @@ async def run_embedded_api(
     host: str,
     port: int,
     push_service: Optional[PushService] = None,
-    commitment_storage: Optional[CommitmentStorage] = None
+    commitment_storage: Optional[CommitmentStorage] = None,
+    jwt_secret: Optional[str] = None,
+    rate_limit_rpm: int = 60
 ):
-    """Run the embedded API server."""
-    app = create_embedded_api(node, push_service, commitment_storage)
+    """Run the embedded API server.
+
+    Args:
+        node: The decentralized node instance
+        host: Host to bind to
+        port: Port to listen on
+        push_service: Optional push notification service
+        commitment_storage: Optional commitment storage (org nodes only)
+        jwt_secret: Secret key for JWT validation (org nodes only)
+        rate_limit_rpm: Requests per minute for rate limiting
+    """
+    app = create_embedded_api(
+        node,
+        push_service,
+        commitment_storage,
+        jwt_secret,
+        rate_limit_rpm
+    )
 
     config = uvicorn.Config(
         app,

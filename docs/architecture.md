@@ -7,14 +7,23 @@ This document outlines the architecture for CallDNS, a zero-knowledge caller ver
 
 ### 1. Core Architecture
 
+CallDNS supports **bidirectional verification**:
+
+**Bank → Customer (Inbound)**
 ```mermaid
 graph TD
-    A[Caller Device] -->|1. Generate ZK Proof| B(CallDNS Network)
-    B -->|2. Broadcast Proof| C[Callee Device]
-    C -->|3. Verify ZK Proof| D{Verification Result}
-    D -->|Valid| E[Accept Call]
-    D -->|Invalid| F[Reject Call]
-    G[Callee Registry] --> B
+    A[Bank Org Node] -->|1. Generate Proof| B(Core Network)
+    B -->|2. Route by Bucket| C[Customer Device]
+    C -->|3. Verify & Decrypt| D{Verified Call}
+```
+
+**Customer → Bank (Outbound)**
+```mermaid
+graph TD
+    A[Customer Device] -->|1. Generate Proof| B(Core Network)
+    B -->|2. Route to Org| C[Bank Org Node]
+    C -->|3. Contact Center Verifies| D{Verified Caller}
+    A -->|4. Place Call| E[Phone/PSTN]
 ```
 
 ### 2. Key Components

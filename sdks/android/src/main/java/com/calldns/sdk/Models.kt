@@ -4,13 +4,47 @@ import java.util.*
 
 /**
  * Configuration for CallDNS SDK
+ *
+ * Authentication model:
+ * - Core nodes: Public, no auth (anonymous for privacy)
+ * - Org nodes: Bank-issued JWT tokens
  */
 data class CallDNSConfig(
-    val baseUrl: String = "https://api.calldns.com",
-    val apiKey: String? = null,
+    val coreNodeUrl: String = "https://core.calldns.network",
+    val orgNodeUrl: String? = null, // Bank's org node for registration
+    val orgAuthToken: String? = null, // JWT token for org node authentication
     val cacheTimeout: Long = 5 * 60 * 1000, // 5 minutes
     val enableLogging: Boolean = false,
     val maxRetries: Int = 3
+)
+
+/**
+ * Result of broadcasting an outbound call proof
+ */
+data class OutboundCallResult(
+    val proofId: String,
+    val broadcast: BroadcastStatus,
+    val dialIntent: String,
+    val verificationWindow: Int = 300 // 5 minutes
+)
+
+/**
+ * Status of proof broadcast
+ */
+data class BroadcastStatus(
+    val status: String,
+    val notified: Int,
+    val timestamp: Long
+)
+
+/**
+ * Destination info for outbound verified calls
+ */
+data class VerifiedCallDestination(
+    val destinationId: String,
+    val destinationName: String,
+    val phoneNumber: String,
+    val commitment: String? = null
 )
 
 /**

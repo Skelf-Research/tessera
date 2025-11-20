@@ -60,6 +60,10 @@ Examples:
                               help='Peer to connect to (format: id@host:port)')
     start_parser.add_argument('--api-port', type=int,
                               help='HTTP API port (optional)')
+    start_parser.add_argument('--jwt-secret',
+                              help='JWT secret for org node authentication (or set CALLDNS_JWT_SECRET)')
+    start_parser.add_argument('--rate-limit', type=int, default=60,
+                              help='Rate limit requests per minute for core nodes (default: 60)')
 
     # Status command
     status_parser = subparsers.add_parser('status', help='Get node status')
@@ -136,10 +140,27 @@ async def handle_start_command(args):
     api_task = None
     if args.api_port:
         from .api_server import start_api_server
+
+        # Get JWT secret from args or environment
+        jwt_secret = args.jwt_secret or os.environ.get('CALLDNS_JWT_SECRET')
+
+        # Warn if org node without JWT
+        if node_type == NodeType.ORG and not jwt_secret:
+            print("  Warning: Org node running without JWT secret - authentication disabled")
+
         api_task = asyncio.create_task(
-            start_api_server(node, args.host, args.api_port)
+            start_api_server(
+                node,
+                args.host,
+                args.api_port,
+                jwt_secret=jwt_secret,
+                rate_limit_rpm=args.rate_limit
+            )
         )
         print(f"  API server: http://{args.host}:{args.api_port}")
+        if jwt_secret:
+            print(f"  JWT authentication: enabled")
+        print(f"  Rate limit: {args.rate_limit} req/min")
 
     # Start maintenance loop
     maintenance_task = asyncio.create_task(run_maintenance(node))

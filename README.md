@@ -187,14 +187,17 @@ This starts a core node and organization node locally for testing.
 ### Node CLI Commands
 
 ```bash
-# Start a core node
-calldns-node start --type core --id core-1 --port 8100
+# Start a core node (public, with rate limiting)
+calldns-node start --type core --id core-1 --port 8100 --api-port 8101 --rate-limit 60
 
-# Start an organization node
-calldns-node start --type org --id acme-bank --port 8101 --peer core-1@localhost:8100
+# Start an organization node (with JWT authentication)
+export CALLDNS_JWT_SECRET="your-secret-key"
+calldns-node start --type org --id acme-bank --port 8100 --api-port 8101 \
+  --peer core-1@localhost:8100
 
 # Start a customer node
-calldns-node start --type customer --id device-123 --port 8102 --peer core-1@localhost:8100
+calldns-node start --type customer --id device-123 --port 8102 \
+  --peer core-1@localhost:8100
 
 # Check node status
 calldns-node status --port 8100
@@ -202,6 +205,11 @@ calldns-node status --port 8100
 # List connected peers
 calldns-node peers --port 8100
 ```
+
+**Authentication Model:**
+- **Core nodes** are public (no auth) with IP-based rate limiting
+- **Org nodes** require JWT tokens for customer registration endpoints
+- See [Authentication Documentation](docs/authentication.md) for details
 
 ### Proof Management CLI
 

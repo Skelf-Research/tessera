@@ -179,24 +179,89 @@ import Foundation
 }
 
 // MARK: - CallDNS Configuration
+/**
+ * CallDNS SDK Configuration
+ *
+ * Authentication model:
+ * - Core nodes: Public, no auth required (anonymous for privacy)
+ * - Org nodes: Bank-issued JWT tokens
+ */
 @objc public class CallDNSConfig: NSObject {
-    @objc public let apiKey: String
-    @objc public let baseUrl: String
+    @objc public let coreNodeUrl: String
+    @objc public let orgNodeUrl: String?
+    @objc public let orgAuthToken: String? // JWT token for org node authentication
     @objc public let enableLogging: Bool
     @objc public let cacheTimeout: TimeInterval
     @objc public let maxRetries: Int
 
     @objc public init(
-        apiKey: String,
-        baseUrl: String = "https://api.calldns.com",
+        coreNodeUrl: String = "https://core.calldns.network",
+        orgNodeUrl: String? = nil,
+        orgAuthToken: String? = nil,
         enableLogging: Bool = false,
         cacheTimeout: TimeInterval = 300, // 5 minutes
         maxRetries: Int = 3
     ) {
-        self.apiKey = apiKey
-        self.baseUrl = baseUrl
+        self.coreNodeUrl = coreNodeUrl
+        self.orgNodeUrl = orgNodeUrl
+        self.orgAuthToken = orgAuthToken
         self.enableLogging = enableLogging
         self.cacheTimeout = cacheTimeout
         self.maxRetries = maxRetries
     }
+}
+
+// MARK: - Outbound Call Result
+@objc public class OutboundCallResult: NSObject {
+    @objc public let proofId: String
+    @objc public let broadcastStatus: String
+    @objc public let notified: Int
+    @objc public let dialIntent: String
+    @objc public let verificationWindow: Int
+    @objc public let timestamp: Date
+
+    @objc public init(
+        proofId: String,
+        broadcastStatus: String,
+        notified: Int,
+        dialIntent: String,
+        verificationWindow: Int = 300,
+        timestamp: Date = Date()
+    ) {
+        self.proofId = proofId
+        self.broadcastStatus = broadcastStatus
+        self.notified = notified
+        self.dialIntent = dialIntent
+        self.verificationWindow = verificationWindow
+        self.timestamp = timestamp
+    }
+}
+
+// MARK: - Verified Call Destination
+@objc public class VerifiedCallDestination: NSObject {
+    @objc public let destinationId: String
+    @objc public let destinationName: String
+    @objc public let phoneNumber: String
+    @objc public let commitment: String?
+
+    @objc public init(
+        destinationId: String,
+        destinationName: String,
+        phoneNumber: String,
+        commitment: String? = nil
+    ) {
+        self.destinationId = destinationId
+        self.destinationName = destinationName
+        self.phoneNumber = phoneNumber
+        self.commitment = commitment
+    }
+}
+
+// MARK: - CallDNS Errors
+public enum CallDNSError: Error {
+    case notInitialized
+    case networkError(String)
+    case verificationFailed(String)
+    case orgNodeNotConfigured
+    case invalidResponse
 }

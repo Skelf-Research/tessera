@@ -59,6 +59,23 @@ class TrafficManager:
     def get_transmission_stats(self) -> Dict[str, Any]
 ```
 
+#### OutboundCaller (Customer → Bank)
+```python
+class OutboundCaller:
+    def __init__(self, core_node_url: str, device_registration: Optional[DeviceRegistration] = None)
+    async def prepare_verified_call(self, destination_id: str, destination_commitment: bytes, metadata: Optional[Dict] = None) -> OutboundCallProof
+    async def broadcast_and_call(self, proof: OutboundCallProof, phone_number: str) -> Dict[str, Any]
+    async def quick_verified_call(self, destination_id: str, destination_commitment: bytes, phone_number: str, metadata: Optional[Dict] = None) -> Dict[str, Any]
+```
+
+#### ContactCenterVerifier (Bank-side verification)
+```python
+class ContactCenterVerifier:
+    def __init__(self, org_node_url: str)
+    async def verify_incoming_caller(self, caller_commitment: str, caller_id: Optional[str] = None, timeout: int = 30) -> Dict[str, Any]
+    async def lookup_customer_commitment(self, customer_id: str) -> Optional[str]
+```
+
 ### calldns.crypto
 Cryptographic implementations for zero-knowledge proofs.
 
@@ -162,12 +179,27 @@ calldns contacts remove <name>
 
 ## Web Service API
 
-### Endpoints
+### Authentication
+
+CallDNS uses a split authentication model:
+
+| Node Type | Authentication | Rate Limiting |
+|-----------|----------------|---------------|
+| **Core Node** | None (public) | IP-based (60 req/min) |
+| **Org Node** | JWT token | Optional |
+
+**Core node endpoints** are public to maintain customer anonymity. They are protected by IP-based rate limiting.
+
+**Org node endpoints** require JWT authentication via the `Authorization: Bearer <token>` header. Banks issue these tokens through their existing identity systems.
+
+See [Authentication Documentation](authentication.md) for details.
+
+### Core Node Endpoints
 
 #### GET /health
-Health check endpoint
+Health check endpoint (rate limited)
 ```bash
-curl http://localhost:8000/health
+curl http://localhost:8101/health
 ```
 Response:
 ```json
@@ -205,6 +237,116 @@ curl -X POST http://localhost:8000/commitments/register \
 Lookup a commitment
 ```bash
 curl http://localhost:8000/commitments/lookup/<commitment_id>
+```
+
+### Org Node API (Contact Center Endpoints)
+
+These endpoints are only available on organization nodes with commitment storage configured.
+
+**All org node endpoints require JWT authentication.**
+
+#### POST /customers/register
+Register a customer's commitment
+```bash
+curl -X POST http://org-node:8101/customers/register \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIs..." \
+  -d '{
+    "customer_id": "CUST-12345",
+    "commitment": "a1b2c3...",
+    "device_id": "iphone-main",
+    "metadata": {"registered_via": "mobile_app"}
+  }'
+```
+Response:
+```json
+{
+  "status": "registered",
+  "customer_id": "CUST-12345",
+  "commitment": "a1b2c3...",
+  "device_id": "iphone-main",
+  "registered_at": 1700000000,
+  "total_devices": 2
+}
+```
+
+#### GET /customers/{customer_id}/commitments
+Get all commitments for a customer
+```bash
+curl http://org-node:8101/customers/CUST-12345/commitments
+```
+Response:
+```json
+{
+  "customer_id": "CUST-12345",
+  "commitments": ["a1b2c3...", "d4e5f6..."],
+  "devices": [
+    {
+      "commitment": "a1b2c3...",
+      "device_id": "iphone-main",
+      "registered_at": 1700000000
+    }
+  ]
+}
+```
+
+#### POST /customers/{customer_id}/broadcast
+Broadcast a proof to all devices of a customer
+```bash
+curl -X POST http://org-node:8101/customers/CUST-12345/broadcast \
+  -H "Content-Type: application/json" \
+  -d '{"proof": {...}, "decoys": 3}'
+```
+
+#### GET /proofs/lookup
+Look up proofs by commitment (for contact center verification)
+```bash
+curl "http://org-node:8101/proofs/lookup?commitment=a1b2c3&since=1700000000"
+```
+Response:
+```json
+{
+  "commitment": "a1b2c3...",
+  "proofs": [
+    {
+      "timestamp": 1700000100,
+      "metadata": {"direction": "outbound"}
+    }
+  ],
+  "count": 1
+}
+```
+
+#### POST /verify/incoming-caller
+Verify an incoming caller by customer ID
+```bash
+curl -X POST http://org-node:8101/verify/incoming-caller \
+  -H "Content-Type: application/json" \
+  -d '{"customer_id": "CUST-12345"}'
+```
+Response (verified):
+```json
+{
+  "verified": true,
+  "customer_id": "CUST-12345",
+  "proofs": [
+    {
+      "commitment": "a1b2c3...",
+      "device_id": "iphone-main",
+      "timestamp": 1700000100
+    }
+  ],
+  "confidence": "high"
+}
+```
+Response (not verified):
+```json
+{
+  "verified": false,
+  "customer_id": "CUST-12345",
+  "reason": "no_recent_proof",
+  "registered_devices": 2
+}
 ```
 
 ## Configuration

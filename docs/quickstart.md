@@ -140,7 +140,7 @@ calldns-service
 import requests
 
 # Health check
-response = requests.get("http://localhost:8000/health")
+response = requests.get("http://localhost:8101/health")
 print(response.json())
 
 # Broadcast a proof
@@ -148,7 +148,7 @@ proof_data = {
     "proof": {"R": "example", "s": 123},
     "metadata": {"timestamp": 1234567890}
 }
-response = requests.post("http://localhost:8000/proofs/broadcast", json=proof_data)
+response = requests.post("http://localhost:8101/proofs/broadcast", json=proof_data)
 print(response.json())
 ```
 

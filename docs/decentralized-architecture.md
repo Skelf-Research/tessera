@@ -440,14 +440,29 @@ commitment = derive_commitment(
 # Install dependencies
 pip install calldns
 
-# Start core node
-python -c "
-from calldns.network.decentralized import DecentralizedNode, NodeType
-
-node = DecentralizedNode('core1', NodeType.CORE)
-# Add peer connections, start listening...
-"
+# Start core node (public, with rate limiting)
+calldns-node start \
+  --type core \
+  --id core-1 \
+  --port 8100 \
+  --api-port 8101 \
+  --rate-limit 60
 ```
+
+### Running an Org Node
+
+```bash
+# Org nodes require JWT authentication for customer registration
+export CALLDNS_JWT_SECRET="your-secret-key"
+calldns-node start \
+  --type org \
+  --id mybank-uk \
+  --port 8100 \
+  --api-port 8101 \
+  --peer core-1@localhost:8100
+```
+
+See [Authentication Documentation](authentication.md) for JWT and rate limiting configuration.
 
 ### Organization Integration
 

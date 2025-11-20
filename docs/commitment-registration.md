@@ -54,7 +54,7 @@ Commitment: 7f8e9d0c1b2a3f4e5d6c7b8a9f0e1d2c3b4a5f6e7d8c9b0a1f2e3d4c5b6a7f8e
 Bucket: 42
 
 # Subscribe to network
-$ calldns node start --type customer --id my-device --port 8102 \
+$ calldns-node start --type customer --id my-device --port 8102 \
     --peer core-1@seed.calldns.network:8100
 ```
 
@@ -218,8 +218,9 @@ Response:
 **Start org node with API:**
 
 ```bash
-calldns node start --type org --id acme-bank --port 8100 \
-    --api-port 8000 \
+export CALLDNS_JWT_SECRET="your-secret-key"
+calldns-node start --type org --id acme-bank --port 8100 \
+    --api-port 8101 \
     --peer core-1@seed.calldns.network:8100
 ```
 
@@ -231,9 +232,10 @@ import httpx
 # Generate commitment locally
 commitment = generate_commitment("+1234567890", salt)
 
-# Register with org
+# Register with org (JWT required)
 response = httpx.post(
-    "https://api.acme-bank.com:8000/customers/register",
+    "https://api.acme-bank.com:8101/customers/register",
+    headers={"Authorization": f"Bearer {jwt_token}"},
     json={
         "customer_id": "cust-12345",
         "commitment": commitment.hex(),
@@ -250,7 +252,8 @@ response = httpx.post(
 ```python
 # When agent calls customer
 response = httpx.post(
-    "http://localhost:8000/customers/cust-12345/broadcast",
+    "http://localhost:8101/customers/cust-12345/broadcast",
+    headers={"Authorization": f"Bearer {jwt_token}"},
     json={
         "proof": generate_proof(commitment)
     }

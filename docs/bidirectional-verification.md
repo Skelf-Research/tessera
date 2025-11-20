@@ -105,7 +105,8 @@ The org node exposes endpoints for contact center verification:
 #### Look Up Proofs by Commitment
 
 ```bash
-GET /proofs/lookup?commitment=<hex>&since=<timestamp>
+curl "http://org-node:8101/proofs/lookup?commitment=<hex>&since=<timestamp>" \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIs..."
 ```
 
 Response:
@@ -128,11 +129,13 @@ Response:
 #### Verify Incoming Caller
 
 ```bash
-POST /verify/incoming-caller
-{
-  "customer_id": "CUST-12345",
-  "caller_id": "+447700900123"  // optional
-}
+curl -X POST http://org-node:8101/verify/incoming-caller \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIs..." \
+  -d '{
+    "customer_id": "CUST-12345",
+    "caller_id": "+447700900123"
+  }'
 ```
 
 Response (verified):

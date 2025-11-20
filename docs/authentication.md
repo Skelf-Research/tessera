@@ -239,7 +239,7 @@ For local development, org nodes can run without JWT:
 
 ```bash
 # Dev mode - no auth required
-calldns node start --type org --id test-bank --api-port 8101
+calldns-node start --type org --id test-bank --port 8100 --api-port 8101
 # Warning: Commitment storage configured without JWT secret
 ```
 

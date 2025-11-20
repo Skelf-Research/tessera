@@ -212,7 +212,7 @@ Response:
 #### POST /proofs/broadcast
 Broadcast a proof to the network
 ```bash
-curl -X POST http://localhost:8000/proofs/broadcast \
+curl -X POST http://localhost:8101/proofs/broadcast \
   -H "Content-Type: application/json" \
   -d '{"proof": {...}, "metadata": {...}}'
 ```
@@ -220,7 +220,7 @@ curl -X POST http://localhost:8000/proofs/broadcast \
 #### POST /proofs/verify
 Verify a proof
 ```bash
-curl -X POST http://localhost:8000/proofs/verify \
+curl -X POST http://localhost:8101/proofs/verify \
   -H "Content-Type: application/json" \
   -d '{"proof": {...}}'
 ```
@@ -228,7 +228,7 @@ curl -X POST http://localhost:8000/proofs/verify \
 #### POST /commitments/register
 Register a commitment
 ```bash
-curl -X POST http://localhost:8000/commitments/register \
+curl -X POST http://localhost:8101/commitments/register \
   -H "Content-Type: application/json" \
   -d '{"commitment": "...", "metadata": {...}}'
 ```
@@ -236,7 +236,7 @@ curl -X POST http://localhost:8000/commitments/register \
 #### GET /commitments/lookup/<commitment_id>
 Lookup a commitment
 ```bash
-curl http://localhost:8000/commitments/lookup/<commitment_id>
+curl http://localhost:8101/commitments/lookup/<commitment_id>
 ```
 
 ### Org Node API (Contact Center Endpoints)
@@ -273,7 +273,8 @@ Response:
 #### GET /customers/{customer_id}/commitments
 Get all commitments for a customer
 ```bash
-curl http://org-node:8101/customers/CUST-12345/commitments
+curl http://org-node:8101/customers/CUST-12345/commitments \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIs..."
 ```
 Response:
 ```json
@@ -295,13 +296,15 @@ Broadcast a proof to all devices of a customer
 ```bash
 curl -X POST http://org-node:8101/customers/CUST-12345/broadcast \
   -H "Content-Type: application/json" \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIs..." \
   -d '{"proof": {...}, "decoys": 3}'
 ```
 
 #### GET /proofs/lookup
 Look up proofs by commitment (for contact center verification)
 ```bash
-curl "http://org-node:8101/proofs/lookup?commitment=a1b2c3&since=1700000000"
+curl "http://org-node:8101/proofs/lookup?commitment=a1b2c3&since=1700000000" \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIs..."
 ```
 Response:
 ```json
@@ -322,6 +325,7 @@ Verify an incoming caller by customer ID
 ```bash
 curl -X POST http://org-node:8101/verify/incoming-caller \
   -H "Content-Type: application/json" \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIs..." \
   -d '{"customer_id": "CUST-12345"}'
 ```
 Response (verified):

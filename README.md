@@ -218,16 +218,16 @@ calldns-node peers --port 8100
 calldns-proof commitment +1234567890
 
 # Subscribe to proofs
-calldns-proof subscribe --commitment <hex> --node localhost:8100
+calldns-proof subscribe --commitment <hex> --node localhost:8101
 
 # Broadcast a proof
-calldns-proof broadcast --bucket 42 --fingerprint <hex> --ciphertext <hex> --node localhost:8100
+calldns-proof broadcast --bucket 42 --fingerprint <hex> --ciphertext <hex> --node localhost:8101
 
 # Fetch pending proofs
-calldns-proof fetch --subscriber-id device-123 --node localhost:8100
+calldns-proof fetch --subscriber-id device-123 --node localhost:8101
 
 # Watch for proofs in real-time
-calldns-proof watch --subscriber-id device-123 --node localhost:8100
+calldns-proof watch --subscriber-id device-123 --node localhost:8101
 ```
 
 ### FastAPI Service
@@ -297,6 +297,7 @@ asyncio.run(main())
 For detailed documentation, see the [docs](docs/) directory:
 
 - [Privacy Model](docs/privacy-model.md) - Last-mile privacy guarantees
+- [Authentication](docs/authentication.md) - JWT and rate limiting configuration
 - [Bidirectional Verification](docs/bidirectional-verification.md) - Customer↔Bank verification flows
 - [Commitment Registration](docs/commitment-registration.md) - Customer onboarding flows
 - [Decentralized Architecture](docs/decentralized-architecture.md) - Network design
@@ -354,7 +355,8 @@ python scripts/benchmark.py --node ws://localhost:8100 --scale medium
 python -c "from calldns.cli.tls_transport import generate_self_signed_cert; generate_self_signed_cert('cert.pem', 'key.pem', 'my-node')"
 
 # Start node with TLS
-calldns-node start --type core --id core-1 --port 8100 --cert cert.pem --key key.pem
+calldns-node start --type core --id core-1 --port 8100 --api-port 8101 \
+  --cert cert.pem --key key.pem
 ```
 
 ### Core Components

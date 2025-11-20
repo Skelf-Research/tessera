@@ -29,15 +29,25 @@ python = "^3.8"
 cryptography = "^3.4.8"
 ecdsa = "^0.19.1"
 flask = "^2.0.0"
+fastapi = "^0.104.0"
+uvicorn = {extras = ["standard"], version = "^0.24.0"}
+aiosqlite = "^0.19.0"
+pydantic = "^2.5.0"
+websockets = "^12.0"
+aiomqtt = {version = "^2.0.0", optional = true}
+
+[tool.poetry.extras]
+mqtt = ["aiomqtt"]
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^7.0.0"
+pytest-asyncio = "^0.21.0"
 black = "^22.0.0"
 flake8 = "^4.0.0"
+httpx = "^0.25.0"
 
 [tool.poetry.scripts]
 calldns = "calldns.cli.main:main"
-calldns-service = "calldns.service:main"
 
 [build-system]
 requires = ["poetry-core"]

@@ -1,0 +1,113 @@
+version: '3.8'
+
+services:
+  # Core nodes - run by CallDNS infrastructure
+  core-1:
+    build: .
+    container_name: calldns-core-1
+    command: ["start", "--type", "core", "--id", "core-1", "--port", "8100", "--host", "0.0.0.0", "--data-dir", "/data"]
+    ports:
+      - "8100:8100"
+    volumes:
+      - core1-data:/data
+    networks:
+      - calldns-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import websockets; import asyncio; asyncio.run(websockets.connect('ws://localhost:8100'))"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  core-2:
+    build: .
+    container_name: calldns-core-2
+    command: ["start", "--type", "core", "--id", "core-2", "--port", "8100", "--host", "0.0.0.0", "--data-dir", "/data", "--peer", "core-1@core-1:8100"]
+    ports:
+      - "8101:8100"
+    volumes:
+      - core2-data:/data
+    networks:
+      - calldns-network
+    depends_on:
+      core-1:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # Example organization node - run by a bank/org
+  org-bank-a:
+    build: .
+    container_name: calldns-org-bank-a
+    command: ["start", "--type", "org", "--id", "bank-a", "--port", "8100", "--host", "0.0.0.0", "--data-dir", "/data", "--peer", "core-1@core-1:8100", "--peer", "core-2@core-2:8100"]
+    ports:
+      - "8200:8100"
+    volumes:
+      - org-bank-a-data:/data
+    networks:
+      - calldns-network
+    depends_on:
+      - core-1
+      - core-2
+    restart: unless-stopped
+
+  # FastAPI service for HTTP/WebSocket API
+  api:
+    build: .
+    container_name: calldns-api
+    entrypoint: ["python", "-m", "calldns.service.api"]
+    environment:
+      - CALLDNS_HOST=0.0.0.0
+      - CALLDNS_PORT=8000
+    ports:
+      - "8000:8000"
+    volumes:
+      - api-data:/data
+    networks:
+      - calldns-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Prometheus for metrics (optional)
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: calldns-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./deploy/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    networks:
+      - calldns-network
+    profiles:
+      - monitoring
+
+  # Grafana for dashboards (optional)
+  grafana:
+    image: grafana/grafana:latest
+    container_name: calldns-grafana
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana-data:/var/lib/grafana
+    networks:
+      - calldns-network
+    profiles:
+      - monitoring
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+
+volumes:
+  core1-data:
+  core2-data:
+  org-bank-a-data:
+  api-data:
+  prometheus-data:
+  grafana-data:
+
+networks:
+  calldns-network:
+    driver: bridge

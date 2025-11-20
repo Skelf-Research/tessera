@@ -1,0 +1,113 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: calldns-core
+  namespace: calldns
+  labels:
+    app: calldns
+    component: core
+spec:
+  serviceName: calldns-core
+  replicas: 3
+  selector:
+    matchLabels:
+      app: calldns
+      component: core
+  template:
+    metadata:
+      labels:
+        app: calldns
+        component: core
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8100"
+        prometheus.io/path: "/metrics"
+    spec:
+      containers:
+        - name: core-node
+          image: calldns:latest
+          args:
+            - "start"
+            - "--type"
+            - "core"
+            - "--id"
+            - "$(POD_NAME)"
+            - "--port"
+            - "8100"
+            - "--host"
+            - "0.0.0.0"
+            - "--data-dir"
+            - "/data"
+          env:
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+          ports:
+            - containerPort: 8100
+              name: node
+              protocol: TCP
+          volumeMounts:
+            - name: data
+              mountPath: /data
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "100m"
+            limits:
+              memory: "1Gi"
+              cpu: "500m"
+          livenessProbe:
+            tcpSocket:
+              port: 8100
+            initialDelaySeconds: 10
+            periodSeconds: 30
+          readinessProbe:
+            tcpSocket:
+              port: 8100
+            initialDelaySeconds: 5
+            periodSeconds: 10
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: 10Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: calldns-core
+  namespace: calldns
+  labels:
+    app: calldns
+    component: core
+spec:
+  clusterIP: None
+  selector:
+    app: calldns
+    component: core
+  ports:
+    - port: 8100
+      targetPort: 8100
+      name: node
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: calldns-core-lb
+  namespace: calldns
+  labels:
+    app: calldns
+    component: core
+spec:
+  type: LoadBalancer
+  selector:
+    app: calldns
+    component: core
+  ports:
+    - port: 8100
+      targetPort: 8100
+      name: node

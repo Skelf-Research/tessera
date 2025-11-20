@@ -9,11 +9,18 @@ from .verifier import Verifier
 from .identity_manager import IdentityManager
 from .commitment_manager import CommitmentManager
 from .traffic_manager import TrafficManager
+from .device_registration import DeviceRegistration, CustomerRegistrationManager
+from .outbound_caller import OutboundCaller, ContactCenterVerifier, OutboundCallProof
 
 __all__ = [
     "Caller",
     "Verifier",
     "IdentityManager",
     "CommitmentManager",
-    "TrafficManager"
+    "TrafficManager",
+    "DeviceRegistration",
+    "CustomerRegistrationManager",
+    "OutboundCaller",
+    "ContactCenterVerifier",
+    "OutboundCallProof"
 ]

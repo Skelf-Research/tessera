@@ -1,0 +1,37 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: calldns-config
+  namespace: calldns
+  labels:
+    app: calldns
+data:
+  # Network configuration
+  network: "mainnet"
+
+  # Seed nodes for discovery
+  seed-nodes: |
+    [
+      {"peer_id": "calldns-core-0", "host": "calldns-core-0.calldns-core.calldns.svc.cluster.local", "port": 8100},
+      {"peer_id": "calldns-core-1", "host": "calldns-core-1.calldns-core.calldns.svc.cluster.local", "port": 8100},
+      {"peer_id": "calldns-core-2", "host": "calldns-core-2.calldns-core.calldns.svc.cluster.local", "port": 8100}
+    ]
+
+  # Node defaults
+  max-peers: "50"
+  min-peers: "3"
+  proof-ttl: "3600"
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: calldns-tls
+  namespace: calldns
+  labels:
+    app: calldns
+type: kubernetes.io/tls
+data:
+  # Base64 encoded TLS certificate and key
+  # Generate with: kubectl create secret tls calldns-tls --cert=cert.pem --key=key.pem
+  tls.crt: ""
+  tls.key: ""

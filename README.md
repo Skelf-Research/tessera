@@ -301,6 +301,7 @@ For detailed documentation, see the [docs](docs/) directory:
 - [Bidirectional Verification](docs/bidirectional-verification.md) - Customer↔Bank verification flows
 - [Commitment Registration](docs/commitment-registration.md) - Customer onboarding flows
 - [Decentralized Architecture](docs/decentralized-architecture.md) - Network design
+- [Network Economics](docs/network-economics.md) - Consortium + fee model for sustainability
 - [Quick Start Guide](docs/quickstart.md)
 - [API Reference](docs/api.md)
 - [Architecture Overview](docs/architecture.md)
@@ -460,6 +461,24 @@ cd calldns
 ```bash
 ./scripts/start_service.sh
 ```
+
+## Roadmap
+
+### Current Status
+- ✅ Core cryptographic primitives (Schnorr ZK proofs)
+- ✅ Decentralized network architecture
+- ✅ Bidirectional verification (bank↔customer)
+- ✅ Multi-platform SDKs (Android, iOS, Web, Flutter, React Native)
+- ✅ JWT authentication and rate limiting
+
+### Planned
+- 🔲 **Billing layer** - Usage tracking and invoicing for non-consortium orgs
+- 🔲 **Foundation dashboard** - Network monitoring and consortium management
+- 🔲 **Commitment rotation** - Automatic rotation for enhanced privacy
+- 🔲 **HSM integration** - Hardware security module support for production keys
+- 🔲 **Geographic expansion** - EU and US core node deployments
+
+See [Network Economics](docs/network-economics.md) for the consortium + fee model.
 
 ## Contributing
 

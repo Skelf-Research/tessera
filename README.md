@@ -302,6 +302,7 @@ For detailed documentation, see the [docs](docs/) directory:
 - [Commitment Registration](docs/commitment-registration.md) - Customer onboarding flows
 - [Decentralized Architecture](docs/decentralized-architecture.md) - Network design
 - [Network Economics](docs/network-economics.md) - Consortium + fee model for sustainability
+- [Node Management UI](docs/ui.md) - Web UI for node operators
 - [Quick Start Guide](docs/quickstart.md)
 - [API Reference](docs/api.md)
 - [Architecture Overview](docs/architecture.md)
@@ -430,6 +431,7 @@ calldns/
 │   ├── keystore/          # Key management
 │   ├── logging/           # Logging and monitoring
 │   └── utils/             # Utilities and validation
+├── ui/                    # Node Management UI (Vue 3 + TailwindCSS)
 ├── sdks/                  # Platform-specific SDKs
 │   ├── android/           # Android SDK (Kotlin/Compose)
 │   ├── ios/               # iOS SDK (Swift/SwiftUI)
@@ -442,6 +444,40 @@ calldns/
 ├── scripts/               # Development scripts
 └── tests/                 # Test suite
 ```
+
+## Node Management UI
+
+CallDNS includes a web-based management interface for node operators:
+
+```bash
+# Start the UI (development)
+./scripts/start_ui.sh
+
+# Or manually
+cd ui && npm install && npm run dev
+```
+
+The UI is available at `http://localhost:3000` and provides:
+
+### Regular Node Mode
+- Real-time node health monitoring
+- WebSocket connection status
+- Proof verification dashboard
+- Commitment management
+
+### Organization Node Mode
+- Customer management (search, pagination for millions of records)
+- Device registration and management
+- Commitment tracking per customer
+- Live statistics with animated counters
+
+### Scalability Features
+- Server-side pagination (25-250 items per page)
+- Debounced search with instant results
+- Virtual scrolling for large lists
+- Compact number formatting (1.2M, 450K)
+
+See [ui/README.md](ui/README.md) for detailed documentation.
 
 ## Development
 

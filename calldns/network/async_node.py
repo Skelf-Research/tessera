@@ -45,6 +45,12 @@ class AsyncDecentralizedNode:
         # In-memory caches
         self.peers: Dict[str, dict] = {}
         self.bucket_subscribers: Dict[int, Set[str]] = defaultdict(set)
+        # subscriber_id -> subscription data, so route_proof matches candidates in
+        # memory instead of one storage read per candidate (fixes F9: O(occupancy) reads).
+        self.subscription_cache: Dict[str, dict] = {}
+        # subscriber_id -> parsed BloomFilter, so matching does not rebuild the 1024-bit
+        # filter from bytes on every candidate of every proof (fixes F12: CPU per match).
+        self._bloom_cache: Dict[str, BloomFilter] = {}
 
         # Local matching (for customer nodes)
         self.my_subscriptions: List[Subscription] = []
@@ -70,11 +76,12 @@ class AsyncDecentralizedNode:
         for peer in await self.storage.get_active_peers():
             self.peers[peer["peer_id"]] = peer
 
-        # Load subscriptions and rebuild bucket index
+        # Load subscriptions and rebuild bucket index + in-memory cache
         for sub_data in await self.storage.get_all_subscriptions():
             bucket = sub_data["bucket"]
             subscriber_id = sub_data["subscriber_id"]
             self.bucket_subscribers[bucket].add(subscriber_id)
+            self.subscription_cache[subscriber_id] = sub_data
 
     # ─────────────────────────────────────────────────────────────
     # Core Node Functions
@@ -87,8 +94,9 @@ class AsyncDecentralizedNode:
         # Store in database
         await self.storage.store_subscription(subscriber_id, subscription_data)
 
-        # Update in-memory bucket index
+        # Update in-memory indexes
         self.bucket_subscribers[bucket].add(subscriber_id)
+        self.subscription_cache[subscriber_id] = subscription_data
 
         await self.storage.increment_stat("subscriptions_registered")
 
@@ -98,9 +106,11 @@ class AsyncDecentralizedNode:
         if not sub_data:
             return
 
-        # Remove from in-memory index
+        # Remove from in-memory indexes
         bucket = sub_data["bucket"]
         self.bucket_subscribers[bucket].discard(subscriber_id)
+        self.subscription_cache.pop(subscriber_id, None)
+        self._bloom_cache.pop(subscriber_id, None)
 
         # Remove from database
         await self.storage.delete_subscription(subscriber_id)
@@ -149,17 +159,30 @@ class AsyncDecentralizedNode:
     async def _check_and_queue_proof(self, subscriber_id: str, proof: dict,
                                      proof_id: str) -> int:
         """Check if proof matches subscriber and queue it."""
-        sub_data = await self.storage.get_subscription(subscriber_id)
+        # In-memory lookup (fixes F9): avoid a storage read per candidate subscriber.
+        sub_data = self.subscription_cache.get(subscriber_id)
+        if not sub_data:
+            sub_data = await self.storage.get_subscription(subscriber_id)
         if not sub_data:
             return 0
 
-        if not self._matches_subscription_data(proof, sub_data):
+        bloom = self._get_cached_bloom(subscriber_id, sub_data)
+        if not self._matches_subscription_data(proof, sub_data, bloom):
             return 0
 
         await self.storage.queue_proof_for_subscriber(subscriber_id, proof_id)
         return 1
 
-    def _matches_subscription_data(self, proof: dict, sub_data: dict) -> bool:
+    def _get_cached_bloom(self, subscriber_id: str, sub_data: dict) -> BloomFilter:
+        """Parsed BloomFilter for a subscriber, built once and cached (fixes F12)."""
+        bloom = self._bloom_cache.get(subscriber_id)
+        if bloom is None:
+            bloom = BloomFilter.from_bytes(base64.b64decode(sub_data["bloom_filter"]))
+            self._bloom_cache[subscriber_id] = bloom
+        return bloom
+
+    def _matches_subscription_data(self, proof: dict, sub_data: dict,
+                                   bloom: BloomFilter = None) -> bool:
         """Check if proof matches subscription filters."""
         # Time check
         time_window = sub_data.get("time_window", 600)
@@ -174,9 +197,9 @@ class AsyncDecentralizedNode:
             if proof_org and proof_org not in org_hints:
                 return False
 
-        # Bloom filter check
-        bloom_bytes = base64.b64decode(sub_data["bloom_filter"])
-        bloom = BloomFilter.from_bytes(bloom_bytes)
+        # Bloom filter check (use the cached filter when available)
+        if bloom is None:
+            bloom = BloomFilter.from_bytes(base64.b64decode(sub_data["bloom_filter"]))
         fingerprint = base64.b64decode(proof.get("bloom_fingerprint", ""))
         if not bloom.might_contain(fingerprint):
             return False
@@ -316,6 +339,7 @@ class AsyncDecentralizedNode:
         """Gracefully shutdown the node."""
         await self.cleanup_expired()
         await self.storage.vacuum()
+        await self.storage.close()
 
     async def run_maintenance(self):
         """Run periodic maintenance tasks."""

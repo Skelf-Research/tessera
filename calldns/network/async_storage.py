@@ -4,6 +4,7 @@ Uses aiosqlite for non-blocking database operations.
 """
 
 import aiosqlite
+import asyncio
 import json
 import time
 import base64
@@ -32,13 +33,23 @@ class AsyncNodeStorage:
         """
         self.db_path = db_path
         self._initialized = False
+        # One long-lived connection serialized by a lock, instead of opening a fresh
+        # connection per operation. This is the key write-throughput fix (F10): per-op
+        # connections never kept synchronous=NORMAL, so every commit did a FULL fsync.
+        self._db: Optional[aiosqlite.Connection] = None
+        self._lock = asyncio.Lock()
 
     async def initialize(self):
         """Initialize database schema."""
         if self._initialized:
             return
 
-        async with aiosqlite.connect(self.db_path) as db:
+        self._db = await aiosqlite.connect(self.db_path)
+        self._db.row_factory = aiosqlite.Row
+        await self._db.execute("PRAGMA busy_timeout=5000")
+
+        async with self._lock:
+            db = self._db
             # Enable WAL mode for better concurrent performance
             await db.execute("PRAGMA journal_mode=WAL")
             await db.execute("PRAGMA synchronous=NORMAL")
@@ -143,7 +154,8 @@ class AsyncNodeStorage:
     async def store_proof(self, proof_id: str, proof: dict, from_peer: str = None,
                          ttl: int = 3600) -> bool:
         """Store a proof in the database."""
-        async with aiosqlite.connect(self.db_path) as db:
+        async with self._lock:
+            db = self._db
             current_time = int(time.time())
             expires_at = current_time + ttl
 
@@ -171,7 +183,8 @@ class AsyncNodeStorage:
 
     async def get_proof(self, proof_id: str) -> Optional[dict]:
         """Get a proof by ID."""
-        async with aiosqlite.connect(self.db_path) as db:
+        async with self._lock:
+            db = self._db
             db.row_factory = aiosqlite.Row
             async with db.execute(
                 "SELECT proof_data FROM proofs WHERE proof_id = ?",
@@ -184,7 +197,8 @@ class AsyncNodeStorage:
 
     async def proof_exists(self, proof_id: str) -> bool:
         """Check if proof already exists."""
-        async with aiosqlite.connect(self.db_path) as db:
+        async with self._lock:
+            db = self._db
             async with db.execute(
                 "SELECT 1 FROM proofs WHERE proof_id = ?",
                 (proof_id,)
@@ -193,7 +207,8 @@ class AsyncNodeStorage:
 
     async def get_proofs_by_bucket(self, bucket: int, since_timestamp: int = 0) -> List[dict]:
         """Get all proofs in a bucket since timestamp."""
-        async with aiosqlite.connect(self.db_path) as db:
+        async with self._lock:
+            db = self._db
             db.row_factory = aiosqlite.Row
             async with db.execute("""
                 SELECT proof_data FROM proofs
@@ -205,7 +220,8 @@ class AsyncNodeStorage:
 
     async def cleanup_expired_proofs(self) -> int:
         """Remove expired proofs."""
-        async with aiosqlite.connect(self.db_path) as db:
+        async with self._lock:
+            db = self._db
             current_time = int(time.time())
 
             # Delete pending references first
@@ -231,7 +247,8 @@ class AsyncNodeStorage:
 
     async def store_subscription(self, subscriber_id: str, subscription: dict):
         """Store or update a subscription."""
-        async with aiosqlite.connect(self.db_path) as db:
+        async with self._lock:
+            db = self._db
             current_time = int(time.time())
             org_hints = json.dumps(subscription.get("org_hints", []))
 
@@ -260,7 +277,8 @@ class AsyncNodeStorage:
 
     async def get_subscription(self, subscriber_id: str) -> Optional[dict]:
         """Get a subscription by ID."""
-        async with aiosqlite.connect(self.db_path) as db:
+        async with self._lock:
+            db = self._db
             db.row_factory = aiosqlite.Row
             async with db.execute(
                 "SELECT * FROM subscriptions WHERE subscriber_id = ?",
@@ -281,7 +299,8 @@ class AsyncNodeStorage:
 
     async def get_subscribers_by_bucket(self, bucket: int) -> List[str]:
         """Get all subscriber IDs in a bucket."""
-        async with aiosqlite.connect(self.db_path) as db:
+        async with self._lock:
+            db = self._db
             async with db.execute(
                 "SELECT subscriber_id FROM subscriptions WHERE bucket = ?",
                 (bucket,)
@@ -291,7 +310,8 @@ class AsyncNodeStorage:
 
     async def delete_subscription(self, subscriber_id: str) -> bool:
         """Delete a subscription."""
-        async with aiosqlite.connect(self.db_path) as db:
+        async with self._lock:
+            db = self._db
             await db.execute(
                 "DELETE FROM pending_proofs WHERE subscriber_id = ?",
                 (subscriber_id,)
@@ -306,7 +326,8 @@ class AsyncNodeStorage:
 
     async def update_subscriber_last_seen(self, subscriber_id: str):
         """Update last seen timestamp."""
-        async with aiosqlite.connect(self.db_path) as db:
+        async with self._lock:
+            db = self._db
             await db.execute(
                 "UPDATE subscriptions SET last_seen = ? WHERE subscriber_id = ?",
                 (int(time.time()), subscriber_id)
@@ -315,7 +336,8 @@ class AsyncNodeStorage:
 
     async def get_all_subscriptions(self) -> List[dict]:
         """Get all subscriptions."""
-        async with aiosqlite.connect(self.db_path) as db:
+        async with self._lock:
+            db = self._db
             db.row_factory = aiosqlite.Row
             async with db.execute("SELECT * FROM subscriptions") as cursor:
                 rows = await cursor.fetchall()
@@ -335,7 +357,8 @@ class AsyncNodeStorage:
 
     async def queue_proof_for_subscriber(self, subscriber_id: str, proof_id: str):
         """Queue a proof for a subscriber."""
-        async with aiosqlite.connect(self.db_path) as db:
+        async with self._lock:
+            db = self._db
             await db.execute("""
                 INSERT INTO pending_proofs (subscriber_id, proof_id, queued_at)
                 VALUES (?, ?, ?)
@@ -345,7 +368,8 @@ class AsyncNodeStorage:
     async def get_pending_proofs(self, subscriber_id: str,
                                  delete_after: bool = True) -> List[dict]:
         """Get pending proofs for a subscriber."""
-        async with aiosqlite.connect(self.db_path) as db:
+        async with self._lock:
+            db = self._db
             db.row_factory = aiosqlite.Row
 
             async with db.execute("""
@@ -372,7 +396,8 @@ class AsyncNodeStorage:
 
     async def get_pending_count(self, subscriber_id: str) -> int:
         """Get count of pending proofs."""
-        async with aiosqlite.connect(self.db_path) as db:
+        async with self._lock:
+            db = self._db
             async with db.execute(
                 "SELECT COUNT(*) FROM pending_proofs WHERE subscriber_id = ?",
                 (subscriber_id,)
@@ -386,7 +411,8 @@ class AsyncNodeStorage:
 
     async def store_peer(self, peer_id: str, peer_info: dict):
         """Store or update a peer."""
-        async with aiosqlite.connect(self.db_path) as db:
+        async with self._lock:
+            db = self._db
             current_time = int(time.time())
 
             await db.execute("""
@@ -411,7 +437,8 @@ class AsyncNodeStorage:
 
     async def get_peer(self, peer_id: str) -> Optional[dict]:
         """Get a peer by ID."""
-        async with aiosqlite.connect(self.db_path) as db:
+        async with self._lock:
+            db = self._db
             db.row_factory = aiosqlite.Row
             async with db.execute(
                 "SELECT * FROM peers WHERE peer_id = ?",
@@ -433,7 +460,8 @@ class AsyncNodeStorage:
 
     async def get_active_peers(self) -> List[dict]:
         """Get all active peers."""
-        async with aiosqlite.connect(self.db_path) as db:
+        async with self._lock:
+            db = self._db
             db.row_factory = aiosqlite.Row
             async with db.execute(
                 "SELECT * FROM peers WHERE is_active = 1"
@@ -452,7 +480,8 @@ class AsyncNodeStorage:
 
     async def deactivate_peer(self, peer_id: str):
         """Mark a peer as inactive."""
-        async with aiosqlite.connect(self.db_path) as db:
+        async with self._lock:
+            db = self._db
             await db.execute(
                 "UPDATE peers SET is_active = 0 WHERE peer_id = ?",
                 (peer_id,)
@@ -465,7 +494,8 @@ class AsyncNodeStorage:
 
     async def increment_stat(self, stat_key: str, amount: int = 1):
         """Increment a statistic counter."""
-        async with aiosqlite.connect(self.db_path) as db:
+        async with self._lock:
+            db = self._db
             current_time = int(time.time())
             await db.execute("""
                 INSERT INTO stats (stat_key, stat_value, updated_at)
@@ -478,7 +508,8 @@ class AsyncNodeStorage:
 
     async def get_stat(self, stat_key: str) -> int:
         """Get a statistic value."""
-        async with aiosqlite.connect(self.db_path) as db:
+        async with self._lock:
+            db = self._db
             async with db.execute(
                 "SELECT stat_value FROM stats WHERE stat_key = ?",
                 (stat_key,)
@@ -488,7 +519,8 @@ class AsyncNodeStorage:
 
     async def get_all_stats(self) -> Dict[str, int]:
         """Get all statistics."""
-        async with aiosqlite.connect(self.db_path) as db:
+        async with self._lock:
+            db = self._db
             async with db.execute(
                 "SELECT stat_key, stat_value FROM stats"
             ) as cursor:
@@ -501,7 +533,8 @@ class AsyncNodeStorage:
 
     async def set_config(self, key: str, value: Any):
         """Set a configuration value."""
-        async with aiosqlite.connect(self.db_path) as db:
+        async with self._lock:
+            db = self._db
             await db.execute(
                 "INSERT OR REPLACE INTO config (key, value) VALUES (?, ?)",
                 (key, json.dumps(value))
@@ -510,7 +543,8 @@ class AsyncNodeStorage:
 
     async def get_config(self, key: str, default: Any = None) -> Any:
         """Get a configuration value."""
-        async with aiosqlite.connect(self.db_path) as db:
+        async with self._lock:
+            db = self._db
             async with db.execute(
                 "SELECT value FROM config WHERE key = ?",
                 (key,)
@@ -526,7 +560,8 @@ class AsyncNodeStorage:
 
     async def get_database_stats(self) -> dict:
         """Get database statistics."""
-        async with aiosqlite.connect(self.db_path) as db:
+        async with self._lock:
+            db = self._db
             stats = {}
 
             async with db.execute("SELECT COUNT(*) FROM proofs") as cursor:
@@ -553,5 +588,15 @@ class AsyncNodeStorage:
 
     async def vacuum(self):
         """Compact the database."""
-        async with aiosqlite.connect(self.db_path) as db:
+        async with self._lock:
+            db = self._db
+            await db.commit()  # VACUUM cannot run inside a transaction
             await db.execute("VACUUM")
+
+    async def close(self):
+        """Close the long-lived database connection."""
+        async with self._lock:
+            if self._db is not None:
+                await self._db.close()
+                self._db = None
+        self._initialized = False

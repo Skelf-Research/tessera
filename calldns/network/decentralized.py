@@ -67,38 +67,78 @@ class BloomFilter:
         return bf
 
 
+# ─────────────────────────────────────────────────────────────────────
+# Canonical routing functions — the single source of truth shared by proof
+# *producers* (callers/orgs) and *consumers* (subscribers). A proof and a
+# subscription only match if both derive bucket and fingerprint identically,
+# so these MUST be the only place this logic lives.
+# ─────────────────────────────────────────────────────────────────────
+
+NUM_BUCKETS = 64
+WINDOW_SECONDS = 10            # fingerprint time-window granularity
+DEFAULT_TIME_WINDOW = 600      # 10 minutes of recent windows kept matchable
+
+
+def compute_bucket(commitment: bytes, num_buckets: int = NUM_BUCKETS) -> int:
+    """Map a commitment to a routing bucket: int(SHA256(commitment)[:2]) mod B."""
+    h = hashlib.sha256(commitment).digest()
+    return int.from_bytes(h[:2], 'big') % num_buckets
+
+
+def compute_fingerprint(commitment: bytes, timestamp: int) -> bytes:
+    """Bloom fingerprint for a commitment in the time window containing ``timestamp``.
+
+    The timestamp is floored to the global ``WINDOW_SECONDS`` grid so that a producer
+    and a consumer independently compute the *same* fingerprint for the same window
+    without coordinating clocks (beyond coarse agreement on wall-clock seconds).
+    """
+    window = int(timestamp) - (int(timestamp) % WINDOW_SECONDS)
+    return hashlib.sha256(commitment + window.to_bytes(8, 'big')).digest()[:8]
+
+
+def make_routing_fields(commitment: bytes, timestamp: int = None,
+                        num_buckets: int = NUM_BUCKETS) -> dict:
+    """Routing fields a proof producer attaches so subscribers can match the proof.
+
+    Returns ``{bucket, bloom_fingerprint (b64), timestamp}`` consistent with how
+    :class:`Subscription` indexes itself.
+    """
+    ts = int(time.time()) if timestamp is None else int(timestamp)
+    return {
+        "bucket": compute_bucket(commitment, num_buckets),
+        "bloom_fingerprint": base64.b64encode(compute_fingerprint(commitment, ts)).decode(),
+        "timestamp": ts,
+    }
+
+
 class Subscription:
     """Customer subscription for filtered proof delivery."""
 
     def __init__(self, commitment: bytes, linked_orgs: List[str] = None):
         self.commitment = commitment
+        self.time_window = 600  # 10 minutes (must be set before _create_bloom_filter)
+        self.linked_orgs = linked_orgs or []
         self.bucket = self._compute_bucket(commitment)
         self.bloom_filter = self._create_bloom_filter(commitment)
-        self.linked_orgs = linked_orgs or []
-        self.time_window = 600  # 10 minutes
 
-    def _compute_bucket(self, commitment: bytes, num_buckets: int = 64) -> int:
-        """Compute bucket from commitment."""
-        h = hashlib.sha256(commitment).digest()
-        return int.from_bytes(h[:2], 'big') % num_buckets
+    def _compute_bucket(self, commitment: bytes, num_buckets: int = NUM_BUCKETS) -> int:
+        """Compute bucket from commitment (delegates to the canonical function)."""
+        return compute_bucket(commitment, num_buckets)
 
     def _create_bloom_filter(self, commitment: bytes) -> BloomFilter:
-        """Create bloom filter for this commitment."""
+        """Create bloom filter holding fingerprints for recent time windows."""
         bf = BloomFilter(size=1024, hash_count=3)
 
-        # Add fingerprints for recent time windows
+        # Add a fingerprint for each WINDOW_SECONDS-aligned window over the lookback.
         current_time = int(time.time())
-        for offset in range(0, self.time_window, 10):  # 10-second intervals
-            timestamp = current_time - offset
-            fingerprint = self._compute_fingerprint(commitment, timestamp)
-            bf.add(fingerprint)
+        for offset in range(0, self.time_window, WINDOW_SECONDS):
+            bf.add(compute_fingerprint(commitment, current_time - offset))
 
         return bf
 
     def _compute_fingerprint(self, commitment: bytes, timestamp: int) -> bytes:
-        """Compute bloom fingerprint for commitment at timestamp."""
-        data = commitment + timestamp.to_bytes(8, 'big')
-        return hashlib.sha256(data).digest()[:8]
+        """Compute bloom fingerprint (delegates to the canonical function)."""
+        return compute_fingerprint(commitment, timestamp)
 
     def to_dict(self) -> dict:
         """Serialize subscription for transmission."""

@@ -69,6 +69,58 @@ class TestZKProofs(unittest.TestCase):
         self.assertFalse(result)
 
 
+class TestProofRobustness(unittest.TestCase):
+    """Soundness regression tests (fast counterparts of scripts/bench_security.py / E6).
+
+    Every category of tampered/forged proof must be rejected. A regression here
+    is a soundness break — the central correctness claim of the paper.
+    """
+
+    def setUp(self):
+        priv, pub, _ = CryptoUtils.generate_keypair()
+        self.private_key = priv
+        self.public_key = pub
+        self.prover = ZKProver()
+        self.verifier = ZKVerifier()
+        self.metadata = {"call_type": "voice", "region": "US"}
+
+    def _valid_proof(self):
+        return self.prover.generate_proof(self.private_key, self.public_key, self.metadata)
+
+    def test_valid_proof_accepted(self):
+        self.assertTrue(self.verifier.verify_proof(self._valid_proof()))
+
+    def test_tampered_R_rejected(self):
+        proof = self._valid_proof()
+        R = bytearray(proof['R'])
+        R[0] ^= 0x01
+        proof['R'] = bytes(R)
+        self.assertFalse(self.verifier.verify_proof(proof))
+
+    def test_swapped_public_key_rejected(self):
+        proof = self._valid_proof()
+        _, other_pub, _ = CryptoUtils.generate_keypair()
+        proof['public_key'] = other_pub
+        self.assertFalse(self.verifier.verify_proof(proof))
+
+    def test_tampered_metadata_rejected(self):
+        proof = self._valid_proof()
+        proof['metadata'] = {"call_type": "voice", "region": "GB"}
+        self.assertFalse(self.verifier.verify_proof(proof))
+
+    def test_random_forgery_rejected(self):
+        proof = self._valid_proof()
+        # Well-formed random point R from an unrelated proof, with a real public key.
+        forged = {
+            'R': self.prover.generate_proof(
+                *CryptoUtils.generate_keypair()[:2], self.metadata)['R'],
+            's': proof['s'],
+            'public_key': self.public_key,
+            'metadata': self.metadata,
+        }
+        self.assertFalse(self.verifier.verify_proof(forged))
+
+
 class TestIdentityManager(unittest.TestCase):
     """Test identity manager."""
     

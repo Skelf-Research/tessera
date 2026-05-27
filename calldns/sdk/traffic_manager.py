@@ -7,8 +7,10 @@ import secrets
 import hashlib
 import json
 import base64
+import math
+import random
 import time
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional
 from collections import deque
 
 
@@ -173,4 +175,78 @@ class TrafficManager:
             'next_transmission': self.last_transmission_time + self.transmission_interval,
             'padding_size': self.padding_size,
             'cover_traffic_ratio': self.cover_traffic_ratio
+        }
+
+
+class DPCoverTraffic:
+    """Differentially-private cover-traffic policy for per-bucket broadcast.
+
+    Unlike ``TrafficManager.mix_traffic`` (whose dummy count is *proportional* to the
+    real load and therefore leaks it), this policy emits a number of dummy proofs per
+    bucket drawn from calibrated Laplace noise that is **independent of the real load**.
+    The published per-bucket count ``C_b = R_b + D_b`` is then (epsilon, delta)-DP with
+    respect to a single call event (sensitivity 1).
+
+    Mechanism (see ../calldns-paper/spec/metadata_privacy.md):
+        D_b = max(0, round(mu + L)),  L ~ Laplace(0, sensitivity/epsilon)
+        mu  >= (sensitivity/epsilon) * ln(1 / (2*delta))   # keeps P(truncation) <= delta
+
+    Args:
+        epsilon: privacy budget per round (smaller = more private, more overhead).
+        delta:   tolerated failure probability from truncation at 0.
+        sensitivity: max change in a bucket's real count from one call event (=1).
+        num_buckets: number of routing buckets (matches Subscription, default 64).
+        rng: optional ``random.Random`` for reproducible simulations; defaults to a
+             cryptographically-seeded ``random.SystemRandom`` for production use.
+    """
+
+    def __init__(self, epsilon: float = 1.0, delta: float = 1e-6,
+                 sensitivity: int = 1, num_buckets: int = 64,
+                 rng: Optional[random.Random] = None):
+        if epsilon <= 0:
+            raise ValueError("epsilon must be positive")
+        if not (0 < delta < 1):
+            raise ValueError("delta must be in (0, 1)")
+        self.epsilon = float(epsilon)
+        self.delta = float(delta)
+        self.sensitivity = int(sensitivity)
+        self.num_buckets = int(num_buckets)
+        self.rng = rng or random.SystemRandom()
+        # Laplace scale and the baseline shift that bounds the truncation probability.
+        self.scale = self.sensitivity / self.epsilon
+        self.mu = self.scale * math.log(1.0 / (2.0 * self.delta))
+
+    def _laplace(self) -> float:
+        """Sample Laplace(0, scale) via inverse-CDF from a uniform draw."""
+        u = self.rng.random() - 0.5  # uniform on (-0.5, 0.5)
+        return -self.scale * math.copysign(1.0, u) * math.log(1.0 - 2.0 * abs(u))
+
+    def dummy_count_for_bucket(self) -> int:
+        """Number of dummy proofs to emit into one bucket this round (>= 0)."""
+        return max(0, int(round(self.mu + self._laplace())))
+
+    def dummy_counts(self, num_buckets: Optional[int] = None) -> List[int]:
+        """Per-bucket dummy counts for one round (length == num_buckets)."""
+        n = self.num_buckets if num_buckets is None else num_buckets
+        return [self.dummy_count_for_bucket() for _ in range(n)]
+
+    def expected_overhead_per_round(self, num_buckets: Optional[int] = None) -> float:
+        """Expected total dummy proofs per round (~ B * mu). Independent of real load."""
+        n = self.num_buckets if num_buckets is None else num_buckets
+        return n * self.mu
+
+    def published_counts(self, real_by_bucket: List[int]) -> List[int]:
+        """Apply the mechanism: return observable counts C_b = R_b + D_b."""
+        return [r + self.dummy_count_for_bucket() for r in real_by_bucket]
+
+    def params(self) -> Dict[str, Any]:
+        return {
+            "mechanism": "shifted-truncated-Laplace",
+            "epsilon": self.epsilon,
+            "delta": self.delta,
+            "sensitivity": self.sensitivity,
+            "num_buckets": self.num_buckets,
+            "laplace_scale": self.scale,
+            "baseline_mu": self.mu,
+            "expected_overhead_per_round": self.expected_overhead_per_round(),
         }

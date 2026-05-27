@@ -4,6 +4,7 @@ Tests node communication, proof routing, and subscription matching.
 """
 
 import pytest
+import pytest_asyncio
 import asyncio
 import base64
 import hashlib
@@ -14,7 +15,7 @@ import shutil
 from pathlib import Path
 
 from calldns.network.async_node import AsyncDecentralizedNode, AsyncPrivacyPreservingBroadcaster
-from calldns.network.decentralized import NodeType, Subscription
+from calldns.network.decentralized import NodeType, Subscription, make_routing_fields
 
 
 @pytest.fixture
@@ -25,7 +26,7 @@ def temp_data_dir():
     shutil.rmtree(temp_dir)
 
 
-@pytest.fixture
+@pytest_asyncio.fixture
 async def core_node(temp_data_dir):
     """Create and initialize a core node."""
     node = AsyncDecentralizedNode(
@@ -38,7 +39,7 @@ async def core_node(temp_data_dir):
     await node.shutdown()
 
 
-@pytest.fixture
+@pytest_asyncio.fixture
 async def org_node(temp_data_dir):
     """Create and initialize an organization node."""
     node = AsyncDecentralizedNode(
@@ -51,7 +52,7 @@ async def org_node(temp_data_dir):
     await node.shutdown()
 
 
-@pytest.fixture
+@pytest_asyncio.fixture
 async def customer_node(temp_data_dir):
     """Create and initialize a customer node."""
     node = AsyncDecentralizedNode(
@@ -76,19 +77,16 @@ def create_test_subscription(commitment: bytes) -> dict:
 
 
 def create_test_proof(commitment: bytes, org_hint: str = "test-org") -> dict:
-    """Create a test proof matching a commitment."""
-    bucket = int.from_bytes(commitment[:2], 'big') % 64
+    """Create a test proof whose routing fields match a commitment's subscription.
 
-    # Create bloom fingerprint that matches the commitment
-    fingerprint = commitment[:8]
-
+    Uses the canonical producer helper so bucket and fingerprint are derived exactly
+    as a real caller/org would (and exactly as the subscriber indexes them).
+    """
     return {
-        "bucket": bucket,
-        "bloom_fingerprint": base64.b64encode(fingerprint).decode(),
+        **make_routing_fields(commitment),
         "ciphertext": base64.b64encode(secrets.token_bytes(128)).decode(),
         "nonce": base64.b64encode(secrets.token_bytes(12)).decode(),
-        "timestamp": int(time.time()),
-        "org_hint": org_hint
+        "org_hint": org_hint,
     }
 
 

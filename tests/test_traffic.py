@@ -5,7 +5,9 @@ Tests for CallDNS traffic privacy features.
 import unittest
 import base64
 import json
-from calldns.sdk.traffic_manager import TrafficManager
+import math
+import random
+from calldns.sdk.traffic_manager import TrafficManager, DPCoverTraffic
 from calldns.sdk.caller import Caller
 from calldns.sdk.verifier import Verifier
 
@@ -131,6 +133,57 @@ class TestVerifierWithTraffic(unittest.TestCase):
         # Verification should return False for dummy proofs
         result = self.verifier.verify_encrypted_call_proof(dummy_proof)
         self.assertFalse(result)
+
+
+class TestDPCoverTraffic(unittest.TestCase):
+    """Differentially-private cover-traffic mechanism (Workstream C).
+
+    Backs ../calldns-paper/spec/metadata_privacy.md and scripts/analysis/linkability_sim.py.
+    """
+
+    def test_baseline_mu_formula(self):
+        eps, delta = 1.0, 1e-6
+        dp = DPCoverTraffic(epsilon=eps, delta=delta, sensitivity=1)
+        expected_mu = (1.0 / eps) * math.log(1.0 / (2.0 * delta))
+        self.assertAlmostEqual(dp.mu, expected_mu, places=9)
+        self.assertAlmostEqual(dp.scale, 1.0 / eps, places=9)
+
+    def test_counts_non_negative(self):
+        dp = DPCoverTraffic(epsilon=2.0, delta=1e-6, rng=random.Random(1))
+        counts = dp.dummy_counts(64)
+        self.assertEqual(len(counts), 64)
+        self.assertTrue(all(c >= 0 for c in counts))
+
+    def test_expected_overhead(self):
+        dp = DPCoverTraffic(epsilon=1.0, delta=1e-6, num_buckets=64)
+        self.assertAlmostEqual(dp.expected_overhead_per_round(), 64 * dp.mu, places=6)
+
+    def test_overhead_independent_of_real_load(self):
+        """Defining DP property: dummy generation does not look at the real load."""
+        dp = DPCoverTraffic(epsilon=1.0, delta=1e-6, rng=random.Random(7))
+        published = dp.published_counts([0, 100, 5, 0, 42])
+        # Each published count >= its real count (only adds dummies, never removes).
+        for real, pub in zip([0, 100, 5, 0, 42], published):
+            self.assertGreaterEqual(pub, real)
+
+    def test_empirical_mean_near_mu(self):
+        dp = DPCoverTraffic(epsilon=1.0, delta=1e-6, rng=random.Random(123))
+        samples = [dp.dummy_count_for_bucket() for _ in range(5000)]
+        mean = sum(samples) / len(samples)
+        # Mean should be close to mu (truncation at 0 is negligible at this mu ~ 13).
+        self.assertLess(abs(mean - dp.mu), 1.0)
+
+    def test_smaller_epsilon_more_overhead(self):
+        hi_priv = DPCoverTraffic(epsilon=0.1, delta=1e-6)
+        lo_priv = DPCoverTraffic(epsilon=4.0, delta=1e-6)
+        self.assertGreater(hi_priv.expected_overhead_per_round(),
+                           lo_priv.expected_overhead_per_round())
+
+    def test_invalid_params_rejected(self):
+        with self.assertRaises(ValueError):
+            DPCoverTraffic(epsilon=0)
+        with self.assertRaises(ValueError):
+            DPCoverTraffic(epsilon=1.0, delta=1.5)
 
 
 if __name__ == "__main__":

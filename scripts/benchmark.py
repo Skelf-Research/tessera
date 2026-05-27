@@ -17,6 +17,8 @@ from dataclasses import dataclass, field
 
 import websockets
 
+from calldns.network.decentralized import Subscription, make_routing_fields
+
 
 @dataclass
 class BenchmarkResult:
@@ -76,18 +78,18 @@ def generate_commitment(value: str) -> bytes:
 
 
 def generate_proof(commitment: bytes, org_hint: str = "benchmark-org") -> dict:
-    """Generate a test proof."""
-    bucket = int.from_bytes(commitment[:2], 'big') % 64
-    fingerprint = commitment[:8]
-
+    """Generate a test proof with canonical routing fields (so routing actually matches)."""
     return {
-        "bucket": bucket,
-        "bloom_fingerprint": base64.b64encode(fingerprint).decode(),
+        **make_routing_fields(commitment),
         "ciphertext": base64.b64encode(secrets.token_bytes(128)).decode(),
         "nonce": base64.b64encode(secrets.token_bytes(12)).decode(),
-        "timestamp": int(time.time()),
-        "org_hint": org_hint
+        "org_hint": org_hint,
     }
+
+
+def generate_subscription(commitment: bytes, org_hint: str = "benchmark-org") -> dict:
+    """Generate a subscription consistent with generate_proof's routing fields."""
+    return Subscription(commitment, linked_orgs=[org_hint]).to_dict()
 
 
 async def benchmark_proof_broadcast(
@@ -154,21 +156,7 @@ async def benchmark_subscription_registration(
 
         async with semaphore:
             commitment = generate_commitment(f"subscriber-{i}")
-            bucket = int.from_bytes(commitment[:2], 'big') % 64
-
-            # Create bloom filter
-            bloom = bytearray(128)
-            for j in range(3):
-                h = hashlib.sha256(commitment + j.to_bytes(1, 'big')).digest()
-                idx = int.from_bytes(h[:2], 'big') % 1024
-                bloom[idx // 8] |= (1 << (idx % 8))
-
-            subscription = {
-                "bucket": bucket,
-                "bloom_filter": base64.b64encode(bytes(bloom)).decode(),
-                "org_hints": ["benchmark-org"],
-                "time_window": 600
-            }
+            subscription = generate_subscription(commitment)
 
             try:
                 async with websockets.connect(node_uri) as ws:
@@ -212,20 +200,7 @@ async def benchmark_proof_routing(
     for i in range(num_subscribers):
         commitment = generate_commitment(f"routing-sub-{i}")
         commitments.append(commitment)
-        bucket = int.from_bytes(commitment[:2], 'big') % 64
-
-        bloom = bytearray(128)
-        for j in range(3):
-            h = hashlib.sha256(commitment + j.to_bytes(1, 'big')).digest()
-            idx = int.from_bytes(h[:2], 'big') % 1024
-            bloom[idx // 8] |= (1 << (idx % 8))
-
-        subscription = {
-            "bucket": bucket,
-            "bloom_filter": base64.b64encode(bytes(bloom)).decode(),
-            "org_hints": [],
-            "time_window": 600
-        }
+        subscription = generate_subscription(commitment)
 
         try:
             async with websockets.connect(node_uri) as ws:

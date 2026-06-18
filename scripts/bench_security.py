@@ -15,7 +15,7 @@ Invalid proofs are produced four ways:
   - forge-random    : well-formed random points with an unrelated s
 
 A non-zero FAR is a soundness break; a non-zero FRR is a correctness bug.
-Both must be exactly 0. Writes a JSON + LaTeX summary to ../calldns-paper/results.
+Both must be exactly 0. Writes a JSON + LaTeX summary to ../tessera-paper-msg/results.
 
 Usage:
   poetry run python scripts/bench_security.py --trials 5000
@@ -31,7 +31,7 @@ from ecdsa import SECP256k1
 
 from tessera.crypto.crypto_utils import CryptoUtils, ZKProver, ZKVerifier
 
-DEFAULT_OUT = Path(__file__).resolve().parents[2] / "calldns-paper" / "results"
+DEFAULT_OUT = Path(__file__).resolve().parents[2] / "tessera-paper-msg" / "results"
 ORDER = SECP256k1.order
 
 

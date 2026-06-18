@@ -17,7 +17,7 @@ Outputs:
   * a JSON results blob          (results/<name>.json)
   * a ready-to-\\input LaTeX table (results/<name>.tex)
 
-By repo convention (see ../calldns-paper), this harness lives in tessera/ and
+By repo convention (see ../tessera-paper-msg), this harness lives in tessera/ and
 writes its artefacts into the sibling paper repo's results/ directory.
 
 Usage:
@@ -40,7 +40,7 @@ from ecdsa import SECP256k1
 from tessera.crypto.crypto_utils import CryptoUtils, ZKProver, ZKVerifier, SecureEncryption
 
 
-DEFAULT_OUT = Path(__file__).resolve().parents[2] / "calldns-paper" / "results"
+DEFAULT_OUT = Path(__file__).resolve().parents[2] / "tessera-paper-msg" / "results"
 
 
 def time_op(fn, iterations, warmup):

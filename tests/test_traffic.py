@@ -138,7 +138,7 @@ class TestVerifierWithTraffic(unittest.TestCase):
 class TestDPCoverTraffic(unittest.TestCase):
     """Differentially-private cover-traffic mechanism (Workstream C).
 
-    Backs ../calldns-paper/spec/metadata_privacy.md and scripts/analysis/linkability_sim.py.
+    Backs ../tessera-paper-msg/spec/metadata_privacy.md and scripts/analysis/linkability_sim.py.
     """
 
     def test_baseline_mu_formula(self):

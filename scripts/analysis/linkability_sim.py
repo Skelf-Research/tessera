@@ -3,7 +3,7 @@
 E3 — Traffic-analysis linkability simulation for Tessera cover traffic.
 
 Validates the metadata-privacy guarantee of Workstream C
-(see ../calldns-paper/spec/metadata_privacy.md).
+(see ../tessera-paper-msg/spec/metadata_privacy.md).
 
 Adversary (worst case, the DP assumption): a global passive observer who knows every
 other input and must decide a single bit — did the *target* user place a call into a
@@ -39,7 +39,7 @@ from pathlib import Path
 
 from tessera.sdk.traffic_manager import DPCoverTraffic
 
-PAPER = Path(__file__).resolve().parents[3] / "calldns-paper"
+PAPER = Path(__file__).resolve().parents[3] / "tessera-paper-msg"
 DEFAULT_RESULTS = PAPER / "results"
 DEFAULT_FIGURES = PAPER / "figures"
 

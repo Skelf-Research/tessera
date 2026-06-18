@@ -7,14 +7,14 @@ import unittest
 
 from tessera.crypto.crypto_utils import CryptoUtils
 from tessera.crypto.blinding import (
-    BlindedCaller, BlindedVerifier, blind_public_key, derive_blinding,
+    BlindedSender, BlindedVerifier, blind_public_key, derive_blinding,
 )
 
 
 class TestBlindedIdentity(unittest.TestCase):
     def setUp(self):
         self.x, self.Y, _ = CryptoUtils.generate_keypair()
-        self.sender = BlindedCaller(self.x, self.Y)
+        self.sender = BlindedSender(self.x, self.Y)
         self.verifier = BlindedVerifier()
         self.seed = b"enrolment-shared-seed-with-bank"
         self.meta = {"call_type": "voice"}

@@ -187,7 +187,7 @@ class DPCoverTraffic:
     The published per-bucket count ``C_b = R_b + D_b`` is then (epsilon, delta)-DP with
     respect to a single call event (sensitivity 1).
 
-    Mechanism (see ../calldns-paper/spec/metadata_privacy.md):
+    Mechanism (see ../tessera-paper-msg/spec/metadata_privacy.md):
         D_b = max(0, round(mu + L)),  L ~ Laplace(0, sensitivity/epsilon)
         mu  >= (sensitivity/epsilon) * ln(1 / (2*delta))   # keeps P(truncation) <= delta
 

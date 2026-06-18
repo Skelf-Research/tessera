@@ -53,7 +53,7 @@ poetry run python -m tessera.deploy.cluster --nodes 5 --topology ring
 
 ## Experiment harnesses (Paper A artifact)
 
-Live under `scripts/` and emit results to `../calldns-paper/results/` (will be
+Live under `scripts/` and emit results to `../tessera-paper-msg/results/` (will be
 renamed `../tessera-paper-msg/results/` in Phase 2):
 
 - `bench_crypto.py` (E1) — proof gen/verify/AES latency + sizes

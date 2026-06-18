@@ -30,7 +30,7 @@ import websockets
 from tessera.deploy.cluster import LocalCluster
 from tessera.network.decentralized import Subscription, make_routing_fields
 
-PAPER = Path(__file__).resolve().parents[3] / "calldns-paper"
+PAPER = Path(__file__).resolve().parents[3] / "tessera-paper-msg"
 DEFAULT_RESULTS = PAPER / "results"
 
 

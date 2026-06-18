@@ -29,7 +29,7 @@ import websockets
 
 from tessera.network.decentralized import Subscription, make_routing_fields
 
-PAPER = Path(__file__).resolve().parents[2] / "calldns-paper"
+PAPER = Path(__file__).resolve().parents[2] / "tessera-paper-msg"
 DEFAULT_RESULTS = PAPER / "results"
 
 

@@ -34,7 +34,7 @@ from pathlib import Path
 
 from tessera.network.decentralized import BloomFilter
 
-PAPER = Path(__file__).resolve().parents[3] / "calldns-paper"
+PAPER = Path(__file__).resolve().parents[3] / "tessera-paper-msg"
 DEFAULT_RESULTS = PAPER / "results"
 
 

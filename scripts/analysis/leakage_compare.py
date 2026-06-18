@@ -1,20 +1,24 @@
 #!/usr/bin/env python3
 """
-E7 — Comparative metadata-leakage analysis.
+E7 — Comparative metadata-leakage analysis (messaging framing, Paper A).
 
-Encodes, for each scheme and each observer, which pieces of call metadata are exposed.
-Produces a JSON matrix + a LaTeX comparison table for the paper (§related-work / §evaluation).
-This is the SoK-style table that makes the privacy contribution legible against deployed and
-academic alternatives; the per-cell rationale is in the `notes` field.
+Encodes, for each scheme and each observer, which pieces of sender<->recipient metadata are
+exposed, plus an explicit indicator of whether the system *authenticates* the sender at all.
+Produces a JSON matrix + a LaTeX comparison table for the paper.
 
-Schemes:   STIR/SHAKEN (FCC), AuthentiCall (USENIX'17), Tessera (this work).
-Observers: Central authority (carrier/CA/enrolment server), Network eavesdropper,
-           The callee, Colluding other callees.
-Leaked items (per observer): sender identity, callee identity, sender<->callee link,
-           call timing, cross-call linkability of a sender.
+Schemes:   Signed messaging (Signal-style), Metadata-private messaging (Vuvuzela/Stadium/Talek),
+           Tessera (this work).
+Observers: Routing platform / mix-servers, Network eavesdropper, The recipient,
+           Colluding other recipients.
+Cell values per (scheme, observer, item):
+  leak     — observer learns this metadata (unintended exposure)
+  none     — observer does not learn this metadata
+  intended — disclosure that is the point of the scheme (excluded from leak count)
+  missing  — the system fundamentally cannot provide this (sender authentication gap)
+  n/a      — observer does not exist in this scheme (e.g. central party in Tessera)
 
-A cell is "leak" (1) / "no leak" (0) / "intended" (disclosure that is the point of the
-system, counted separately). Lower total leakage = stronger metadata privacy.
+The headline is: signed messaging authenticates but leaks the graph; metadata-private messaging
+hides the graph but cannot authenticate; Tessera does both.
 
 Usage:  poetry run python scripts/analysis/leakage_compare.py
 """
@@ -24,127 +28,135 @@ import json
 from datetime import datetime, timezone
 from pathlib import Path
 
-PAPER = Path(__file__).resolve().parents[3] / "calldns-paper"
+PAPER = Path(__file__).resolve().parents[3] / "tessera-paper-msg"
 DEFAULT_RESULTS = PAPER / "results"
 
-ITEMS = ["sender_id", "callee_id", "caller_callee_link", "call_timing", "cross_call_link"]
+ITEMS = ["sender_id", "recipient_id", "sender_recipient_link", "delivery_timing", "cross_recipient_link"]
 
-# value: "leak" | "none" | "intended" | "n/a"
 MATRIX = {
-    "STIR/SHAKEN": {
-        "central_authority": {  # carriers + certificate authorities mediate every call
-            "sender_id": "leak", "callee_id": "leak", "caller_callee_link": "leak",
-            "call_timing": "leak", "cross_call_link": "leak",
-            "_note": "Carriers/CAs sign & verify every call; full call-graph visibility.",
+    "Signed messaging (Signal-style)": {
+        "routing_platform": {  # central server / push platform routing every message
+            "sender_id": "leak", "recipient_id": "leak", "sender_recipient_link": "leak",
+            "delivery_timing": "leak", "cross_recipient_link": "leak",
+            "_note": "Central server routes by sender/recipient identifiers; full graph visibility.",
         },
-        "network": {  # SS7/SIP signaling frequently in clear
-            "sender_id": "leak", "callee_id": "leak", "caller_callee_link": "leak",
-            "call_timing": "leak", "cross_call_link": "leak",
-            "_note": "Signaling metadata commonly observable on-path.",
+        "network": {  # TLS encrypts content; timing remains observable
+            "sender_id": "none", "recipient_id": "none", "sender_recipient_link": "none",
+            "delivery_timing": "leak", "cross_recipient_link": "none",
+            "_note": "TLS encrypts content+identities on the wire; message timing observable.",
         },
-        "callee": {
-            "sender_id": "intended", "callee_id": "n/a", "caller_callee_link": "intended",
-            "call_timing": "leak", "cross_call_link": "leak",
-            "_note": "Stable sender number -> callee links all calls from a sender.",
+        "recipient": {  # the recipient itself
+            "sender_id": "intended", "recipient_id": "n/a", "sender_recipient_link": "intended",
+            "delivery_timing": "intended", "cross_recipient_link": "leak",
+            "_note": "Long-term sender identity key links the sender's prior deliveries to me.",
         },
-        "colluding_callees": {
-            "sender_id": "leak", "callee_id": "leak", "caller_callee_link": "leak",
-            "call_timing": "leak", "cross_call_link": "leak",
-            "_note": "Shared global sender number links a sender across callees.",
+        "colluding_recipients": {  # multiple recipients compare notes
+            "sender_id": "leak", "recipient_id": "leak", "sender_recipient_link": "leak",
+            "delivery_timing": "leak", "cross_recipient_link": "leak",
+            "_note": "Shared long-term identity key links the sender across all their recipients.",
         },
     },
-    "AuthentiCall": {
-        "central_authority": {  # central enrolment + handshake service
-            "sender_id": "leak", "callee_id": "leak", "caller_callee_link": "leak",
-            "call_timing": "leak", "cross_call_link": "leak",
-            "_note": "Central enrolment/handshake server sees who authenticates to whom.",
+    "Metadata-private messaging (Vuvuzela-style)": {
+        "routing_platform": {  # mix servers + DP cover traffic
+            "sender_id": "none", "recipient_id": "none", "sender_recipient_link": "none",
+            "delivery_timing": "none", "cross_recipient_link": "none",
+            "_note": "Mix servers + (eps,delta)-DP cover traffic hide the graph by design.",
         },
         "network": {
-            "sender_id": "none", "callee_id": "none", "caller_callee_link": "none",
-            "call_timing": "leak", "cross_call_link": "none",
-            "_note": "Handshake over an encrypted data channel; timing still observable.",
+            "sender_id": "none", "recipient_id": "none", "sender_recipient_link": "none",
+            "delivery_timing": "none", "cross_recipient_link": "none",
+            "_note": "Encrypted, padded, shuffled traffic between mix servers.",
         },
-        "callee": {
-            "sender_id": "intended", "callee_id": "n/a", "caller_callee_link": "intended",
-            "call_timing": "leak", "cross_call_link": "leak",
-            "_note": "Enrolled long-term identity -> cross-call linkage.",
+        "recipient": {
+            "sender_id": "missing", "recipient_id": "n/a", "sender_recipient_link": "missing",
+            "delivery_timing": "intended", "cross_recipient_link": "missing",
+            "_note": "No sender authentication: recipient cannot tell which contact sent the message.",
         },
-        "colluding_callees": {
-            "sender_id": "leak", "callee_id": "leak", "caller_callee_link": "leak",
-            "call_timing": "leak", "cross_call_link": "leak",
-            "_note": "Enrolled identity is global -> linkable across callees.",
+        "colluding_recipients": {
+            "sender_id": "none", "recipient_id": "none", "sender_recipient_link": "none",
+            "delivery_timing": "none", "cross_recipient_link": "none",
+            "_note": "Cover traffic + per-mailbox PIR hides links between recipients.",
         },
     },
     "Tessera": {
-        "central_authority": {  # there is none: pairwise local enrolment
-            "sender_id": "n/a", "callee_id": "n/a", "caller_callee_link": "n/a",
-            "call_timing": "n/a", "cross_call_link": "n/a",
-            "_note": "No central party exists; bindings are pairwise/local.",
+        "routing_platform": {  # there is none: pairwise local enrolment, peered relays
+            "sender_id": "n/a", "recipient_id": "n/a", "sender_recipient_link": "n/a",
+            "delivery_timing": "n/a", "cross_recipient_link": "n/a",
+            "_note": "No central routing operator; bindings are pairwise/local; relays are peers.",
         },
         "network": {  # encrypted proofs + DP cover traffic in buckets
-            "sender_id": "none", "callee_id": "none", "caller_callee_link": "none",
-            "call_timing": "none", "cross_call_link": "none",
-            "_note": "Proofs encrypted; (eps,delta)-DP bucket counts; blinded keys.",
+            "sender_id": "none", "recipient_id": "none", "sender_recipient_link": "none",
+            "delivery_timing": "none", "cross_recipient_link": "none",
+            "_note": "Encrypted proofs; (eps,delta)-DP bucket counts; blinded pseudonyms.",
         },
-        "callee": {
-            "sender_id": "intended", "callee_id": "n/a", "caller_callee_link": "intended",
-            "call_timing": "intended", "cross_call_link": "intended",
-            "_note": "Callee authenticates its own contact (the point); nothing more.",
+        "recipient": {
+            "sender_id": "intended", "recipient_id": "n/a", "sender_recipient_link": "intended",
+            "delivery_timing": "intended", "cross_recipient_link": "intended",
+            "_note": "Recipient authenticates its own contact (the point); nothing more.",
         },
-        "colluding_callees": {
-            "sender_id": "none", "callee_id": "none", "caller_callee_link": "none",
-            "call_timing": "none", "cross_call_link": "none",
-            "_note": "Per-callee blinded pseudonym Y' -> no cross-callee linkage.",
+        "colluding_recipients": {
+            "sender_id": "none", "recipient_id": "none", "sender_recipient_link": "none",
+            "delivery_timing": "none", "cross_recipient_link": "none",
+            "_note": "Per-recipient blinded pseudonym Y' -> no cross-recipient linkage.",
         },
     },
-}
-
-COMPLIANCE = {
-    "note": "Minimising sender<->callee metadata supports GDPR data-minimisation (Art. 5(1)(c)) "
-            "and reduces the call-detail-record footprint relevant to PSD2 SCA and FCA Consumer "
-            "Duty obligations; Tessera keeps verification logs without a central communication graph.",
 }
 
 
 def leak_score(cells: dict) -> int:
-    """Count of unintended leaks (excludes 'intended', 'none', 'n/a')."""
+    """Count of unintended leaks (excludes 'intended', 'none', 'n/a', 'missing')."""
     return sum(1 for k in ITEMS if cells.get(k) == "leak")
 
 
+def auth_gap_score(cells: dict) -> int:
+    """Count of cells where the system fundamentally cannot provide authentication."""
+    return sum(1 for k in ITEMS if cells.get(k) == "missing")
+
+
 def summarize():
-    summary = {}
+    leaks, gaps = {}, {}
     for scheme, observers in MATRIX.items():
-        total = sum(leak_score(cells) for cells in observers.values())
-        summary[scheme] = total
-    return summary
+        leaks[scheme] = sum(leak_score(c) for c in observers.values())
+        gaps[scheme] = sum(auth_gap_score(c) for c in observers.values())
+    return leaks, gaps
 
 
-# Base-LaTeX math symbols (no extra packages needed).
-SYMBOL = {"leak": "$\\bullet$", "none": "$\\circ$", "intended": "$\\odot$", "n/a": "--"}
+SYMBOL = {
+    "leak": "$\\bullet$",
+    "none": "$\\circ$",
+    "intended": "$\\odot$",
+    "missing": "$\\diamond$",
+    "n/a": "--",
+}
 
 
 def latex_table():
-    obs_order = ["central_authority", "network", "callee", "colluding_callees"]
-    obs_label = {"central_authority": "Central auth.", "network": "Network",
-                 "callee": "Callee", "colluding_callees": "Colluding callees"}
+    obs_order = ["routing_platform", "network", "recipient", "colluding_recipients"]
+    obs_label = {
+        "routing_platform": "Routing platform",
+        "network": "Network",
+        "recipient": "Recipient",
+        "colluding_recipients": "Colluding recipients",
+    }
+    item_label = ["sender", "recip.", "link", "timing", "x-recip"]
     lines = [
-        "% Auto-generated by scripts/analysis/leakage_compare.py (E7).",
-        "% legend: $\\bullet$ leaked, $\\odot$ intended disclosure, $\\circ$ not leaked, -- n/a",
+        "% Auto-generated by scripts/analysis/leakage_compare.py (E7, messaging framing).",
+        "% legend: $\\bullet$ leaked, $\\odot$ intended, $\\circ$ not leaked,",
+        "%         $\\diamond$ authentication gap (system cannot provide), -- n/a",
         "\\begin{table}[t]\\centering",
-        "\\caption{Sender$\\leftrightarrow$callee metadata leakage by observer. "
-        "Lower is more private.}",
+        "\\caption{Sender$\\leftrightarrow$recipient metadata leakage by observer. "
+        "Lower is more private; $\\diamond$ marks gaps where the scheme cannot authenticate the sender.}",
         "\\label{tab:leakage}",
         "\\begin{tabular}{ll" + "c" * len(ITEMS) + "}",
         "\\toprule",
-        "Scheme & Observer & " + " & ".join(
-            ["sender", "callee", "link", "timing", "x-call"]) + " \\\\",
+        "Scheme & Observer & " + " & ".join(item_label) + " \\\\",
         "\\midrule",
     ]
     for scheme, observers in MATRIX.items():
         for j, obs in enumerate(obs_order):
             cells = observers[obs]
             row = [SYMBOL[cells[i]] for i in ITEMS]
-            prefix = f"{scheme}" if j == 0 else ""
+            prefix = scheme if j == 0 else ""
             lines.append(f"{prefix} & {obs_label[obs]} & " + " & ".join(row) + " \\\\")
         lines.append("\\midrule")
     lines[-1] = "\\bottomrule"
@@ -153,11 +165,13 @@ def latex_table():
 
 
 def print_report():
-    print("E7 — comparative metadata leakage (unintended leaks per scheme)")
-    print("=" * 60)
-    for scheme, score in summarize().items():
-        print(f"  {scheme:<14} total unintended-leak cells: {score}")
-    print("\n(lower = more private; 'intended' callee disclosure excluded)")
+    leaks, gaps = summarize()
+    print("E7 — comparative metadata leakage (messaging framing)")
+    print("=" * 72)
+    print(f"{'scheme':<46}{'unintended leaks':>18}{'auth gaps':>11}")
+    for scheme in MATRIX:
+        print(f"  {scheme:<44}{leaks[scheme]:>18}{gaps[scheme]:>11}")
+    print("\n(lower leaks = more private; auth gaps = recipient cannot authenticate sender)")
 
 
 def main():
@@ -168,10 +182,16 @@ def main():
 
     print_report()
     if not args.no_write:
+        leaks, gaps = summarize()
         args.out_dir.mkdir(parents=True, exist_ok=True)
-        payload = {"experiment": "E7_leakage", "items": ITEMS, "matrix": MATRIX,
-                   "summary_unintended_leaks": summarize(), "compliance": COMPLIANCE,
-                   "timestamp_utc": datetime.now(timezone.utc).isoformat()}
+        payload = {
+            "experiment": "E7_leakage_messaging",
+            "items": ITEMS,
+            "matrix": MATRIX,
+            "summary_unintended_leaks": leaks,
+            "summary_authentication_gaps": gaps,
+            "timestamp_utc": datetime.now(timezone.utc).isoformat(),
+        }
         (args.out_dir / "e7_leakage.json").write_text(json.dumps(payload, indent=2))
         (args.out_dir / "e7_leakage.tex").write_text(latex_table())
         print(f"\nwrote {args.out_dir / 'e7_leakage.json'}")

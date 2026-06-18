@@ -16,7 +16,7 @@ I share this seed with" while:
   * a *different* callee (with a different seed) cannot recompute Y' (no cross-callee linkage);
   * no central registry maps sender <-> callee — the binding is pairwise and local.
 
-See ../../calldns-paper/formal/security_proofs.md (F11) and ../../calldns-paper/spec/protocol_spec.md.
+See ../../tessera-paper-msg/formal/security_proofs.md (F11) and ../../tessera-paper-msg/spec/protocol_spec.md.
 """
 
 import hashlib
@@ -47,7 +47,7 @@ def blind_public_key(public_key_bytes: bytes, t: int) -> bytes:
     return VerifyingKey.from_public_point(point, curve=SECP256k1).to_string()
 
 
-class BlindedCaller:
+class BlindedSender:
     """Sender side: produce a per-call proof under a fresh blinded pseudonym."""
 
     def __init__(self, private_key_int: int, public_key_bytes: bytes):

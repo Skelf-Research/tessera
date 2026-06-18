@@ -1,6 +1,6 @@
-# CallDNS Node Management UI
+# Tessera Node Management UI
 
-The CallDNS Node UI is a Vue 3 + TailwindCSS web application designed for managing CallDNS nodes. It supports two operational modes and is built to handle millions of records efficiently.
+The Tessera Node UI is a Vue 3 + TailwindCSS web application designed for managing Tessera nodes. It supports two operational modes and is built to handle millions of records efficiently.
 
 ## Overview
 
@@ -46,7 +46,7 @@ ui/
 
 - Node.js 18 or higher
 - npm or yarn
-- Running CallDNS backend service
+- Running Tessera backend service
 
 ### Installation
 
@@ -401,8 +401,8 @@ COPY nginx.conf /etc/nginx/conf.d/default.conf
 Configure API endpoint via Settings page or pre-configure in localStorage:
 
 ```javascript
-localStorage.setItem('calldns-api-url', 'https://api.example.com')
-localStorage.setItem('calldns-mode', 'organization')
+localStorage.setItem('tessera-api-url', 'https://api.example.com')
+localStorage.setItem('tessera-mode', 'organization')
 ```
 
 ## Troubleshooting
@@ -432,7 +432,7 @@ localStorage.setItem('calldns-mode', 'organization')
 Enable logging in Settings or via console:
 
 ```javascript
-localStorage.setItem('calldns-debug', 'true')
+localStorage.setItem('tessera-debug', 'true')
 ```
 
 ## Contributing

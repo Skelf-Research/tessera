@@ -1,8 +1,8 @@
-# Solving the Matching Problem in CallDNS
+# Solving the Matching Problem in Tessera
 
 ## The Challenge
 
-In a large-scale deployment of CallDNS with thousands of simultaneous calls, we face a critical challenge:
+In a large-scale deployment of Tessera with thousands of simultaneous calls, we face a critical challenge:
 
 **How does a callee efficiently find and verify relevant proofs among thousands of broadcast proofs without compromising privacy?**
 
@@ -126,4 +126,4 @@ bloom_fingerprint = H(reception_commitment || timestamp)[:8]
 3. **Post-Quantum Commitments**: Upgrade to quantum-resistant cryptography
 4. **Group Commitments**: Support for multicast verification scenarios
 
-This solution successfully addresses the matching problem while maintaining the core privacy guarantees of CallDNS, making it suitable for large-scale deployment.
+This solution successfully addresses the matching problem while maintaining the core privacy guarantees of Tessera, making it suitable for large-scale deployment.

@@ -1,5 +1,5 @@
 """
-Commitment manager for CallDNS.
+Commitment manager for Tessera.
 Handles cryptographic commitments for privacy-preserving proof routing.
 """
 
@@ -49,7 +49,7 @@ class CommitmentManager:
         
         Args:
             commitment: The reception commitment
-            ephemeral_hint: Ephemeral hint from caller
+            ephemeral_hint: Ephemeral hint from sender
             
         Returns:
             bytes: The derived routing key

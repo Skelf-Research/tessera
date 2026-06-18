@@ -1,5 +1,5 @@
 """
-Async decentralized node for CallDNS.
+Async decentralized node for Tessera.
 High-performance async implementation using aiosqlite.
 """
 
@@ -19,7 +19,7 @@ from .decentralized import NodeType, BloomFilter, Subscription
 
 class AsyncDecentralizedNode:
     """
-    Async decentralized CallDNS node.
+    Async decentralized Tessera node.
 
     Can be run as:
     - Core node: High availability, routes proofs between nodes
@@ -34,7 +34,7 @@ class AsyncDecentralizedNode:
 
         # Setup data directory
         if data_dir is None:
-            data_dir = f"./calldns_data/{node_id}"
+            data_dir = f"./tessera_data/{node_id}"
         self.data_dir = Path(data_dir)
         self.data_dir.mkdir(parents=True, exist_ok=True)
 

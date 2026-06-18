@@ -2,13 +2,13 @@ import CryptoJS from 'crypto-js';
 
 // Types
 /**
- * CallDNS SDK Configuration
+ * Tessera SDK Configuration
  *
  * Authentication model:
  * - Core nodes: Public, no auth required (anonymous for privacy)
  * - Org nodes: Bank-issued JWT tokens
  */
-export interface CallDNSConfig {
+export interface TesseraConfig {
   coreNodeUrl?: string;
   orgNodeUrl?: string; // Bank's org node for registration
   orgAuthToken?: string; // JWT token for org node authentication
@@ -109,7 +109,7 @@ export enum VerificationLevel {
   CERTIFICATE = 'CERTIFICATE',
 }
 
-export interface CallDNSWidgetConfig {
+export interface TesseraWidgetConfig {
   showTrustScore?: boolean;
   showOrganization?: boolean;
   showVerificationBadge?: boolean;
@@ -121,29 +121,29 @@ export interface CallDNSWidgetConfig {
 }
 
 // Events
-export type CallDNSEventType =
+export type TesseraEventType =
   | 'verification-started'
   | 'verification-completed'
   | 'verification-failed'
   | 'proof-generated'
   | 'cache-updated';
 
-export interface CallDNSEvent {
-  type: CallDNSEventType;
+export interface TesseraEvent {
+  type: TesseraEventType;
   data: any;
   timestamp: number;
 }
 
-// CallDNS Web Client
-export class CallDNSClient {
-  private static instance: CallDNSClient | null = null;
-  private config: Required<CallDNSConfig>;
+// Tessera Web Client
+export class TesseraClient {
+  private static instance: TesseraClient | null = null;
+  private config: Required<TesseraConfig>;
   private verificationCache: Map<string, VerificationResult> = new Map();
-  private eventListeners: Map<CallDNSEventType, Function[]> = new Map();
+  private eventListeners: Map<TesseraEventType, Function[]> = new Map();
 
-  private constructor(config: CallDNSConfig) {
+  private constructor(config: TesseraConfig) {
     this.config = {
-      coreNodeUrl: 'https://core.calldns.network',
+      coreNodeUrl: 'https://core.tessera.network',
       orgNodeUrl: undefined,
       orgAuthToken: undefined,
       cacheTimeout: 5 * 60 * 1000, // 5 minutes
@@ -249,29 +249,29 @@ export class CallDNSClient {
     return response.json();
   }
 
-  public static initialize(config: CallDNSConfig): CallDNSClient {
-    if (!CallDNSClient.instance) {
-      CallDNSClient.instance = new CallDNSClient(config);
+  public static initialize(config: TesseraConfig): TesseraClient {
+    if (!TesseraClient.instance) {
+      TesseraClient.instance = new TesseraClient(config);
     }
-    return CallDNSClient.instance;
+    return TesseraClient.instance;
   }
 
-  public static getInstance(): CallDNSClient {
-    if (!CallDNSClient.instance) {
-      throw new Error('CallDNSClient not initialized. Call CallDNSClient.initialize() first.');
+  public static getInstance(): TesseraClient {
+    if (!TesseraClient.instance) {
+      throw new Error('TesseraClient not initialized. Call TesseraClient.initialize() first.');
     }
-    return CallDNSClient.instance;
+    return TesseraClient.instance;
   }
 
   // Event handling
-  public on(event: CallDNSEventType, callback: (data: any) => void): void {
+  public on(event: TesseraEventType, callback: (data: any) => void): void {
     if (!this.eventListeners.has(event)) {
       this.eventListeners.set(event, []);
     }
     this.eventListeners.get(event)!.push(callback);
   }
 
-  public off(event: CallDNSEventType, callback: (data: any) => void): void {
+  public off(event: TesseraEventType, callback: (data: any) => void): void {
     const listeners = this.eventListeners.get(event);
     if (listeners) {
       const index = listeners.indexOf(callback);
@@ -281,7 +281,7 @@ export class CallDNSClient {
     }
   }
 
-  private emit(event: CallDNSEventType, data: any): void {
+  private emit(event: TesseraEventType, data: any): void {
     const listeners = this.eventListeners.get(event);
     if (listeners) {
       listeners.forEach(callback => callback(data));
@@ -408,12 +408,12 @@ export class CallDNSClient {
       const originalSetRemoteDescription = RTCPeerConnection.prototype.setRemoteDescription;
 
       RTCPeerConnection.prototype.setLocalDescription = function(description) {
-        CallDNSClient.getInstance()?.handleWebRTCEvent('local-description', description);
+        TesseraClient.getInstance()?.handleWebRTCEvent('local-description', description);
         return originalSetLocalDescription.call(this, description);
       };
 
       RTCPeerConnection.prototype.setRemoteDescription = function(description) {
-        CallDNSClient.getInstance()?.handleWebRTCEvent('remote-description', description);
+        TesseraClient.getInstance()?.handleWebRTCEvent('remote-description', description);
         return originalSetRemoteDescription.call(this, description);
       };
     }
@@ -461,7 +461,7 @@ export class CallDNSClient {
   }
 
   private async getOrCreateIdentity(): Promise<any> {
-    const storageKey = 'calldns_identity';
+    const storageKey = 'tessera_identity';
 
     try {
       const stored = localStorage.getItem(storageKey);
@@ -578,7 +578,7 @@ export class CallDNSClient {
 
   private log(...args: any[]): void {
     if (this.config.enableLogging) {
-      console.log('[CallDNS]', ...args);
+      console.log('[Tessera]', ...args);
     }
   }
 
@@ -603,4 +603,4 @@ export class CallDNSClient {
 }
 
 // Default export
-export default CallDNSClient;
+export default TesseraClient;

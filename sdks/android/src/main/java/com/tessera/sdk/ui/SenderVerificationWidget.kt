@@ -1,4 +1,4 @@
-package com.calldns.sdk.ui
+package com.tessera.sdk.ui
 
 import androidx.compose.animation.*
 import androidx.compose.foundation.background
@@ -19,20 +19,20 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.calldns.sdk.*
+import com.tessera.sdk.*
 import kotlinx.coroutines.delay
 
 /**
- * CallDNS Verification Widget
+ * Tessera Verification Widget
  *
  * A composable widget that can be embedded in any Android app to show
  * call verification status. Supports various call types and themes.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun CallVerificationWidget(
+fun SenderVerificationWidget(
     callContext: CallContext,
-    config: CallDNSWidgetConfig = CallDNSWidgetConfig(),
+    config: TesseraWidgetConfig = TesseraWidgetConfig(),
     onVerificationComplete: ((VerificationResult) -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
@@ -41,7 +41,7 @@ fun CallVerificationWidget(
 
     LaunchedEffect(callContext) {
         try {
-            val client = CallDNSClient.getInstance()
+            val client = TesseraClient.getInstance()
             val result = client.verifyIncomingCall(callContext) { result ->
                 verificationState = when {
                     result.isVerified -> VerificationState.Verified(result)
@@ -81,7 +81,7 @@ fun CallVerificationWidget(
 @Composable
 private fun LoadingContent(
     callContext: CallContext,
-    config: CallDNSWidgetConfig
+    config: TesseraWidgetConfig
 ) {
     Row(
         modifier = Modifier
@@ -103,7 +103,7 @@ private fun LoadingContent(
                 fontWeight = FontWeight.Medium
             )
             Text(
-                text = "CallDNS Security Check",
+                text = "Tessera Security Check",
                 fontSize = 12.sp,
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
             )
@@ -114,7 +114,7 @@ private fun LoadingContent(
 @Composable
 private fun VerifiedContent(
     result: VerificationResult,
-    config: CallDNSWidgetConfig
+    config: TesseraWidgetConfig
 ) {
     Column(
         modifier = Modifier
@@ -183,7 +183,7 @@ private fun VerifiedContent(
         }
 
         Text(
-            text = "CallDNS Protected",
+            text = "Tessera Protected",
             fontSize = 10.sp,
             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
             modifier = Modifier.padding(top = 4.dp)
@@ -194,7 +194,7 @@ private fun VerifiedContent(
 @Composable
 private fun UnverifiedContent(
     result: VerificationResult,
-    config: CallDNSWidgetConfig
+    config: TesseraWidgetConfig
 ) {
     Column(
         modifier = Modifier
@@ -238,7 +238,7 @@ private fun UnverifiedContent(
 @Composable
 private fun ErrorContent(
     message: String,
-    config: CallDNSWidgetConfig
+    config: TesseraWidgetConfig
 ) {
     Row(
         modifier = Modifier
@@ -329,7 +329,7 @@ private fun CallType.displayName(): String = when (this) {
 @Composable
 private fun CallVerificationWidgetPreview() {
     MaterialTheme {
-        CallVerificationWidget(
+        SenderVerificationWidget(
             callContext = CallContext(
                 callerId = "+1234567890",
                 callType = CallType.VOICE_CALL

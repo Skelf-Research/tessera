@@ -1,5 +1,5 @@
 """
-Secure key management for CallDNS.
+Secure key management for Tessera.
 Handles key generation, storage, rotation, and lifecycle management.
 """
 
@@ -19,7 +19,7 @@ from .storage import FileKeyStore, EncryptedKeyStore
 
 class KeyManager:
     """
-    Secure key management for CallDNS operations.
+    Secure key management for Tessera operations.
     Handles identity keys, encryption keys, and key derivation.
     """
 

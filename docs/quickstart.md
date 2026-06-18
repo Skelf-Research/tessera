@@ -3,7 +3,7 @@
 ## Installation
 
 ```bash
-pip install calldns
+pip install tessera
 ```
 
 ## Basic Usage
@@ -12,19 +12,19 @@ pip install calldns
 
 ```bash
 # Register your identity
-calldns register
+tessera register
 
 # Verify an incoming call
-calldns verify
+tessera verify
 
 # Make a verified call
-calldns call +1234567890
+tessera call +1234567890
 
 # Manage contacts
-calldns contacts add "Alice" <commitment_hash>
+tessera contacts add "Alice" <commitment_hash>
 
 # Check your identity
-calldns identity show
+tessera identity show
 ```
 
 ### Python SDK
@@ -32,7 +32,7 @@ calldns identity show
 #### Making Verified Calls
 
 ```python
-from calldns import Caller
+from tessera import Caller
 
 # Initialize caller
 caller = Caller()
@@ -54,7 +54,7 @@ print(f"Generated proof with commitment: {caller.get_public_key()[:16].hex()}...
 #### Verifying Incoming Calls
 
 ```python
-from calldns import Verifier
+from tessera import Verifier
 
 # Initialize verifier
 verifier = Verifier()
@@ -77,7 +77,7 @@ print(f"Call verification: {'VALID' if is_valid else 'INVALID'}")
 #### Contact Management
 
 ```python
-from calldns import Caller, Verifier
+from tessera import Caller, Verifier
 
 # Add a verified contact
 def add_verified_contact(name, commitment_hash):
@@ -98,7 +98,7 @@ contacts = add_verified_contact("Alice", alice_commitment)
 
 ```bash
 # Core nodes are public and handle proof routing
-calldns-node start \
+tessera-node start \
   --type core \
   --id core-1 \
   --port 8100 \
@@ -111,7 +111,7 @@ calldns-node start \
 ```bash
 # Org nodes require JWT authentication for customer registration
 export CALLDNS_JWT_SECRET="your-secret-key"
-calldns-node start \
+tessera-node start \
   --type org \
   --id mybank-uk \
   --port 8100 \
@@ -122,8 +122,8 @@ calldns-node start \
 ### Check Node Status
 
 ```bash
-calldns-node status --port 8100
-calldns-node peers --port 8100
+tessera-node status --port 8100
+tessera-node peers --port 8100
 ```
 
 ## Web Service
@@ -131,7 +131,7 @@ calldns-node peers --port 8100
 ### Starting the Service
 
 ```bash
-calldns-service
+tessera-service
 ```
 
 ### API Endpoints
@@ -157,7 +157,7 @@ print(response.json())
 ### Privacy Enhancement
 
 ```python
-from calldns import Caller
+from tessera import Caller
 
 caller = Caller()
 
@@ -173,7 +173,7 @@ print(f"Batch size with cover traffic: {len(batch)}")
 ### Commitment Management
 
 ```python
-from calldns import Verifier
+from tessera import Verifier
 
 verifier = Verifier()
 
@@ -190,7 +190,7 @@ print(f"Meeting commitment: {meeting_commitment.hex()[:16]}...")
 ### Bank Website Integration
 
 ```python
-from calldns import Verifier
+from tessera import Verifier
 import requests
 
 def verify_bank_call(user_phone_number, bank_commitment_hash):
@@ -198,9 +198,9 @@ def verify_bank_call(user_phone_number, bank_commitment_hash):
     Verify if a bank recently called the user.
     This would be implemented on the bank's website.
     """
-    # In a real implementation, query the CallDNS network
+    # In a real implementation, query the Tessera network
     # network_response = requests.post(
-    #     "https://calldns-network/proofs/verify",
+    #     "https://tessera-network/proofs/verify",
     #     json={
     #         "phone_hash": hash_phone(user_phone_number),
     #         "commitment": bank_commitment_hash,
@@ -229,10 +229,10 @@ else:
 ### Mobile App Integration
 
 ```python
-from calldns import Caller, Verifier
+from tessera import Caller, Verifier
 import time
 
-class CallDNSApp:
+class TesseraApp:
     def __init__(self):
         self.caller = Caller()
         self.verifier = Verifier()
@@ -266,7 +266,7 @@ class CallDNSApp:
         print(f"Added verified contact: {name}")
 
 # Usage
-app = CallDNSApp()
+app = TesseraApp()
 app.add_contact("Alice", "alice_commitment_hash")
 app.make_verified_call("Alice", "+1234567890")
 ```
@@ -283,14 +283,14 @@ poetry run pytest
 poetry run pytest tests/test_crypto.py
 
 # Run with coverage
-poetry run pytest --cov=calldns
+poetry run pytest --cov=tessera
 ```
 
 ### Example Test
 
 ```python
 import pytest
-from calldns import Caller, Verifier
+from tessera import Caller, Verifier
 
 def test_verified_call():
     """Test that verified calls work correctly."""
@@ -326,5 +326,5 @@ def test_invalid_proof_rejection():
 
 1. **Explore the API**: Check out the full API documentation
 2. **Run Examples**: Try the example scripts in the `examples/` directory
-3. **Build Integration**: Integrate CallDNS into your communication app
-4. **Contribute**: Help improve CallDNS by contributing code or documentation
+3. **Build Integration**: Integrate Tessera into your communication app
+4. **Contribute**: Help improve Tessera by contributing code or documentation

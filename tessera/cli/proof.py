@@ -1,5 +1,5 @@
 """
-CallDNS Proof CLI.
+Tessera Proof CLI.
 Commands for managing proofs, subscriptions, and broadcasts.
 """
 
@@ -16,27 +16,27 @@ import websockets
 
 
 def main():
-    """Main entry point for the CallDNS proof CLI."""
+    """Main entry point for the Tessera proof CLI."""
     parser = argparse.ArgumentParser(
-        prog='calldns-proof',
-        description='CallDNS Proof Management - Broadcast and subscribe to proofs',
+        prog='tessera-proof',
+        description='Tessera Proof Management - Broadcast and subscribe to proofs',
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
   # Subscribe to proofs (customer)
-  calldns-proof subscribe --commitment <hex> --node localhost:8100
+  tessera-proof subscribe --commitment <hex> --node localhost:8100
 
   # Broadcast a proof (organization)
-  calldns-proof broadcast --bucket 42 --fingerprint <hex> --ciphertext <hex> --node localhost:8100
+  tessera-proof broadcast --bucket 42 --fingerprint <hex> --ciphertext <hex> --node localhost:8100
 
   # Generate a test proof
-  calldns-proof generate --bucket 42
+  tessera-proof generate --bucket 42
 
   # Fetch pending proofs
-  calldns-proof fetch --subscriber-id device-123 --node localhost:8100
+  tessera-proof fetch --subscriber-id device-123 --node localhost:8100
 
   # Watch for proofs in real-time
-  calldns-proof watch --subscriber-id device-123 --node localhost:8100
+  tessera-proof watch --subscriber-id device-123 --node localhost:8100
         """
     )
 

@@ -1,18 +1,18 @@
 """
-Complete flow demo for CallDNS.
+Complete flow demo for Tessera.
 Demonstrates the full privacy-preserving proof matching workflow.
 """
 
 import time
 import base64
-from calldns.sdk.caller import Caller
-from calldns.sdk.verifier import Verifier
-from calldns.network.enhanced_broadcast import EnhancedBroadcast
+from tessera.sdk.sender import Sender
+from tessera.sdk.verifier import Verifier
+from tessera.network.enhanced_broadcast import EnhancedBroadcast
 
 
 def demo_complete_flow():
-    """Demonstrate the complete CallDNS workflow."""
-    print("CallDNS Complete Flow Demo")
+    """Demonstrate the complete Tessera workflow."""
+    print("Tessera Complete Flow Demo")
     print("=" * 30)
     
     # Create broadcast system
@@ -34,9 +34,9 @@ def demo_complete_flow():
     encrypted_proofs = []
     
     for i in range(3):
-        print(f"   Caller {i} generating proof...")
-        caller = Caller()
-        callers.append(caller)
+        print(f"   Sender {i} generating proof...")
+        sender = Sender()
+        callers.append(sender)
         
         # Generate metadata
         metadata = {
@@ -46,15 +46,15 @@ def demo_complete_flow():
         }
         
         # Generate ZK proof
-        proof = caller.generate_call_proof(metadata)
+        proof = sender.generate_call_proof(metadata)
         
         # Encrypt proof for verifier using the commitment
-        encrypted_proof = caller.encrypt_proof_for_callee(proof, commitment, metadata)
+        encrypted_proof = sender.encrypt_proof_for_callee(proof, commitment, metadata)
         encrypted_proofs.append(encrypted_proof)
         
         # Broadcast encrypted proof
         broadcast_system.broadcast_proof(encrypted_proof, "default_region")
-        print(f"   Caller {i} proof broadcasted")
+        print(f"   Sender {i} proof broadcasted")
     
     # Step 3: Verifier checks for relevant proofs
     print("\n3. Verifier checking for calls...")
@@ -88,7 +88,7 @@ def demo_complete_flow():
     # Privacy demonstration
     print("\n6. Privacy Analysis:")
     print("   - Network only sees encrypted proofs")
-    print("   - No caller identification in transmitted data")
+    print("   - No sender identification in transmitted data")
     print("   - Verifier commitment is not linked to identity in network")
     print("   - Bloom filters prevent exhaustive matching")
     
@@ -116,13 +116,13 @@ def demo_privacy_protection():
     print(f"   Verifier 1: {commitment1.hex()[:16]}...")
     print(f"   Verifier 2: {commitment2.hex()[:16]}...")
     
-    # Create caller
-    caller = Caller()
+    # Create sender
+    sender = Sender()
     
     # Generate proof for verifier 1
     metadata = {"timestamp": int(time.time()), "call_type": "voice"}
-    proof = caller.generate_call_proof(metadata)
-    encrypted_proof1 = caller.encrypt_proof_for_callee(proof, commitment1, metadata)
+    proof = sender.generate_call_proof(metadata)
+    encrypted_proof1 = sender.encrypt_proof_for_callee(proof, commitment1, metadata)
     
     # Network sees only:
     print("\nNetwork can only see:")
@@ -131,7 +131,7 @@ def demo_privacy_protection():
     print(f"   Ephemeral hint: {encrypted_proof1['ephemeral_hint'][:8]}...")
     
     print("\nNetwork cannot determine:")
-    print("   - Who the caller is")
+    print("   - Who the sender is")
     print("   - Who the intended recipient is")
     print("   - What the proof contains")
     print("   - Any metadata about the call")
@@ -144,7 +144,7 @@ if __name__ == "__main__":
     print("\n" + "=" * 50)
     print("DEMO COMPLETE")
     print("=" * 50)
-    print("This demonstrates how CallDNS solves the matching problem:")
+    print("This demonstrates how Tessera solves the matching problem:")
     print("1. Privacy-preserving commitment scheme")
     print("2. Encrypted proof routing")
     print("3. Bloom filter-based efficient matching")

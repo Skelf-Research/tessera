@@ -1,6 +1,6 @@
 """
-Caller component for CallDNS.
-Handles ZK proof generation on caller device with commitment-based routing and traffic privacy.
+Sender component for Tessera.
+Handles ZK proof generation on sender device with commitment-based routing and traffic privacy.
 """
 
 import hashlib
@@ -12,8 +12,8 @@ from .traffic_manager import TrafficManager
 from ..crypto.crypto_utils import ZKProver, SecureEncryption
 
 
-class Caller:
-    """Handles ZK proof generation on caller device."""
+class Sender:
+    """Handles ZK proof generation on sender device."""
     
     def __init__(self):
         self.identity_manager = IdentityManager()
@@ -37,7 +37,7 @@ class Caller:
         )
     
     def get_public_key(self):
-        """Get the caller's public key."""
+        """Get the sender's public key."""
         return self.identity_manager.get_public_key()
     
     def encrypt_proof_for_callee(self, proof: dict, reception_commitment: bytes, metadata=None) -> dict:

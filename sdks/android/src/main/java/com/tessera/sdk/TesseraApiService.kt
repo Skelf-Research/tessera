@@ -1,12 +1,12 @@
-package com.calldns.sdk
+package com.tessera.sdk
 
 import retrofit2.Response
 import retrofit2.http.*
 
 /**
- * Retrofit API service for CallDNS network communication
+ * Retrofit API service for Tessera network communication
  */
-interface CallDNSApiService {
+interface TesseraApiService {
 
     // Core node endpoints (proof routing)
 

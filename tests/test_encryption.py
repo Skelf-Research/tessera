@@ -1,11 +1,11 @@
 """
-Tests for CallDNS secure encryption components.
+Tests for Tessera secure encryption components.
 """
 
 import unittest
 import secrets
-from calldns.crypto.crypto_utils import SecureEncryption
-from calldns.utils.exceptions import EncryptionError
+from tessera.crypto.crypto_utils import SecureEncryption
+from tessera.utils.exceptions import EncryptionError
 
 
 class TestSecureEncryption(unittest.TestCase):

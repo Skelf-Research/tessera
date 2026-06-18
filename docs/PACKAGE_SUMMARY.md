@@ -1,13 +1,13 @@
-# CallDNS Package Implementation Summary
+# Tessera Package Implementation Summary
 
 ## Package Structure
 
 ```
-calldns/
+tessera/
 ├── pyproject.toml              # Poetry configuration
 ├── README.md                   # Package overview
 ├── LICENSE                     # MIT License
-├── calldns/                    # Main package
+├── tessera/                    # Main package
 │   ├── __init__.py            # Package exports
 │   ├── sdk/                   # Client SDK
 │   │   ├── __init__.py
@@ -75,7 +75,7 @@ calldns/
 
 ### 4. Client SDK
 - **Easy Integration**: Simple API for app developers
-- **Comprehensive Features**: All CallDNS functionality exposed
+- **Comprehensive Features**: All Tessera functionality exposed
 - **Well-documented**: Clear API reference and examples
 - **Backward Compatible**: Maintains existing functionality
 
@@ -105,8 +105,8 @@ calldns/
 - **flake8**: >= 4.0.0
 
 ### Entry Points
-- **CLI**: `calldns` command
-- **Service**: `calldns-service` command
+- **CLI**: `tessera` command
+- **Service**: `tessera-service` command
 
 ## Documentation
 
@@ -173,7 +173,7 @@ OK
 
 ### Python SDK
 ```python
-from calldns import Caller, Verifier
+from tessera import Caller, Verifier
 
 caller = Caller()
 proof = caller.generate_call_proof(metadata)
@@ -182,9 +182,9 @@ is_valid = verifier.verify_call_proof(proof)
 
 ### CLI Tools
 ```bash
-calldns register
-calldns call +1234567890
-calldns verify
+tessera register
+tessera call +1234567890
+tessera verify
 ```
 
 ### Web Service
@@ -213,19 +213,19 @@ response = requests.post(
 
 ### PyPI Package
 ```bash
-pip install calldns
+pip install tessera
 ```
 
 ### Source Installation
 ```bash
-git clone https://github.com/dipankar/calldns.git
-cd calldns
+git clone https://github.com/dipankar/tessera.git
+cd tessera
 poetry install
 ```
 
 ### Service Deployment
 ```bash
-poetry run calldns-service
+poetry run tessera-service
 ```
 
 ## Future Enhancements

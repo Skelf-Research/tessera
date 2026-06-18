@@ -13,15 +13,15 @@ import pytest
 import pytest_asyncio
 import websockets
 
-from calldns.network.async_node import AsyncDecentralizedNode
-from calldns.network.decentralized import NodeType, Subscription, make_routing_fields, compute_bucket
-from calldns.network.ws_server import NodeWebSocketServer
+from tessera.network.async_node import AsyncDecentralizedNode
+from tessera.network.decentralized import NodeType, Subscription, make_routing_fields, compute_bucket
+from tessera.network.ws_server import NodeWebSocketServer
 
 
 @pytest_asyncio.fixture
 async def ws_node():
     """Start a node WS server on an ephemeral port; yield (uri, node)."""
-    tmp = tempfile.mkdtemp(prefix="calldns_ws_test_")
+    tmp = tempfile.mkdtemp(prefix="tessera_ws_test_")
     node = AsyncDecentralizedNode("ws-test", NodeType.CORE, data_dir=f"{tmp}/n")
     await node.initialize()
     server = await websockets.serve(NodeWebSocketServer(node).handler, "127.0.0.1", 0)

@@ -1,5 +1,5 @@
 """
-Async SQLite persistence layer for CallDNS decentralized nodes.
+Async SQLite persistence layer for Tessera decentralized nodes.
 Uses aiosqlite for non-blocking database operations.
 """
 
@@ -14,7 +14,7 @@ from pathlib import Path
 
 class AsyncNodeStorage:
     """
-    Async SQLite-based storage for CallDNS nodes.
+    Async SQLite-based storage for Tessera nodes.
 
     Handles persistence for:
     - Proof cache with TTL
@@ -24,7 +24,7 @@ class AsyncNodeStorage:
     - Node statistics
     """
 
-    def __init__(self, db_path: str = "calldns_node.db"):
+    def __init__(self, db_path: str = "tessera_node.db"):
         """
         Initialize node storage.
 

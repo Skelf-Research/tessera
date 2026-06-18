@@ -1,16 +1,16 @@
-package com.calldns.sdk
+package com.tessera.sdk
 
 import java.util.*
 
 /**
- * Configuration for CallDNS SDK
+ * Configuration for Tessera SDK
  *
  * Authentication model:
  * - Core nodes: Public, no auth (anonymous for privacy)
  * - Org nodes: Bank-issued JWT tokens
  */
-data class CallDNSConfig(
-    val coreNodeUrl: String = "https://core.calldns.network",
+data class TesseraConfig(
+    val coreNodeUrl: String = "https://core.tessera.network",
     val orgNodeUrl: String? = null, // Bank's org node for registration
     val orgAuthToken: String? = null, // JWT token for org node authentication
     val cacheTimeout: Long = 5 * 60 * 1000, // 5 minutes
@@ -166,19 +166,19 @@ data class VerificationStats(
 )
 
 /**
- * CallDNS specific exceptions
+ * Tessera specific exceptions
  */
-class CallDNSException(message: String, cause: Throwable? = null) : Exception(message, cause)
+class TesseraException(message: String, cause: Throwable? = null) : Exception(message, cause)
 
 /**
  * Widget configuration for UI components
  */
-data class CallDNSWidgetConfig(
+data class TesseraWidgetConfig(
     val showTrustScore: Boolean = true,
     val showOrganization: Boolean = true,
     val showVerificationBadge: Boolean = true,
     val autoVerify: Boolean = true,
-    val theme: CallDNSTheme = CallDNSTheme.AUTO,
+    val theme: TesseraTheme = TesseraTheme.AUTO,
     val position: WidgetPosition = WidgetPosition.TOP_RIGHT,
     val size: WidgetSize = WidgetSize.MEDIUM
 )
@@ -186,7 +186,7 @@ data class CallDNSWidgetConfig(
 /**
  * UI theme options
  */
-enum class CallDNSTheme {
+enum class TesseraTheme {
     LIGHT,
     DARK,
     AUTO
@@ -217,10 +217,10 @@ enum class WidgetSize {
 /**
  * Events that can be emitted by the SDK
  */
-sealed class CallDNSEvent {
-    data class VerificationStarted(val callContext: CallContext) : CallDNSEvent()
-    data class VerificationCompleted(val result: VerificationResult) : CallDNSEvent()
-    data class VerificationFailed(val error: String) : CallDNSEvent()
-    data class ProofGenerated(val proof: CallProof) : CallDNSEvent()
-    data class CacheUpdated(val cacheSize: Int) : CallDNSEvent()
+sealed class TesseraEvent {
+    data class VerificationStarted(val callContext: CallContext) : TesseraEvent()
+    data class VerificationCompleted(val result: VerificationResult) : TesseraEvent()
+    data class VerificationFailed(val error: String) : TesseraEvent()
+    data class ProofGenerated(val proof: CallProof) : TesseraEvent()
+    data class CacheUpdated(val cacheSize: Int) : TesseraEvent()
 }

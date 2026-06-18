@@ -13,9 +13,9 @@ import pytest
 import pytest_asyncio
 import websockets
 
-from calldns.network.async_node import AsyncDecentralizedNode
-from calldns.network.decentralized import NodeType, Subscription, make_routing_fields
-from calldns.network.ws_server import NodeWebSocketServer, WSPeerTransport
+from tessera.network.async_node import AsyncDecentralizedNode
+from tessera.network.decentralized import NodeType, Subscription, make_routing_fields
+from tessera.network.ws_server import NodeWebSocketServer, WSPeerTransport
 
 
 class _Node:
@@ -29,7 +29,7 @@ class _Node:
 @pytest_asyncio.fixture
 async def cluster():
     """Two peered nodes (A, B) each served over WS and gossiping to each other."""
-    tmp = tempfile.mkdtemp(prefix="calldns_cluster_")
+    tmp = tempfile.mkdtemp(prefix="tessera_cluster_")
     nodes = {}
     for name in ("A", "B"):
         n = AsyncDecentralizedNode(name, NodeType.CORE, data_dir=f"{tmp}/{name}")

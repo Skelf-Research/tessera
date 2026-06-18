@@ -1,5 +1,5 @@
 """
-Traffic manager for CallDNS.
+Traffic manager for Tessera.
 Handles traffic padding and cover traffic generation for enhanced privacy.
 """
 

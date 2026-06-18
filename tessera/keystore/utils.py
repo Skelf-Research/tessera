@@ -1,5 +1,5 @@
 """
-Key management utilities for CallDNS.
+Key management utilities for Tessera.
 Provides key derivation, backup, and recovery functionality.
 """
 
@@ -133,7 +133,7 @@ class KeyBackup:
             backup_dir: Directory for storing backups
         """
         if backup_dir is None:
-            backup_dir = os.path.expanduser("~/.calldns/backups")
+            backup_dir = os.path.expanduser("~/.tessera/backups")
 
         self.backup_dir = Path(backup_dir)
         self.backup_dir.mkdir(parents=True, exist_ok=True)
@@ -202,7 +202,7 @@ class KeyBackup:
 
             # Save to file with more precise timestamp
             timestamp = int(time.time() * 1000)  # Use milliseconds for uniqueness
-            backup_filename = f"calldns_backup_{timestamp}.cbk"
+            backup_filename = f"tessera_backup_{timestamp}.cbk"
             backup_path = self.backup_dir / backup_filename
 
             with open(backup_path, 'wb') as f:

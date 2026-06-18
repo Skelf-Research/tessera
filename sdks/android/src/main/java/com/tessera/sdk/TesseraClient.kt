@@ -1,4 +1,4 @@
-package com.calldns.sdk
+package com.tessera.sdk
 
 import android.content.Context
 import android.util.Log
@@ -9,7 +9,7 @@ import java.security.SecureRandom
 import java.util.concurrent.ConcurrentHashMap
 
 /**
- * CallDNS Android SDK
+ * Tessera Android SDK
  *
  * Provides zero-knowledge proof verification for incoming calls of any type:
  * - Traditional phone calls
@@ -18,26 +18,26 @@ import java.util.concurrent.ConcurrentHashMap
  * - Video calls
  * - Conference calls
  */
-class CallDNSClient private constructor(
+class TesseraClient private constructor(
     private val context: Context,
-    private val config: CallDNSConfig
+    private val config: TesseraConfig
 ) {
     companion object {
-        private const val TAG = "CallDNSClient"
-        private var instance: CallDNSClient? = null
+        private const val TAG = "TesseraClient"
+        private var instance: TesseraClient? = null
 
-        fun initialize(context: Context, config: CallDNSConfig): CallDNSClient {
+        fun initialize(context: Context, config: TesseraConfig): TesseraClient {
             return instance ?: synchronized(this) {
-                instance ?: CallDNSClient(context.applicationContext, config).also { instance = it }
+                instance ?: TesseraClient(context.applicationContext, config).also { instance = it }
             }
         }
 
-        fun getInstance(): CallDNSClient {
-            return instance ?: throw IllegalStateException("CallDNSClient not initialized")
+        fun getInstance(): TesseraClient {
+            return instance ?: throw IllegalStateException("TesseraClient not initialized")
         }
     }
 
-    private val apiService: CallDNSApiService
+    private val apiService: TesseraApiService
     private val cryptoManager: CryptoManager
     private val keyManager: KeyManager
     private val verificationCache = ConcurrentHashMap<String, VerificationResult>()
@@ -50,11 +50,11 @@ class CallDNSClient private constructor(
             .addConverterFactory(GsonConverterFactory.create())
             .build()
 
-        apiService = retrofit.create(CallDNSApiService::class.java)
+        apiService = retrofit.create(TesseraApiService::class.java)
         cryptoManager = CryptoManager()
         keyManager = KeyManager(context)
 
-        Log.d(TAG, "CallDNS SDK initialized")
+        Log.d(TAG, "Tessera SDK initialized")
     }
 
     /**
@@ -72,7 +72,7 @@ class CallDNSClient private constructor(
                     Log.d(TAG, "Proof generated and registered for ${callContext.callType}")
                     Result.success(proof)
                 } else {
-                    Result.failure(CallDNSException("Failed to register proof: ${response.code()}"))
+                    Result.failure(TesseraException("Failed to register proof: ${response.code()}"))
                 }
             } catch (e: Exception) {
                 Log.e(TAG, "Error generating proof", e)
@@ -165,7 +165,7 @@ class CallDNSClient private constructor(
                     Log.d(TAG, "Identity registered successfully")
                     Result.success(true)
                 } else {
-                    Result.failure(CallDNSException("Failed to register identity: ${response.code()}"))
+                    Result.failure(TesseraException("Failed to register identity: ${response.code()}"))
                 }
             } catch (e: Exception) {
                 Log.e(TAG, "Error registering identity", e)
@@ -228,6 +228,6 @@ class CallDNSClient private constructor(
         scope.cancel()
         verificationCache.clear()
         instance = null
-        Log.d(TAG, "CallDNS SDK destroyed")
+        Log.d(TAG, "Tessera SDK destroyed")
     }
 }

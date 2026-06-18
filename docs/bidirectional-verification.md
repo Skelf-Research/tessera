@@ -1,6 +1,6 @@
 # Bidirectional Call Verification
 
-CallDNS supports verification in both directions:
+Tessera supports verification in both directions:
 
 1. **Bank → Customer**: Bank proves identity when calling customer
 2. **Customer → Bank**: Customer proves identity when calling bank
@@ -36,7 +36,7 @@ Customer taps "Verified Call" → Proof broadcasts → Dials bank → Contact ce
 #### Android (Kotlin/Compose)
 
 ```kotlin
-import com.calldns.sdk.ui.VerifiedCallButton
+import com.tessera.sdk.ui.VerifiedCallButton
 
 @Composable
 fun BankContactScreen() {
@@ -46,7 +46,7 @@ fun BankContactScreen() {
         destinationName = "NatWest Customer Service",
         onCallInitiated = { proof ->
             // Proof has been broadcast, call is being placed
-            Log.d("CallDNS", "Verified call initiated: ${proof.id}")
+            Log.d("Tessera", "Verified call initiated: ${proof.id}")
         },
         onError = { error ->
             // Handle error - offer fallback unverified call
@@ -59,7 +59,7 @@ fun BankContactScreen() {
 #### iOS (SwiftUI)
 
 ```swift
-import CallDNS
+import Tessera
 
 struct BankContactView: View {
     var body: some View {
@@ -167,7 +167,7 @@ Response (not verified):
 ### Python Integration
 
 ```python
-from calldns.sdk import ContactCenterVerifier
+from tessera.sdk import ContactCenterVerifier
 
 verifier = ContactCenterVerifier("http://org-node:8101")
 

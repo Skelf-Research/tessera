@@ -1,7 +1,7 @@
 {
-  "name": "@calldns/react-native",
+  "name": "@tessera/react-native",
   "version": "0.1.0",
-  "description": "CallDNS React Native SDK for zero-knowledge caller verification",
+  "description": "Tessera React Native SDK for zero-knowledge caller verification",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
   "scripts": {
@@ -12,7 +12,7 @@
     "lint": "eslint src --ext .ts,.tsx"
   },
   "keywords": [
-    "calldns",
+    "tessera",
     "react-native",
     "verification",
     "zero-knowledge",
@@ -22,13 +22,13 @@
   ],
   "author": "Dipankar Sarkar <me@dipankar.name>",
   "license": "MIT",
-  "homepage": "https://github.com/dipankar/calldns#readme",
+  "homepage": "https://github.com/dipankar/tessera#readme",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/dipankar/calldns.git"
+    "url": "git+https://github.com/dipankar/tessera.git"
   },
   "bugs": {
-    "url": "https://github.com/dipankar/calldns/issues"
+    "url": "https://github.com/dipankar/tessera/issues"
   },
   "peerDependencies": {
     "react": ">=16.8.0",

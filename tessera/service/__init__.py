@@ -1,13 +1,13 @@
 """
-CallDNS service entry point.
+Tessera service entry point.
 """
 
-from .web import CallDNSService
+from .web import TesseraService
 
 
 def main():
-    """Main entry point for the CallDNS service."""
-    service = CallDNSService()
+    """Main entry point for the Tessera service."""
+    service = TesseraService()
     service.run()
 
 

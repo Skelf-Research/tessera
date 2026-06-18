@@ -1,5 +1,5 @@
 """
-CallDNS CLI - Unified command-line interface.
+Tessera CLI - Unified command-line interface.
 Single entry point with multiple modes: node, proof, identity, service.
 """
 
@@ -13,16 +13,16 @@ import hashlib
 import secrets
 from typing import List
 
-from ..sdk import Caller, Verifier
+from ..sdk import Sender, Verifier
 from ..sdk.identity_manager import IdentityManager
 from ..sdk.commitment_manager import CommitmentManager
 
 
 def main():
-    """Main entry point for the CallDNS CLI."""
+    """Main entry point for the Tessera CLI."""
     parser = argparse.ArgumentParser(
-        prog='calldns',
-        description='CallDNS - Zero-knowledge caller verification system',
+        prog='tessera',
+        description='Tessera - Zero-knowledge sender verification system',
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Modes:
@@ -33,16 +33,16 @@ Modes:
 
 Examples:
   # Start a core node
-  calldns node start --type core --id core-1 --port 8100
+  tessera node start --type core --id core-1 --port 8100
 
   # Subscribe to proofs
-  calldns proof subscribe --commitment <hex> --node localhost:8100
+  tessera proof subscribe --commitment <hex> --node localhost:8100
 
   # Start API service
-  calldns service --port 8000
+  tessera service --port 8000
 
   # Register identity
-  calldns identity register --name "My Name"
+  tessera identity register --name "My Name"
         """
     )
 
@@ -183,11 +183,11 @@ def handle_node_mode(args):
     elif args.node_command == 'connect':
         asyncio.run(node_connect(args))
     else:
-        print("Usage: calldns node <start|status|peers|connect>")
+        print("Usage: tessera node <start|status|peers|connect>")
 
 
 async def node_start(args):
-    """Start a CallDNS node."""
+    """Start a Tessera node."""
     import signal
     from ..network.async_node import AsyncDecentralizedNode
     from ..network.decentralized import NodeType
@@ -195,7 +195,7 @@ async def node_start(args):
     from .transport import NodeTransport
 
     node_type = NodeType(args.type)
-    print(f"Starting CallDNS {args.type} node: {args.id}")
+    print(f"Starting Tessera {args.type} node: {args.id}")
     print(f"  Host: {args.host}:{args.port}")
     print(f"  Network: {args.network}")
 
@@ -418,7 +418,7 @@ def handle_proof_mode(args):
     elif args.proof_command == 'generate':
         proof_generate(args)
     else:
-        print("Usage: calldns proof <subscribe|broadcast|fetch|watch|commitment|generate>")
+        print("Usage: tessera proof <subscribe|broadcast|fetch|watch|commitment|generate>")
 
 
 async def proof_subscribe(args):
@@ -591,7 +591,7 @@ def handle_identity_mode(args):
     elif args.identity_command == 'export':
         identity_export()
     else:
-        print("Usage: calldns identity <register|show|export>")
+        print("Usage: tessera identity <register|show|export>")
 
 
 def identity_register(args):

@@ -1,5 +1,5 @@
 """
-Identity management for CallDNS.
+Identity management for Tessera.
 Handles cryptographic identities locally on the device.
 """
 

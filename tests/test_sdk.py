@@ -1,27 +1,27 @@
 """
-Tests for CallDNS SDK components.
+Tests for Tessera SDK components.
 """
 
 import unittest
-from calldns.sdk.caller import Caller
-from calldns.sdk.verifier import Verifier
+from tessera.sdk.sender import Sender
+from tessera.sdk.verifier import Verifier
 
 
 class TestCaller(unittest.TestCase):
-    """Test caller SDK."""
+    """Test sender SDK."""
     
     def setUp(self):
         """Set up test fixtures."""
-        self.caller = Caller()
+        self.sender = Sender()
     
     def test_caller_creation(self):
-        """Test caller creation."""
-        self.assertIsNotNone(self.caller.identity_manager)
-        self.assertIsNotNone(self.caller.zk_prover)
+        """Test sender creation."""
+        self.assertIsNotNone(self.sender.identity_manager)
+        self.assertIsNotNone(self.sender.zk_prover)
     
     def test_generate_call_proof(self):
         """Test generating call proof."""
-        proof = self.caller.generate_call_proof({"test": "data"})
+        proof = self.sender.generate_call_proof({"test": "data"})
         self.assertIn('R', proof)
         self.assertIn('s', proof)
         self.assertIsInstance(proof['R'], bytes)

@@ -1,7 +1,7 @@
-# CallDNS Scalable Architecture with Privacy-Preserving Matching
+# Tessera Scalable Architecture with Privacy-Preserving Matching
 
 ## Overview
-This document outlines an enhanced architecture for CallDNS that addresses the scalability challenge of matching proofs to callees in a privacy-preserving manner.
+This document outlines an enhanced architecture for Tessera that addresses the scalability challenge of matching proofs to callees in a privacy-preserving manner.
 
 ## The Matching Problem
 
@@ -154,7 +154,7 @@ def verify_incoming_call(encrypted_proof_data):
 ### 6. Enhanced Python Package Structure
 
 ```
-calldns/
+tessera/
 ├── sdk/
 │   ├── caller.py          # Enhanced with commitment handling
 │   ├── verifier.py        # Enhanced with reception commitment management

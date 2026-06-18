@@ -1,4 +1,4 @@
-# CallDNS for Legal Services
+# Tessera for Legal Services
 
 ## Regulatory Landscape
 
@@ -13,7 +13,7 @@ The Solicitors Regulation Authority requires:
 - Professional competence in communications
 - Proper handling of client money
 
-**How CallDNS helps**: Clients can verify solicitor identity before discussing privileged matters or authorizing fund transfers.
+**How Tessera helps**: Clients can verify solicitor identity before discussing privileged matters or authorizing fund transfers.
 
 #### AML/KYC Requirements
 Anti-money laundering regulations require:
@@ -21,7 +21,7 @@ Anti-money laundering regulations require:
 - Ongoing monitoring of business relationships
 - Verification of identity for transactions
 
-**How CallDNS helps**: Adds cryptographic verification layer to client communications about transactions.
+**How Tessera helps**: Adds cryptographic verification layer to client communications about transactions.
 
 #### Legal Privilege
 Communications between solicitor and client are privileged when:
@@ -29,7 +29,7 @@ Communications between solicitor and client are privileged when:
 - For the purpose of legal advice
 - Between properly identified parties
 
-**How CallDNS helps**: Verification ensures client knows they're speaking with their actual solicitor before disclosing privileged information.
+**How Tessera helps**: Verification ensures client knows they're speaking with their actual solicitor before disclosing privileged information.
 
 #### GDPR / Data Protection Act 2018
 Requires:
@@ -37,7 +37,7 @@ Requires:
 - Privacy by design
 - Security of processing
 
-**How CallDNS helps**: Zero-knowledge proofs verify without transmitting or storing client data centrally.
+**How Tessera helps**: Zero-knowledge proofs verify without transmitting or storing client data centrally.
 
 #### Bar Council / Law Society Guidelines
 Professional bodies provide guidance on:
@@ -45,7 +45,7 @@ Professional bodies provide guidance on:
 - Cybersecurity best practices
 - Fraud prevention measures
 
-**How CallDNS helps**: Demonstrates proactive fraud prevention and client protection measures.
+**How Tessera helps**: Demonstrates proactive fraud prevention and client protection measures.
 
 ---
 
@@ -76,7 +76,7 @@ Law firms are prime targets for sophisticated fraud:
 #### Solicitor-to-Client Verification
 
 ```python
-from calldns.sdk import Caller
+from tessera.sdk import Caller
 
 class ConveyancingSolicitor:
     def __init__(self, solicitor_name: str, sra_number: str, firm_name: str):
@@ -187,7 +187,7 @@ function VerifySolicitorCall({ clientId, matterRef }) {
 #### Solicitor-to-Solicitor Verification
 
 ```python
-from calldns.sdk import Caller, Verifier
+from tessera.sdk import Caller, Verifier
 
 class LitigationSolicitor:
     def __init__(self, sra_number: str, firm_name: str):
@@ -229,7 +229,7 @@ class LitigationSolicitor:
 class CommercialLegalVerification(
     private val solicitorsDetails: SolicitorDetails
 ) {
-    private val caller = CallDNS.createCaller("solicitor_${solicitorsDetails.sraNumber}")
+    private val caller = Tessera.createCaller("solicitor_${solicitorsDetails.sraNumber}")
 
     fun generateTransactionCallProof(
         transactionType: String,
@@ -256,7 +256,7 @@ fun VerifyLegalAdvisorCall(incomingCallerId: String) {
     var verification by remember { mutableStateOf<VerificationResult?>(null) }
 
     LaunchedEffect(incomingCallerId) {
-        verification = CallDNS.verify(CallContext(callerId = incomingCallerId))
+        verification = Tessera.verify(CallContext(callerId = incomingCallerId))
     }
 
     Card(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
@@ -388,7 +388,7 @@ struct PrivateClientVerification: View {
         .padding()
         .onAppear {
             Task {
-                verification = await CallDNS.verify(callerId: callerId)
+                verification = await Tessera.verify(callerId: callerId)
             }
         }
     }
@@ -402,7 +402,7 @@ struct PrivateClientVerification: View {
 #### Enhanced Verification for Fund Transfers
 
 ```python
-from calldns.sdk import Caller
+from tessera.sdk import Caller
 
 class ConveyancingCompletionCall:
     def __init__(self, solicitor_name: str, sra_number: str, firm_name: str):
@@ -449,7 +449,7 @@ proof = solicitor.generate_completion_call_proof("CONV-2024-002")
 ### SRA Compliance Reporting
 
 ```python
-from calldns.logging import ComplianceLogger
+from tessera.logging import ComplianceLogger
 
 class LegalCompliance:
     def __init__(self):
@@ -500,7 +500,7 @@ class LegalCompliance:
 
 ```
 ┌─────────────────┐     ┌──────────────┐     ┌─────────────────┐
-│  Practice       │────▶│   CallDNS    │────▶│  Client Portal  │
+│  Practice       │────▶│   Tessera    │────▶│  Client Portal  │
 │  Management     │     │   Service    │     │                 │
 │                 │     │              │     │  - Verify calls │
 │  - Clio         │     │  - Proof     │     │  - View history │
@@ -519,7 +519,7 @@ class LegalCompliance:
 ### Key Management for Law Firms
 
 ```python
-from calldns.keystore import EncryptedKeyStore
+from tessera.keystore import EncryptedKeyStore
 
 # Law firm deployment
 keystore = EncryptedKeyStore(
@@ -589,8 +589,8 @@ keystore = EncryptedKeyStore(
 
 ### Contact
 
-For legal services deployment support and SRA compliance consultation, contact your CallDNS representative.
+For legal services deployment support and SRA compliance consultation, contact your Tessera representative.
 
 ---
 
-*CallDNS helps law firms protect clients from impersonation fraud while maintaining professional standards and regulatory compliance.*
+*Tessera helps law firms protect clients from impersonation fraud while maintaining professional standards and regulatory compliance.*

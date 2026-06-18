@@ -1,5 +1,5 @@
 """
-Tests for CallDNS traffic privacy features.
+Tests for Tessera traffic privacy features.
 """
 
 import unittest
@@ -7,9 +7,9 @@ import base64
 import json
 import math
 import random
-from calldns.sdk.traffic_manager import TrafficManager, DPCoverTraffic
-from calldns.sdk.caller import Caller
-from calldns.sdk.verifier import Verifier
+from tessera.sdk.traffic_manager import TrafficManager, DPCoverTraffic
+from tessera.sdk.sender import Sender
+from tessera.sdk.verifier import Verifier
 
 
 class TestTrafficManager(unittest.TestCase):
@@ -64,11 +64,11 @@ class TestTrafficManager(unittest.TestCase):
 
 
 class TestCallerWithTraffic(unittest.TestCase):
-    """Test caller with traffic privacy features."""
+    """Test sender with traffic privacy features."""
     
     def setUp(self):
         """Set up test fixtures."""
-        self.caller = Caller()
+        self.sender = Sender()
     
     def test_proof_preparation_with_padding(self):
         """Test proof preparation with padding."""
@@ -80,10 +80,10 @@ class TestCallerWithTraffic(unittest.TestCase):
             'proof_size': 4
         }
         
-        padded_proof = self.caller.prepare_proof_for_transmission(sample_proof)
+        padded_proof = self.sender.prepare_proof_for_transmission(sample_proof)
         
         self.assertIn('_padding', padded_proof)
-        self.assertEqual(padded_proof['_padded_size'], self.caller.traffic_manager.padding_size)
+        self.assertEqual(padded_proof['_padded_size'], self.sender.traffic_manager.padding_size)
     
     def test_batch_scheduling(self):
         """Test batch scheduling with cover traffic."""
@@ -98,7 +98,7 @@ class TestCallerWithTraffic(unittest.TestCase):
         ]
         
         # Schedule transmission
-        scheduled_proofs = self.caller.schedule_batch_transmission(sample_proofs)
+        scheduled_proofs = self.sender.schedule_batch_transmission(sample_proofs)
         
         # Should have real proofs plus dummy proofs
         self.assertGreaterEqual(len(scheduled_proofs), len(sample_proofs))

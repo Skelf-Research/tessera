@@ -1,8 +1,8 @@
 import SwiftUI
-import CallDNS
+import Tessera
 
 struct ContentView: View {
-    @StateObject private var viewModel = CallDNSDemoViewModel()
+    @StateObject private var viewModel = TesseraDemoViewModel()
 
     var body: some View {
         NavigationView {
@@ -17,17 +17,17 @@ struct ContentView: View {
                 }
                 .padding()
             }
-            .navigationTitle("CallDNS Demo")
+            .navigationTitle("Tessera Demo")
             .navigationBarTitleDisplayMode(.large)
         }
         .onAppear {
-            viewModel.initializeCallDNS()
+            viewModel.initializeTessera()
         }
     }
 
     private var headerSection: some View {
         VStack(spacing: 12) {
-            Text("🛡️ CallDNS iOS Demo")
+            Text("🛡️ Tessera iOS Demo")
                 .font(.title.bold())
                 .foregroundColor(.primary)
 
@@ -97,9 +97,9 @@ struct ContentView: View {
             }
 
             if let callContext = viewModel.callContext {
-                CallVerificationView(
+                SenderVerificationView(
                     callContext: callContext,
-                    config: CallDNSWidgetConfig(
+                    config: TesseraWidgetConfig(
                         showTrustScore: true,
                         showOrganization: true,
                         showVerificationBadge: true,
@@ -214,20 +214,20 @@ struct ExampleRow: View {
 }
 
 @MainActor
-class CallDNSDemoViewModel: ObservableObject {
+class TesseraDemoViewModel: ObservableObject {
     @Published var selectedCallType: CallType?
     @Published var callerId = "+1 (555) 123-4567"
     @Published var showWidget = false
     @Published var callContext: CallContext?
 
-    func initializeCallDNS() {
-        let config = CallDNSConfig(
+    func initializeTessera() {
+        let config = TesseraConfig(
             apiKey: "demo-api-key",
-            baseUrl: "https://demo.calldns.com",
+            baseUrl: "https://demo.tessera.com",
             enableLogging: true
         )
 
-        CallDNSClient.shared.initialize(config: config)
+        TesseraClient.shared.initialize(config: config)
     }
 
     func verifyCall() {

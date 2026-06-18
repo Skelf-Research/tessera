@@ -1,5 +1,5 @@
 """
-Network broadcast for CallDNS.
+Network broadcast for Tessera.
 Handles proof broadcasting mechanism.
 """
 
@@ -20,7 +20,7 @@ class Broadcast:
         
         Args:
             proof: The ZK proof to broadcast
-            caller_public_key: The caller's public key
+            caller_public_key: The sender's public key
         """
         # In a real implementation, this would send over network
         # For now, we'll just store it in memory

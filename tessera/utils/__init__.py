@@ -1,15 +1,15 @@
 """
-CallDNS utilities module.
+Tessera utilities module.
 Provides validation, error handling, and common utility functions.
 """
 
 from .validation import InputValidator, ValidationError
-from .exceptions import CallDNSError, ProofError, EncryptionError, NetworkError
+from .exceptions import TesseraError, ProofError, EncryptionError, NetworkError
 
 __all__ = [
     "InputValidator",
     "ValidationError",
-    "CallDNSError",
+    "TesseraError",
     "ProofError",
     "EncryptionError",
     "NetworkError"

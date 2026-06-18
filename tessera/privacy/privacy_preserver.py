@@ -1,6 +1,6 @@
 """
-Privacy preservation for CallDNS.
-Ensures caller/callee anonymity and minimizes information leakage.
+Privacy preservation for Tessera.
+Ensures sender/callee anonymity and minimizes information leakage.
 """
 
 import hashlib
@@ -8,7 +8,7 @@ import secrets
 
 
 class PrivacyPreserver:
-    """Ensures privacy in the CallDNS system."""
+    """Ensures privacy in the Tessera system."""
     
     @staticmethod
     def anonymize_metadata(metadata):
@@ -29,7 +29,7 @@ class PrivacyPreserver:
         
         # Remove common identifying fields
         identifying_fields = [
-            'caller_id', 'callee_id', 'phone_number', 'email', 
+            'sender_id', 'callee_id', 'phone_number', 'email', 
             'ip_address', 'device_id', 'location'
         ]
         

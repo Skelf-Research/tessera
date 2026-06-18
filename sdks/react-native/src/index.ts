@@ -3,13 +3,13 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Types
 /**
- * CallDNS SDK Configuration
+ * Tessera SDK Configuration
  *
  * Authentication model:
  * - Core nodes: Public, no auth required (anonymous for privacy)
  * - Org nodes: Bank-issued JWT tokens
  */
-export interface CallDNSConfig {
+export interface TesseraConfig {
   coreNodeUrl?: string;
   orgNodeUrl?: string;
   orgAuthToken?: string; // JWT token for org node authentication
@@ -91,15 +91,15 @@ export interface VerifiedCallDestination {
   commitment?: string;
 }
 
-// CallDNS React Native Client
-export class CallDNSClient {
-  private static instance: CallDNSClient | null = null;
-  private config: Required<CallDNSConfig>;
+// Tessera React Native Client
+export class TesseraClient {
+  private static instance: TesseraClient | null = null;
+  private config: Required<TesseraConfig>;
   private verificationCache: Map<string, VerificationResult> = new Map();
 
-  private constructor(config: CallDNSConfig) {
+  private constructor(config: TesseraConfig) {
     this.config = {
-      coreNodeUrl: 'https://core.calldns.network',
+      coreNodeUrl: 'https://core.tessera.network',
       orgNodeUrl: '',
       orgAuthToken: '',
       cacheTimeout: 5 * 60 * 1000,
@@ -109,18 +109,18 @@ export class CallDNSClient {
     };
   }
 
-  public static initialize(config: CallDNSConfig): CallDNSClient {
-    if (!CallDNSClient.instance) {
-      CallDNSClient.instance = new CallDNSClient(config);
+  public static initialize(config: TesseraConfig): TesseraClient {
+    if (!TesseraClient.instance) {
+      TesseraClient.instance = new TesseraClient(config);
     }
-    return CallDNSClient.instance;
+    return TesseraClient.instance;
   }
 
-  public static getInstance(): CallDNSClient {
-    if (!CallDNSClient.instance) {
-      throw new Error('CallDNSClient not initialized');
+  public static getInstance(): TesseraClient {
+    if (!TesseraClient.instance) {
+      throw new Error('TesseraClient not initialized');
     }
-    return CallDNSClient.instance;
+    return TesseraClient.instance;
   }
 
   // Verify incoming call
@@ -283,7 +283,7 @@ export class CallDNSClient {
 
   // Helper methods
   private async getOrCreateIdentity(): Promise<any> {
-    const storageKey = 'calldns_identity';
+    const storageKey = 'tessera_identity';
 
     try {
       const stored = await AsyncStorage.getItem(storageKey);
@@ -396,4 +396,4 @@ export class CallDNSClient {
   }
 }
 
-export default CallDNSClient;
+export default TesseraClient;

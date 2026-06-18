@@ -1,5 +1,5 @@
 """
-WebSocket support for real-time proof delivery in CallDNS.
+WebSocket support for real-time proof delivery in Tessera.
 Enables instant notification when proofs are broadcast to devices.
 """
 

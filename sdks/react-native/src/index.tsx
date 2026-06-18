@@ -11,7 +11,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import CryptoJS from 'react-native-crypto-js';
 
 // Types
-export interface CallDNSConfig {
+export interface TesseraConfig {
   baseUrl?: string;
   apiKey?: string;
   cacheTimeout?: number;
@@ -81,7 +81,7 @@ export enum VerificationLevel {
   ENTERPRISE = 'ENTERPRISE',
 }
 
-export interface CallDNSWidgetConfig {
+export interface TesseraWidgetConfig {
   showTrustScore?: boolean;
   showOrganization?: boolean;
   showVerificationBadge?: boolean;
@@ -91,15 +91,15 @@ export interface CallDNSWidgetConfig {
   size?: 'small' | 'medium' | 'large';
 }
 
-// CallDNS Client Class
-export class CallDNSClient {
-  private static instance: CallDNSClient | null = null;
-  private config: CallDNSConfig;
+// Tessera Client Class
+export class TesseraClient {
+  private static instance: TesseraClient | null = null;
+  private config: TesseraConfig;
   private verificationCache: Map<string, VerificationResult> = new Map();
 
-  private constructor(config: CallDNSConfig) {
+  private constructor(config: TesseraConfig) {
     this.config = {
-      baseUrl: 'https://api.calldns.com',
+      baseUrl: 'https://api.tessera.com',
       cacheTimeout: 5 * 60 * 1000, // 5 minutes
       enableLogging: false,
       maxRetries: 3,
@@ -107,18 +107,18 @@ export class CallDNSClient {
     };
   }
 
-  public static initialize(config: CallDNSConfig): CallDNSClient {
-    if (!CallDNSClient.instance) {
-      CallDNSClient.instance = new CallDNSClient(config);
+  public static initialize(config: TesseraConfig): TesseraClient {
+    if (!TesseraClient.instance) {
+      TesseraClient.instance = new TesseraClient(config);
     }
-    return CallDNSClient.instance;
+    return TesseraClient.instance;
   }
 
-  public static getInstance(): CallDNSClient {
-    if (!CallDNSClient.instance) {
-      throw new Error('CallDNSClient not initialized');
+  public static getInstance(): TesseraClient {
+    if (!TesseraClient.instance) {
+      throw new Error('TesseraClient not initialized');
     }
-    return CallDNSClient.instance;
+    return TesseraClient.instance;
   }
 
   public async generateCallProof(callContext: CallContext): Promise<any> {
@@ -218,7 +218,7 @@ export class CallDNSClient {
 
   private async getOrCreateIdentity(): Promise<any> {
     try {
-      const stored = await AsyncStorage.getItem('@calldns_identity');
+      const stored = await AsyncStorage.getItem('@tessera_identity');
       if (stored) {
         return JSON.parse(stored);
       }
@@ -230,7 +230,7 @@ export class CallDNSClient {
         created: Date.now(),
       };
 
-      await AsyncStorage.setItem('@calldns_identity', JSON.stringify(identity));
+      await AsyncStorage.setItem('@tessera_identity', JSON.stringify(identity));
       return identity;
     } catch (error) {
       throw new Error('Failed to get or create identity');
@@ -301,7 +301,7 @@ export class CallDNSClient {
 
   private log(...args: any[]): void {
     if (this.config.enableLogging) {
-      console.log('[CallDNS]', ...args);
+      console.log('[Tessera]', ...args);
     }
   }
 
@@ -311,9 +311,9 @@ export class CallDNSClient {
 }
 
 // React Hook
-export const useCallDNSVerification = (
+export const useTesseraVerification = (
   callContext: CallContext,
-  config?: CallDNSWidgetConfig
+  config?: TesseraWidgetConfig
 ) => {
   const [verificationResult, setVerificationResult] = useState<VerificationResult | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -326,7 +326,7 @@ export const useCallDNSVerification = (
     setError(null);
 
     try {
-      const client = CallDNSClient.getInstance();
+      const client = TesseraClient.getInstance();
       const result = await client.verifyIncomingCall(callContext);
       setVerificationResult(result);
 
@@ -358,18 +358,18 @@ export const useCallDNSVerification = (
 // React Component
 export interface CallVerificationWidgetProps {
   callContext: CallContext;
-  config?: CallDNSWidgetConfig;
+  config?: TesseraWidgetConfig;
   onVerificationComplete?: (result: VerificationResult) => void;
   style?: any;
 }
 
-export const CallVerificationWidget: React.FC<CallVerificationWidgetProps> = ({
+export const SenderVerificationWidget: React.FC<CallVerificationWidgetProps> = ({
   callContext,
   config = {},
   onVerificationComplete,
   style,
 }) => {
-  const { verificationResult, isLoading, error } = useCallDNSVerification(callContext, config);
+  const { verificationResult, isLoading, error } = useTesseraVerification(callContext, config);
   const [fadeAnim] = useState(new Animated.Value(0));
 
   useEffect(() => {
@@ -398,11 +398,11 @@ export const CallVerificationWidget: React.FC<CallVerificationWidgetProps> = ({
     if (error) return 'Verification Error';
     if (verificationResult?.isVerified) return '✓ Verified Call';
     if (verificationResult) return 'Unverified Call';
-    return 'CallDNS';
+    return 'Tessera';
   };
 
   const getSubtext = () => {
-    if (isLoading) return 'CallDNS Security Check';
+    if (isLoading) return 'Tessera Security Check';
     if (error) return error;
     if (verificationResult?.isVerified && verificationResult.callerInfo?.organization) {
       return verificationResult.callerInfo.organization;
@@ -455,7 +455,7 @@ export const CallVerificationWidget: React.FC<CallVerificationWidgetProps> = ({
             </View>
           )}
 
-          <Text style={styles.poweredBy}>CallDNS Protected</Text>
+          <Text style={styles.poweredBy}>Tessera Protected</Text>
         </View>
       </View>
     </Animated.View>
@@ -558,4 +558,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default CallVerificationWidget;
+export default SenderVerificationWidget;

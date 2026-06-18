@@ -153,7 +153,7 @@ import Foundation
 }
 
 // MARK: - Widget Configuration
-@objc public class CallDNSWidgetConfig: NSObject {
+@objc public class TesseraWidgetConfig: NSObject {
     @objc public let showTrustScore: Bool
     @objc public let showOrganization: Bool
     @objc public let showVerificationBadge: Bool
@@ -178,15 +178,15 @@ import Foundation
     }
 }
 
-// MARK: - CallDNS Configuration
+// MARK: - Tessera Configuration
 /**
- * CallDNS SDK Configuration
+ * Tessera SDK Configuration
  *
  * Authentication model:
  * - Core nodes: Public, no auth required (anonymous for privacy)
  * - Org nodes: Bank-issued JWT tokens
  */
-@objc public class CallDNSConfig: NSObject {
+@objc public class TesseraConfig: NSObject {
     @objc public let coreNodeUrl: String
     @objc public let orgNodeUrl: String?
     @objc public let orgAuthToken: String? // JWT token for org node authentication
@@ -195,7 +195,7 @@ import Foundation
     @objc public let maxRetries: Int
 
     @objc public init(
-        coreNodeUrl: String = "https://core.calldns.network",
+        coreNodeUrl: String = "https://core.tessera.network",
         orgNodeUrl: String? = nil,
         orgAuthToken: String? = nil,
         enableLogging: Bool = false,
@@ -257,8 +257,8 @@ import Foundation
     }
 }
 
-// MARK: - CallDNS Errors
-public enum CallDNSError: Error {
+// MARK: - Tessera Errors
+public enum TesseraError: Error {
     case notInitialized
     case networkError(String)
     case verificationFailed(String)

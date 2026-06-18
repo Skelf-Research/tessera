@@ -1,7 +1,7 @@
-name: calldns_flutter
-description: CallDNS Flutter SDK for zero-knowledge caller verification
+name: tessera_flutter
+description: Tessera Flutter SDK for zero-knowledge caller verification
 version: 0.1.0
-homepage: https://github.com/dipankar/calldns
+homepage: https://github.com/dipankar/tessera
 
 environment:
   sdk: '>=2.17.0 <4.0.0'
@@ -24,7 +24,7 @@ flutter:
   plugin:
     platforms:
       android:
-        package: com.calldns.flutter
+        package: com.tessera.flutter
         pluginClass: CallDnsFlutterPlugin
       ios:
         pluginClass: CallDnsFlutterPlugin

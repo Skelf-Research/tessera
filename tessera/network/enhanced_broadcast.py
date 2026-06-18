@@ -1,5 +1,5 @@
 """
-Enhanced network broadcast for CallDNS.
+Enhanced network broadcast for Tessera.
 Implements privacy-preserving proof routing using bloom filters.
 """
 

@@ -1,6 +1,6 @@
-# CallDNS Mobile & Web SDKs
+# Tessera Mobile & Web SDKs
 
-This directory contains platform-specific SDKs for integrating CallDNS zero-knowledge caller verification into mobile and web applications.
+This directory contains platform-specific SDKs for integrating Tessera zero-knowledge caller verification into mobile and web applications.
 
 ## 📱 **Available SDKs**
 
@@ -12,7 +12,7 @@ This directory contains platform-specific SDKs for integrating CallDNS zero-know
 
 ```kotlin
 // Initialize
-CallDNSClient.initialize(this, CallDNSConfig(apiKey = "your-api-key"))
+TesseraClient.initialize(this, TesseraConfig(apiKey = "your-api-key"))
 
 // Use in Compose
 CallVerificationWidget(
@@ -31,7 +31,7 @@ CallVerificationWidget(
 
 ```swift
 // Initialize
-CallDNSClient.shared.initialize(config: CallDNSConfig(apiKey: "your-api-key"))
+TesseraClient.shared.initialize(config: TesseraConfig(apiKey: "your-api-key"))
 
 // Use in SwiftUI
 CallVerificationView(
@@ -50,7 +50,7 @@ CallVerificationView(
 
 ```tsx
 // Initialize
-CallDNSClient.initialize({ apiKey: 'your-api-key' });
+TesseraClient.initialize({ apiKey: 'your-api-key' });
 
 // Use in React Native
 <CallVerificationWidget
@@ -69,10 +69,10 @@ CallDNSClient.initialize({ apiKey: 'your-api-key' });
 
 ```javascript
 // Initialize
-CallDNSClient.initialize({ apiKey: 'your-api-key' });
+TesseraClient.initialize({ apiKey: 'your-api-key' });
 
 // Create widget
-const widget = new CallDNSWidget('#widget-container');
+const widget = new TesseraWidget('#widget-container');
 widget.show({
   callerId: '+1234567890',
   callType: 'WEBRTC_CALL'
@@ -106,9 +106,9 @@ Select the appropriate SDK for your platform and follow the platform-specific se
 ### 2. Initialize SDK
 ```javascript
 // Common initialization pattern across all platforms
-CallDNSClient.initialize({
+TesseraClient.initialize({
   apiKey: 'your-api-key',
-  baseUrl: 'https://api.calldns.com', // Optional
+  baseUrl: 'https://api.tessera.com', // Optional
   enableLogging: true, // Optional
   cacheTimeout: 300000 // 5 minutes
 });
@@ -119,7 +119,7 @@ Embed the verification widget in your call interface:
 
 ```javascript
 // When receiving a call
-const result = await CallDNSClient.getInstance().verifyIncomingCall({
+const result = await TesseraClient.getInstance().verifyIncomingCall({
   callerId: incomingCallerId,
   callType: 'VOICE_CALL',
   sessionId: callSessionId
@@ -268,9 +268,9 @@ Each SDK directory contains complete example applications demonstrating:
 ## 🆘 **Support**
 
 - 📖 [Documentation](../docs/)
-- 💬 [GitHub Discussions](https://github.com/dipankar/calldns/discussions)
-- 🐛 [Issue Tracker](https://github.com/dipankar/calldns/issues)
-- 📧 [Email Support](mailto:support@calldns.com)
+- 💬 [GitHub Discussions](https://github.com/dipankar/tessera/discussions)
+- 🐛 [Issue Tracker](https://github.com/dipankar/tessera/issues)
+- 📧 [Email Support](mailto:support@tessera.com)
 
 ## 📄 **License**
 

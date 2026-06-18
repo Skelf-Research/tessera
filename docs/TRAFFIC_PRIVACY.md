@@ -2,7 +2,7 @@
 
 ## Overview
 
-This document describes the implementation of traffic padding and cover traffic mechanisms to prevent network-level activity mapping in CallDNS.
+This document describes the implementation of traffic padding and cover traffic mechanisms to prevent network-level activity mapping in Tessera.
 
 ## Traffic Analysis Threats
 
@@ -33,7 +33,7 @@ Even with our commitment-based routing, the network can still potentially:
 
 ### Updated Package Structure
 ```
-calldns/
+tessera/
 ├── sdk/
 │   ├── caller.py           # Enhanced with traffic padding
 │   ├── verifier.py         # Enhanced with cover traffic handling

@@ -4,7 +4,7 @@
 import PackageDescription
 
 let package = Package(
-    name: "CallDNS",
+    name: "Tessera",
     platforms: [
         .iOS(.v13),
         .macOS(.v10_15),
@@ -13,8 +13,8 @@ let package = Package(
     ],
     products: [
         .library(
-            name: "CallDNS",
-            targets: ["CallDNS"]
+            name: "Tessera",
+            targets: ["Tessera"]
         ),
     ],
     dependencies: [
@@ -23,17 +23,17 @@ let package = Package(
     ],
     targets: [
         .target(
-            name: "CallDNS",
+            name: "Tessera",
             dependencies: [
                 "Alamofire",
                 "CryptoSwift"
             ],
-            path: "Sources/CallDNS"
+            path: "Sources/Tessera"
         ),
         .testTarget(
-            name: "CallDNSTests",
-            dependencies: ["CallDNS"],
-            path: "Tests/CallDNSTests"
+            name: "TesseraTests",
+            dependencies: ["Tessera"],
+            path: "Tests/TesseraTests"
         ),
     ]
 )

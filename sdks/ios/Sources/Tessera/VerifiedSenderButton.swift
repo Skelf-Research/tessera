@@ -13,7 +13,7 @@ import UIKit
  * 3. Phone app opens with destination number
  * 4. Bank's contact center verifies the proof
  */
-public struct VerifiedCallButton: View {
+public struct VerifiedSenderButton: View {
     let phoneNumber: String
     let destinationId: String
     let destinationName: String
@@ -126,7 +126,7 @@ public struct VerifiedCallButton: View {
             networkInfo: nil
         )
 
-        CallDNSClient.shared.generateCallProof(callContext: callContext) { result in
+        TesseraClient.shared.generateCallProof(callContext: callContext) { result in
             DispatchQueue.main.async {
                 switch result {
                 case .success(let proof):
@@ -240,7 +240,7 @@ private struct VerifiedCallButtonStyle: ButtonStyle {
 struct VerifiedCallButton_Previews: PreviewProvider {
     static var previews: some View {
         VStack(spacing: 20) {
-            VerifiedCallButton(
+            VerifiedSenderButton(
                 phoneNumber: "+44 800 123 4567",
                 destinationId: "natwest-uk",
                 destinationName: "NatWest Bank"

@@ -1,11 +1,11 @@
 #!/bin/bash
 
-# CallDNS Service Startup Script
-# Starts the CallDNS web service with proper configuration
+# Tessera Service Startup Script
+# Starts the Tessera web service with proper configuration
 
 set -e
 
-echo "🌐 Starting CallDNS Service"
+echo "🌐 Starting Tessera Service"
 echo "=========================="
 
 # Ensure we're in the project root
@@ -21,8 +21,8 @@ echo "   Port: $PORT"
 echo ""
 
 # Check if dependencies are installed
-if ! poetry run python -c "import calldns" 2>/dev/null; then
-    echo "❌ CallDNS not properly installed. Run ./scripts/setup_dev.sh first"
+if ! poetry run python -c "import tessera" 2>/dev/null; then
+    echo "❌ Tessera not properly installed. Run ./scripts/setup_dev.sh first"
     exit 1
 fi
 
@@ -32,4 +32,4 @@ echo "🛑 Press Ctrl+C to stop"
 echo ""
 
 # Start the service
-poetry run python -m calldns.service.web --host "$HOST" --port "$PORT"
+poetry run python -m tessera.service.web --host "$HOST" --port "$PORT"

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Start CallDNS Node UI
+# Start Tessera Node UI
 # Usage: ./scripts/start_ui.sh [--build]
 
 set -e

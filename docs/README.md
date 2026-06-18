@@ -1,6 +1,6 @@
-# CallDNS Documentation
+# Tessera Documentation
 
-This directory contains comprehensive documentation for the CallDNS zero-knowledge caller verification system.
+This directory contains comprehensive documentation for the Tessera zero-knowledge caller verification system.
 
 ## Core Documentation
 

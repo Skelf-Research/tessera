@@ -1,22 +1,22 @@
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
-  name: calldns-core
-  namespace: calldns
+  name: tessera-core
+  namespace: tessera
   labels:
-    app: calldns
+    app: tessera
     component: core
 spec:
-  serviceName: calldns-core
+  serviceName: tessera-core
   replicas: 3
   selector:
     matchLabels:
-      app: calldns
+      app: tessera
       component: core
   template:
     metadata:
       labels:
-        app: calldns
+        app: tessera
         component: core
       annotations:
         prometheus.io/scrape: "true"
@@ -25,7 +25,7 @@ spec:
     spec:
       containers:
         - name: core-node
-          image: calldns:latest
+          image: tessera:latest
           args:
             - "start"
             - "--type"
@@ -79,15 +79,15 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: calldns-core
-  namespace: calldns
+  name: tessera-core
+  namespace: tessera
   labels:
-    app: calldns
+    app: tessera
     component: core
 spec:
   clusterIP: None
   selector:
-    app: calldns
+    app: tessera
     component: core
   ports:
     - port: 8100
@@ -97,15 +97,15 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: calldns-core-lb
-  namespace: calldns
+  name: tessera-core-lb
+  namespace: tessera
   labels:
-    app: calldns
+    app: tessera
     component: core
 spec:
   type: LoadBalancer
   selector:
-    app: calldns
+    app: tessera
     component: core
   ports:
     - port: 8100

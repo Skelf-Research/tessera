@@ -1,14 +1,14 @@
-# CallDNS Decentralized Architecture
+# Tessera Decentralized Architecture
 
 ## Overview
 
-CallDNS uses a decentralized network architecture that provides **privacy by design** - no single node can determine who is calling whom. This document explains how the system achieves both privacy and scalability.
+Tessera uses a decentralized network architecture that provides **privacy by design** - no single node can determine who is calling whom. This document explains how the system achieves both privacy and scalability.
 
 ## Privacy Guarantees
 
 ### Core Claim
 
-> **CallDNS cannot identify the specific recipient of a call.** Organizations broadcast proofs with cover traffic to multiple buckets, and customers subscribe to buckets containing their commitment. No node in the network can correlate callers to callees.
+> **Tessera cannot identify the specific recipient of a call.** Organizations broadcast proofs with cover traffic to multiple buckets, and customers subscribe to buckets containing their commitment. No node in the network can correlate callers to callees.
 
 ### How It Works
 
@@ -111,7 +111,7 @@ Global Traffic (100%)
 
 ### Core Nodes
 
-Run by CallDNS or network operators. High-availability nodes that:
+Run by Tessera or network operators. High-availability nodes that:
 - Route proofs between network participants
 - Manage customer subscriptions
 - Store pending proofs for pull model
@@ -119,10 +119,10 @@ Run by CallDNS or network operators. High-availability nodes that:
 - **Cannot identify customers** (only see buckets)
 
 ```python
-from calldns.network.decentralized import DecentralizedNode, NodeType
+from tessera.network.decentralized import DecentralizedNode, NodeType
 
 core = DecentralizedNode(
-    node_id="core1.calldns.network",
+    node_id="core1.tessera.network",
     node_type=NodeType.CORE
 )
 ```
@@ -142,7 +142,7 @@ Run by banks, healthcare providers, etc. These nodes:
 - **Store customer commitments** for contact center verification
 
 ```python
-from calldns.network.decentralized import DecentralizedNode, NodeType, PrivacyPreservingBroadcaster
+from tessera.network.decentralized import DecentralizedNode, NodeType, PrivacyPreservingBroadcaster
 
 org_node = DecentralizedNode(
     node_id="org_barclays",
@@ -167,7 +167,7 @@ Lightweight clients for mobile/desktop apps:
 - Verify proofs locally
 
 ```python
-from calldns.network.decentralized import CustomerNodeClient
+from tessera.network.decentralized import CustomerNodeClient
 
 client = CustomerNodeClient(
     commitment=my_commitment,
@@ -192,7 +192,7 @@ VerifiedCallButton(
 
 ## Bidirectional Verification
 
-CallDNS supports verification in both directions:
+Tessera supports verification in both directions:
 
 ### Bank → Customer (Inbound Verification)
 
@@ -428,7 +428,7 @@ commitment = derive_commitment(
 
 ### Honest Privacy Claim
 
-> CallDNS provides **practical privacy** through layered defenses: bucket anonymity sets, bloom filter ambiguity, cover traffic, and pull-based retrieval. A motivated adversary with access to core node logs could narrow possibilities but cannot definitively identify specific caller-callee relationships without additional information.
+> Tessera provides **practical privacy** through layered defenses: bucket anonymity sets, bloom filter ambiguity, cover traffic, and pull-based retrieval. A motivated adversary with access to core node logs could narrow possibilities but cannot definitively identify specific caller-callee relationships without additional information.
 
 ---
 
@@ -438,10 +438,10 @@ commitment = derive_commitment(
 
 ```bash
 # Install dependencies
-pip install calldns
+pip install tessera
 
 # Start core node (public, with rate limiting)
-calldns-node start \
+tessera-node start \
   --type core \
   --id core-1 \
   --port 8100 \
@@ -454,7 +454,7 @@ calldns-node start \
 ```bash
 # Org nodes require JWT authentication for customer registration
 export CALLDNS_JWT_SECRET="your-secret-key"
-calldns-node start \
+tessera-node start \
   --type org \
   --id mybank-uk \
   --port 8100 \
@@ -467,12 +467,12 @@ See [Authentication Documentation](authentication.md) for JWT and rate limiting 
 ### Organization Integration
 
 ```python
-from calldns.network.decentralized import (
+from tessera.network.decentralized import (
     DecentralizedNode,
     NodeType,
     PrivacyPreservingBroadcaster
 )
-from calldns.sdk import Caller
+from tessera.sdk import Caller
 
 # Setup
 org_node = DecentralizedNode("org_barclays", NodeType.ORGANIZATION)
@@ -501,8 +501,8 @@ def make_call(customer_commitment: bytes, metadata: dict):
 ### Customer App Integration
 
 ```python
-from calldns.network.decentralized import CustomerNodeClient
-from calldns.sdk import Verifier
+from tessera.network.decentralized import CustomerNodeClient
+from tessera.sdk import Verifier
 
 # Setup
 client = CustomerNodeClient(
@@ -550,4 +550,4 @@ for proof in client.filter_proofs(proofs):
 
 ---
 
-*CallDNS Decentralized - Privacy by architecture, not policy*
+*Tessera Decentralized - Privacy by architecture, not policy*

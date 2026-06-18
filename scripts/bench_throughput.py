@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-E4 (proper) — throughput/latency of a live CallDNS node over persistent connections.
+E4 (proper) — throughput/latency of a live Tessera node over persistent connections.
 
 Unlike scripts/benchmark.py (which opens a fresh WebSocket per operation and is therefore
 connection-bound), this driver holds ``--connections`` persistent connections and pipelines
@@ -12,7 +12,7 @@ Operations:
   * fetch     : drain pending proofs for subscribers
 
 Usage (start a node first):
-  poetry run python -m calldns.network.ws_server --port 8100 &
+  poetry run python -m tessera.network.ws_server --port 8100 &
   poetry run python scripts/bench_throughput.py --node ws://127.0.0.1:8100 --op route \
       --connections 16 --ops-per-conn 500
 """
@@ -27,7 +27,7 @@ from pathlib import Path
 
 import websockets
 
-from calldns.network.decentralized import Subscription, make_routing_fields
+from tessera.network.decentralized import Subscription, make_routing_fields
 
 PAPER = Path(__file__).resolve().parents[2] / "calldns-paper"
 DEFAULT_RESULTS = PAPER / "results"
@@ -125,7 +125,7 @@ def print_report(r):
 
 
 def main():
-    ap = argparse.ArgumentParser(description="CallDNS throughput driver (E4)")
+    ap = argparse.ArgumentParser(description="Tessera throughput driver (E4)")
     ap.add_argument("--node", default="ws://127.0.0.1:8100")
     ap.add_argument("--op", default="route", choices=["subscribe", "route", "fetch"])
     ap.add_argument("--connections", type=int, default=16)

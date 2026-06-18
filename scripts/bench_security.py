@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-E6 — Security / robustness measurement for CallDNS ZK proofs.
+E6 — Security / robustness measurement for Tessera ZK proofs.
 
 Quantifies the verifier's error rates over many independent trials:
 
@@ -29,7 +29,7 @@ from pathlib import Path
 
 from ecdsa import SECP256k1
 
-from calldns.crypto.crypto_utils import CryptoUtils, ZKProver, ZKVerifier
+from tessera.crypto.crypto_utils import CryptoUtils, ZKProver, ZKVerifier
 
 DEFAULT_OUT = Path(__file__).resolve().parents[2] / "calldns-paper" / "results"
 ORDER = SECP256k1.order
@@ -108,7 +108,7 @@ def _tally(slot, accepted):
 
 
 def print_report(r):
-    print("\nCallDNS ZK proof security/robustness (E6)")
+    print("\nTessera ZK proof security/robustness (E6)")
     print("=" * 60)
     print(f"{'category':<18}{'tested':>10}{'accepted':>10}{'rejected':>10}")
     print("-" * 60)
@@ -141,7 +141,7 @@ def latex_table(r):
 
 
 def main():
-    ap = argparse.ArgumentParser(description="CallDNS ZK security/robustness (E6)")
+    ap = argparse.ArgumentParser(description="Tessera ZK security/robustness (E6)")
     ap.add_argument("--trials", type=int, default=5000)
     ap.add_argument("--out-dir", type=Path, default=DEFAULT_OUT)
     ap.add_argument("--name", default="e6_security")

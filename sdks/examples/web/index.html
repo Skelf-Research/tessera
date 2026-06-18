@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CallDNS Web SDK Demo</title>
+    <title>Tessera Web SDK Demo</title>
     <style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -191,7 +191,7 @@
 <body>
     <div class="demo-container">
         <div class="header">
-            <h1>🛡️ CallDNS Web SDK Demo</h1>
+            <h1>🛡️ Tessera Web SDK Demo</h1>
             <p>Experience zero-knowledge caller verification in your web browser</p>
         </div>
 
@@ -224,7 +224,7 @@
             </button>
 
             <div class="widget-container" id="widgetContainer">
-                <div class="widget-placeholder">CallDNS widget will appear here</div>
+                <div class="widget-placeholder">Tessera widget will appear here</div>
             </div>
         </div>
 
@@ -270,7 +270,7 @@
                 <div id="webrtcStatus" class="webrtc-status">
                     Checking WebRTC support...
                 </div>
-                <p>This demo shows how CallDNS integrates with WebRTC calls:</p>
+                <p>This demo shows how Tessera integrates with WebRTC calls:</p>
                 <button class="verify-button" id="simulateWebRTC">
                     Simulate WebRTC Call
                 </button>
@@ -310,23 +310,23 @@
 
             <h4>Basic Setup:</h4>
             <div class="code-example">
-// Initialize CallDNS
-import { CallDNSClient, CallDNSWidget } from '@calldns/web';
+// Initialize Tessera
+import { TesseraClient, TesseraWidget } from '@tessera/web';
 
 // Initialize the client
-CallDNSClient.initialize({
+TesseraClient.initialize({
   apiKey: 'your-api-key',
   enableLogging: true
 });
 
 // Create widget
-const widget = new CallDNSWidget('#widget-container');
+const widget = new TesseraWidget('#widget-container');
             </div>
 
             <h4>Verify Incoming Call:</h4>
             <div class="code-example">
 // Verify an incoming call
-const result = await CallDNSClient.getInstance().verifyIncomingCall({
+const result = await TesseraClient.getInstance().verifyIncomingCall({
   callerId: '+1234567890',
   callType: 'WEBRTC_CALL',
   sessionId: 'unique-session-id'
@@ -341,10 +341,10 @@ if (result.isVerified) {
 
             <h4>React Integration:</h4>
             <div class="code-example">
-import { useCallDNSVerification } from '@calldns/web';
+import { useTesseraVerification } from '@tessera/web';
 
 function CallInterface({ callContext }) {
-  const { verificationResult, isLoading } = useCallDNSVerification(callContext);
+  const { verificationResult, isLoading } = useTesseraVerification(callContext);
 
   return (
     &lt;div&gt;
@@ -360,23 +360,23 @@ function CallInterface({ callContext }) {
         </div>
     </div>
 
-    <!-- Include CallDNS Web SDK -->
+    <!-- Include Tessera Web SDK -->
     <script src="../web/dist/index.js"></script>
     <script>
         // Demo application logic
         let selectedCallType = null;
         let callDNSWidget = null;
 
-        // Initialize CallDNS (demo mode - no real API key)
+        // Initialize Tessera (demo mode - no real API key)
         try {
-            CallDNSClient.initialize({
-                baseUrl: 'https://demo.calldns.com',
+            TesseraClient.initialize({
+                baseUrl: 'https://demo.tessera.com',
                 enableLogging: true,
                 cacheTimeout: 60000 // 1 minute for demo
             });
-            console.log('CallDNS initialized successfully');
+            console.log('Tessera initialized successfully');
         } catch (error) {
-            console.warn('CallDNS demo mode:', error.message);
+            console.warn('Tessera demo mode:', error.message);
         }
 
         // Call type selection
@@ -402,7 +402,7 @@ function CallInterface({ callContext }) {
             try {
                 // Create widget with current config
                 const config = getWidgetConfig();
-                callDNSWidget = new CallDNSWidget(widgetContainer, config);
+                callDNSWidget = new TesseraWidget(widgetContainer, config);
 
                 // Simulate verification
                 const result = await simulateVerification({
@@ -426,7 +426,7 @@ function CallInterface({ callContext }) {
             webrtcWidget.innerHTML = '';
 
             try {
-                const widget = new CallDNSWidget(webrtcWidget);
+                const widget = new TesseraWidget(webrtcWidget);
                 const result = await simulateVerification({
                     callerId: 'webrtc-user@example.com',
                     callType: 'WEBRTC_CALL',
@@ -449,7 +449,7 @@ function CallInterface({ callContext }) {
         // Clear cache
         document.getElementById('clearCache').addEventListener('click', () => {
             try {
-                CallDNSClient.getInstance().clearCache();
+                TesseraClient.getInstance().clearCache();
                 updateStats();
                 console.log('Cache cleared');
             } catch (error) {
@@ -512,7 +512,7 @@ function CallInterface({ callContext }) {
 
         function updateStats() {
             try {
-                const stats = CallDNSClient.getInstance().getStats();
+                const stats = TesseraClient.getInstance().getStats();
                 document.getElementById('totalVerifications').textContent = stats.totalVerifications || 0;
                 document.getElementById('successfulVerifications').textContent = stats.successfulVerifications || 0;
                 document.getElementById('successRate').textContent = Math.round((stats.successRate || 0) * 100) + '%';
@@ -539,7 +539,7 @@ function CallInterface({ callContext }) {
         document.addEventListener('DOMContentLoaded', () => {
             checkWebRTCSupport();
             updateStats();
-            console.log('CallDNS Web SDK Demo ready');
+            console.log('Tessera Web SDK Demo ready');
         });
 
         // Set up demo data

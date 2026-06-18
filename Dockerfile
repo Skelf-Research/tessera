@@ -1,4 +1,4 @@
-# CallDNS Node Dockerfile
+# Tessera Node Dockerfile
 # Multi-stage build for minimal image size
 
 FROM python:3.11-slim as builder
@@ -28,7 +28,7 @@ RUN poetry config virtualenvs.create false \
 FROM python:3.11-slim
 
 # Create non-root user
-RUN useradd -m -u 1000 calldns
+RUN useradd -m -u 1000 tessera
 
 # Set working directory
 WORKDIR /app
@@ -38,13 +38,13 @@ COPY --from=builder /usr/local/lib/python3.11/site-packages /usr/local/lib/pytho
 COPY --from=builder /usr/local/bin /usr/local/bin
 
 # Copy application code
-COPY calldns/ ./calldns/
+COPY tessera/ ./tessera/
 
 # Create data directory
-RUN mkdir -p /data && chown -R calldns:calldns /data /app
+RUN mkdir -p /data && chown -R tessera:tessera /data /app
 
 # Switch to non-root user
-USER calldns
+USER tessera
 
 # Environment variables
 ENV CALLDNS_DATA_DIR=/data
@@ -55,5 +55,5 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
     CMD python -c "import socket; s=socket.socket(); s.settimeout(5); s.connect(('localhost', int('$PORT' or 8100))); s.close()" || exit 1
 
 # Default command (can be overridden)
-ENTRYPOINT ["python", "-m", "calldns.cli.node"]
+ENTRYPOINT ["python", "-m", "tessera.cli.node"]
 CMD ["start", "--type", "core", "--id", "node-1", "--port", "8100", "--host", "0.0.0.0"]

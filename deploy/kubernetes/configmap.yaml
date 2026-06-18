@@ -1,10 +1,10 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: calldns-config
-  namespace: calldns
+  name: tessera-config
+  namespace: tessera
   labels:
-    app: calldns
+    app: tessera
 data:
   # Network configuration
   network: "mainnet"
@@ -12,9 +12,9 @@ data:
   # Seed nodes for discovery
   seed-nodes: |
     [
-      {"peer_id": "calldns-core-0", "host": "calldns-core-0.calldns-core.calldns.svc.cluster.local", "port": 8100},
-      {"peer_id": "calldns-core-1", "host": "calldns-core-1.calldns-core.calldns.svc.cluster.local", "port": 8100},
-      {"peer_id": "calldns-core-2", "host": "calldns-core-2.calldns-core.calldns.svc.cluster.local", "port": 8100}
+      {"peer_id": "tessera-core-0", "host": "tessera-core-0.tessera-core.tessera.svc.cluster.local", "port": 8100},
+      {"peer_id": "tessera-core-1", "host": "tessera-core-1.tessera-core.tessera.svc.cluster.local", "port": 8100},
+      {"peer_id": "tessera-core-2", "host": "tessera-core-2.tessera-core.tessera.svc.cluster.local", "port": 8100}
     ]
 
   # Node defaults
@@ -25,13 +25,13 @@ data:
 apiVersion: v1
 kind: Secret
 metadata:
-  name: calldns-tls
-  namespace: calldns
+  name: tessera-tls
+  namespace: tessera
   labels:
-    app: calldns
+    app: tessera
 type: kubernetes.io/tls
 data:
   # Base64 encoded TLS certificate and key
-  # Generate with: kubectl create secret tls calldns-tls --cert=cert.pem --key=key.pem
+  # Generate with: kubectl create secret tls tessera-tls --cert=cert.pem --key=key.pem
   tls.crt: ""
   tls.key: ""

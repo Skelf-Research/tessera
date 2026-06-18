@@ -1,4 +1,4 @@
-package com.calldns.sdk.ui
+package com.tessera.sdk.ui
 
 import android.content.Intent
 import android.net.Uri
@@ -20,7 +20,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.calldns.sdk.*
+import com.tessera.sdk.*
 import kotlinx.coroutines.launch
 
 /**
@@ -37,7 +37,7 @@ import kotlinx.coroutines.launch
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun VerifiedCallButton(
+fun VerifiedSenderButton(
     phoneNumber: String,
     destinationId: String,
     destinationName: String = "Organization",
@@ -61,7 +61,7 @@ fun VerifiedCallButton(
 
                     scope.launch {
                         try {
-                            val client = CallDNSClient.getInstance()
+                            val client = TesseraClient.getInstance()
 
                             // Generate proof for outbound call
                             val callContext = CallContext(
@@ -242,7 +242,7 @@ fun VerifiedCallButton(
 }
 
 /**
- * Configuration for VerifiedCallButton
+ * Configuration for VerifiedSenderButton
  */
 data class VerifiedCallButtonConfig(
     val buttonText: String = "Call with Verification",
@@ -268,7 +268,7 @@ private fun VerifiedCallButtonPreview() {
         Surface(
             modifier = Modifier.padding(16.dp)
         ) {
-            VerifiedCallButton(
+            VerifiedSenderButton(
                 phoneNumber = "+44 800 123 4567",
                 destinationId = "natwest-uk",
                 destinationName = "NatWest Bank"

@@ -1,14 +1,14 @@
-# Decentralized CallDNS Network Architecture
+# Decentralized Tessera Network Architecture
 
 ## Overview
 
-This document outlines the architecture for a hyperscalable, decentralized CallDNS network that can handle millions of concurrent users while maintaining strong privacy and security guarantees.
+This document outlines the architecture for a hyperscalable, decentralized Tessera network that can handle millions of concurrent users while maintaining strong privacy and security guarantees.
 
 ## Core Architecture
 
 ### Peer-to-Peer Network Foundation
 
-The decentralized CallDNS network operates on a peer-to-peer foundation where every participating node contributes to the network's operation:
+The decentralized Tessera network operates on a peer-to-peer foundation where every participating node contributes to the network's operation:
 
 ```
 Network Structure:
@@ -442,7 +442,7 @@ class LoadBalancer:
 ```
 Bank Integration Flow:
 ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│   Bank Website  │───▶│ CallDNS Network │───▶│ User Device     │
+│   Bank Website  │───▶│ Tessera Network │───▶│ User Device     │
 │                 │    │                 │    │                 │
 │ 1. User Request │    │ 2. Proof Query  │    │ 3. Local Cache  │
 │ 2. API Call     │    │ 3. DHT Lookup   │    │ 4. Verification │
@@ -491,7 +491,7 @@ def verify_recent_call(user_phone, bank_commitment):
 ```
 Mobile App Architecture:
 ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│   Caller App    │───▶│ CallDNS Network │───▶│ Receiver App    │
+│   Caller App    │───▶│ Tessera Network │───▶│ Receiver App    │
 │                 │    │                 │    │                 │
 │ 1. Generate     │    │ 2. Broadcast    │    │ 3. Receive      │
 │    Proof        │    │    Proof        │    │    Proof        │
@@ -502,7 +502,7 @@ Mobile App Architecture:
 
 #### Contact Verification System:
 ```python
-class CallDNSMobileApp:
+class TesseraMobileApp:
     def __init__(self):
         self.local_node = LocalNode()
         self.contact_manager = ContactManager()
@@ -562,7 +562,7 @@ class CallDNSMobileApp:
 ```
 Enterprise Integration:
 ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│Enterprise System│───▶│ API Gateway     │───▶│ CallDNS Network │
+│Enterprise System│───▶│ API Gateway     │───▶│ Tessera Network │
 │                 │    │                 │    │                 │
 │ 1. Authentication│    │ 1. Rate Limiting│    │ 1. Proof        │
 │ 2. API Request   │    │ 2. Load         │    │    Routing      │
@@ -573,10 +573,10 @@ Enterprise Integration:
 
 #### Enterprise SDK Features:
 ```python
-class EnterpriseCallDNSClient:
+class EnterpriseTesseraClient:
     def __init__(self, api_key, network_endpoint):
         self.api_key = api_key
-        self.network = CallDNSNetworkClient(network_endpoint)
+        self.network = TesseraNetworkClient(network_endpoint)
         self.rate_limiter = RateLimiter()
     
     def batch_verify_calls(self, phone_numbers, organization_commitment):
@@ -739,6 +739,6 @@ Milestones:
 
 ## Conclusion
 
-This decentralized CallDNS network architecture provides a hyperscalable, privacy-preserving solution for global caller verification. By leveraging peer-to-peer networking, blockchain-based identity management, and advanced cryptographic techniques, the network can handle massive scale while maintaining the strong privacy guarantees that make CallDNS valuable.
+This decentralized Tessera network architecture provides a hyperscalable, privacy-preserving solution for global caller verification. By leveraging peer-to-peer networking, blockchain-based identity management, and advanced cryptographic techniques, the network can handle massive scale while maintaining the strong privacy guarantees that make Tessera valuable.
 
 The implementation roadmap ensures gradual deployment with thorough testing at each phase, leading to a production-ready network capable of serving millions of users worldwide with sub-millisecond verification times and enterprise-grade security.

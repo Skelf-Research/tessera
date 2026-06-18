@@ -1,29 +1,29 @@
 """
-Verification demo for CallDNS.
+Verification demo for Tessera.
 Shows how privacy is preserved in the system.
 """
 
 import time
-from calldns.sdk.caller import Caller
-from calldns.sdk.verifier import Verifier
-from calldns.privacy.privacy_preserver import PrivacyPreserver
-from calldns.network.broadcast import Broadcast
+from tessera.sdk.sender import Sender
+from tessera.sdk.verifier import Verifier
+from tessera.privacy.privacy_preserver import PrivacyPreserver
+from tessera.network.broadcast import Broadcast
 
 
 def demo_privacy_features():
     """Demonstrate privacy preservation features."""
-    print("CallDNS Privacy Demo")
+    print("Tessera Privacy Demo")
     print("=" * 30)
     
     # Create components
-    caller = Caller()
+    sender = Sender()
     verifier = Verifier()
     privacy_preserver = PrivacyPreserver()
     broadcast = Broadcast()
     
     # Generate metadata with potentially identifying information
     original_metadata = {
-        "caller_id": "1234567890",
+        "sender_id": "1234567890",
         "callee_id": "0987654321",
         "phone_number": "+1234567890",
         "ip_address": "192.168.1.100",
@@ -57,12 +57,12 @@ def demo_privacy_features():
     
     # Generate ZK proof with anonymized metadata
     print("\nGenerating ZK proof with anonymized metadata...")
-    proof = caller.generate_call_proof(anonymized_metadata)
+    proof = sender.generate_call_proof(anonymized_metadata)
     print(f"Proof generated successfully")
     
     # Broadcast and verify
     print("\nBroadcasting proof...")
-    broadcast.broadcast_proof(proof, caller.get_public_key())
+    broadcast.broadcast_proof(proof, sender.get_public_key())
     
     print("\nVerifying proof...")
     messages = broadcast.get_broadcast_messages()
@@ -80,7 +80,7 @@ def demo_privacy_features():
     print("- Original identifying information has been removed")
     print("- Timestamps are obfuscated to reduce precision")
     print("- Session IDs are ephemeral and random")
-    print("- CallDNS cannot identify originator or receiver")
+    print("- Tessera cannot identify originator or receiver")
     print("- Zero-knowledge proofs verify authenticity without revealing sensitive data")
 
 

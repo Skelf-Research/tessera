@@ -1,5 +1,5 @@
 """
-Push notification services for CallDNS.
+Push notification services for Tessera.
 Supports MQTT and WebSocket for mobile app real-time updates.
 """
 
@@ -183,8 +183,8 @@ class MQTTBridge:
         self._connected = False
 
         # Topic patterns
-        self.proof_topic_pattern = "calldns/proofs/{commitment}"
-        self.device_topic_pattern = "calldns/devices/{device_id}"
+        self.proof_topic_pattern = "tessera/proofs/{commitment}"
+        self.device_topic_pattern = "tessera/devices/{device_id}"
 
     async def connect(self):
         """Connect to MQTT broker."""

@@ -1,5 +1,5 @@
 """
-CallDNS - A zero-knowledge caller verification system.
+Tessera - A zero-knowledge sender verification system.
 
 This package provides:
 1. Zero-knowledge proof generation and verification
@@ -16,16 +16,16 @@ __email__ = "me@dipankar.name"
 __license__ = "MIT"
 
 # Import main components for easy access
-from .sdk import Caller, Verifier
+from .sdk import Sender, Verifier
 from .crypto import ZKProver, ZKVerifier, SecureEncryption
 from .privacy import PrivacyPreserver
 from .network import EnhancedBroadcast
-from .utils import InputValidator, ValidationError, CallDNSError, ProofError, EncryptionError
+from .utils import InputValidator, ValidationError, TesseraError, ProofError, EncryptionError
 from .keystore import KeyManager, KeyRotationManager, EncryptedKeyStore
-from .logging import CallDNSLogger, SecurityLogger, MetricsCollector, SecurityMonitor, PerformanceMonitor
+from .logging import TesseraLogger, SecurityLogger, MetricsCollector, SecurityMonitor, PerformanceMonitor
 
 __all__ = [
-    "Caller",
+    "Sender",
     "Verifier",
     "ZKProver",
     "ZKVerifier",
@@ -34,13 +34,13 @@ __all__ = [
     "EnhancedBroadcast",
     "InputValidator",
     "ValidationError",
-    "CallDNSError",
+    "TesseraError",
     "ProofError",
     "EncryptionError",
     "KeyManager",
     "KeyRotationManager",
     "EncryptedKeyStore",
-    "CallDNSLogger",
+    "TesseraLogger",
     "SecurityLogger",
     "MetricsCollector",
     "SecurityMonitor",

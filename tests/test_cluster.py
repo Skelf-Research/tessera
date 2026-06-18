@@ -9,8 +9,8 @@ import pytest
 import pytest_asyncio
 import websockets
 
-from calldns.deploy.cluster import LocalCluster
-from calldns.network.decentralized import Subscription, make_routing_fields
+from tessera.deploy.cluster import LocalCluster
+from tessera.network.decentralized import Subscription, make_routing_fields
 
 
 @pytest_asyncio.fixture

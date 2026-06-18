@@ -1,5 +1,5 @@
 """
-Structured logging for CallDNS operations.
+Structured logging for Tessera operations.
 Provides secure, configurable logging with sensitive data protection.
 """
 
@@ -13,7 +13,7 @@ from pathlib import Path
 from typing import Dict, Any, Optional, List
 from datetime import datetime, timezone
 
-from ..utils.exceptions import CallDNSError
+from ..utils.exceptions import TesseraError
 
 
 class SecurityLogFormatter(logging.Formatter):
@@ -71,21 +71,21 @@ class SecurityLogFormatter(logging.Formatter):
         return sanitized
 
 
-class CallDNSLogger:
+class TesseraLogger:
     """
-    Main logger for CallDNS operations.
+    Main logger for Tessera operations.
     Provides structured logging with security considerations.
     """
 
-    def __init__(self, name: str = "calldns", log_dir: str = None,
+    def __init__(self, name: str = "tessera", log_dir: str = None,
                  log_level: str = "INFO", max_bytes: int = 10*1024*1024,
                  backup_count: int = 5):
         """
-        Initialize CallDNS logger.
+        Initialize Tessera logger.
 
         Args:
             name: Logger name
-            log_dir: Directory for log files (defaults to ~/.calldns/logs)
+            log_dir: Directory for log files (defaults to ~/.tessera/logs)
             log_level: Logging level
             max_bytes: Maximum log file size before rotation
             backup_count: Number of backup files to keep
@@ -96,7 +96,7 @@ class CallDNSLogger:
 
         # Set up log directory
         if log_dir is None:
-            log_dir = os.path.expanduser("~/.calldns/logs")
+            log_dir = os.path.expanduser("~/.tessera/logs")
 
         self.log_dir = Path(log_dir)
         self.log_dir.mkdir(parents=True, exist_ok=True)
@@ -156,14 +156,14 @@ class CallDNSLogger:
         self.log('critical', message, **kwargs)
 
 
-class SecurityLogger(CallDNSLogger):
+class SecurityLogger(TesseraLogger):
     """
     Specialized logger for security events.
     Tracks authentication, authorization, and potential security issues.
     """
 
     def __init__(self, log_dir: str = None):
-        super().__init__("calldns.security", log_dir)
+        super().__init__("tessera.security", log_dir)
         self.security_events = []
         self._setup_security_monitoring()
 
@@ -213,12 +213,12 @@ class SecurityLogger(CallDNSLogger):
         self.security_events.append(event_data)
 
     def log_proof_verification(self, verifier_id: str, proof_valid: bool,
-                             caller_id: str = None, metadata: Dict[str, Any] = None):
+                             sender_id: str = None, metadata: Dict[str, Any] = None):
         """Log proof verification event."""
         event_data = {
             'event_type': 'proof_verification',
             'verifier_id': verifier_id,
-            'caller_id': caller_id,
+            'sender_id': sender_id,
             'proof_valid': proof_valid,
             'metadata': metadata or {},
             'timestamp': time.time()

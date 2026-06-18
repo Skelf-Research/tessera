@@ -3,12 +3,12 @@ global:
   evaluation_interval: 15s
 
 scrape_configs:
-  - job_name: 'calldns-api'
+  - job_name: 'tessera-api'
     static_configs:
       - targets: ['api:8000']
     metrics_path: /metrics
 
-  - job_name: 'calldns-nodes'
+  - job_name: 'tessera-nodes'
     static_configs:
       - targets: ['core-1:8100', 'core-2:8100', 'org-bank-a:8100']
     metrics_path: /metrics

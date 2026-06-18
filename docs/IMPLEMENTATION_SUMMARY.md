@@ -1,4 +1,4 @@
-# CallDNS Implementation Summary
+# Tessera Implementation Summary
 
 ## Requirements Addressed
 
@@ -25,7 +25,7 @@ Based on the specs.md file, we've implemented a system that addresses all the ke
    - Uniform verification process regardless of caller type
 
 5. **Client-side privacy preservation** ✅
-   - CallDNS cannot identify originator or receiver
+   - Tessera cannot identify originator or receiver
    - Metadata minimization removes identifying information
    - Ephemeral keys for each session
    - No central registry of caller-callee relationships
@@ -72,7 +72,7 @@ Based on the specs.md file, we've implemented a system that addresses all the ke
 
 ### Package Structure
 ```
-calldns/
+tessera/
 ├── sdk/          # Device SDK components
 ├── crypto/       # Cryptographic implementations
 ├── privacy/      # Privacy preservation mechanisms
@@ -103,4 +103,4 @@ calldns/
 4. **Batch Verification**: Process multiple proofs simultaneously
 5. **Advanced Privacy**: Implement onion routing or similar techniques
 
-This implementation provides a solid foundation for the CallDNS system that addresses all specified requirements with a focus on performance and privacy.
+This implementation provides a solid foundation for the Tessera system that addresses all specified requirements with a focus on performance and privacy.

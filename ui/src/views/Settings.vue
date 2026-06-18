@@ -3,7 +3,7 @@
     <!-- Header -->
     <div>
       <h2 class="text-2xl font-bold text-gray-900 dark:text-white">Settings</h2>
-      <p class="text-gray-500 dark:text-gray-400 mt-1">Configure your CallDNS node</p>
+      <p class="text-gray-500 dark:text-gray-400 mt-1">Configure your Tessera node</p>
     </div>
 
     <!-- Mode Selection -->
@@ -63,7 +63,7 @@
             placeholder="http://localhost:8000"
           />
           <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
-            The CallDNS node API endpoint
+            The Tessera node API endpoint
           </p>
         </div>
 
@@ -152,7 +152,7 @@
     </Card>
 
     <!-- About -->
-    <Card title="About" subtitle="CallDNS Node Information">
+    <Card title="About" subtitle="Tessera Node Information">
       <div class="space-y-4">
         <div class="grid grid-cols-2 gap-4">
           <div>
@@ -170,7 +170,7 @@
 
         <div>
           <label class="label">Documentation</label>
-          <a href="https://github.com/calldns" target="_blank" rel="noopener" class="text-sm text-primary-600 hover:text-primary-700 dark:text-primary-400">
+          <a href="https://github.com/tessera" target="_blank" rel="noopener" class="text-sm text-primary-600 hover:text-primary-700 dark:text-primary-400">
             View on GitHub &rarr;
           </a>
         </div>

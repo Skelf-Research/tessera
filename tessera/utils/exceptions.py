@@ -1,11 +1,11 @@
 """
-Custom exceptions for CallDNS.
+Custom exceptions for Tessera.
 Provides specific error types for better error handling and debugging.
 """
 
 
-class CallDNSError(Exception):
-    """Base exception for CallDNS operations."""
+class TesseraError(Exception):
+    """Base exception for Tessera operations."""
 
     def __init__(self, message: str, error_code: str = None, details: dict = None):
         super().__init__(message)
@@ -22,7 +22,7 @@ class CallDNSError(Exception):
         }
 
 
-class ValidationError(CallDNSError):
+class ValidationError(TesseraError):
     """Exception raised for input validation errors."""
 
     def __init__(self, message: str, field: str = None, value=None):
@@ -34,7 +34,7 @@ class ValidationError(CallDNSError):
         self.value = value
 
 
-class ProofError(CallDNSError):
+class ProofError(TesseraError):
     """Exception raised for zero-knowledge proof operations."""
 
     def __init__(self, message: str, proof_type: str = None):
@@ -42,7 +42,7 @@ class ProofError(CallDNSError):
         self.proof_type = proof_type
 
 
-class EncryptionError(CallDNSError):
+class EncryptionError(TesseraError):
     """Exception raised for encryption/decryption operations."""
 
     def __init__(self, message: str, operation: str = None):
@@ -50,7 +50,7 @@ class EncryptionError(CallDNSError):
         self.operation = operation
 
 
-class NetworkError(CallDNSError):
+class NetworkError(TesseraError):
     """Exception raised for network operations."""
 
     def __init__(self, message: str, endpoint: str = None, status_code: int = None):
@@ -62,7 +62,7 @@ class NetworkError(CallDNSError):
         self.status_code = status_code
 
 
-class CommitmentError(CallDNSError):
+class CommitmentError(TesseraError):
     """Exception raised for commitment operations."""
 
     def __init__(self, message: str, commitment_id: str = None):
@@ -70,7 +70,7 @@ class CommitmentError(CallDNSError):
         self.commitment_id = commitment_id
 
 
-class IdentityError(CallDNSError):
+class IdentityError(TesseraError):
     """Exception raised for identity management operations."""
 
     def __init__(self, message: str, identity_type: str = None):

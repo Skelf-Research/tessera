@@ -1,10 +1,10 @@
 import { useState, useEffect, useCallback } from 'react';
-import { CallDNSClient, CallContext, VerificationResult, CallDNSWidgetConfig } from './index';
+import { TesseraClient, CallContext, VerificationResult, TesseraWidgetConfig } from './index';
 
-// React Hook for CallDNS verification
-export function useCallDNSVerification(
+// React Hook for Tessera verification
+export function useTesseraVerification(
   callContext: CallContext | null,
-  config?: CallDNSWidgetConfig
+  config?: TesseraWidgetConfig
 ) {
   const [verificationResult, setVerificationResult] = useState<VerificationResult | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -17,7 +17,7 @@ export function useCallDNSVerification(
     setError(null);
 
     try {
-      const client = CallDNSClient.getInstance();
+      const client = TesseraClient.getInstance();
       const result = await client.verifyIncomingCall(context);
       setVerificationResult(result);
     } catch (err) {
@@ -56,17 +56,17 @@ export function useCallDNSVerification(
   };
 }
 
-// React Hook for CallDNS statistics
-export function useCallDNSStats() {
+// React Hook for Tessera statistics
+export function useTesseraStats() {
   const [stats, setStats] = useState<any>(null);
 
   const refreshStats = useCallback(() => {
     try {
-      const client = CallDNSClient.getInstance();
+      const client = TesseraClient.getInstance();
       const currentStats = client.getStats();
       setStats(currentStats);
     } catch (error) {
-      console.warn('Failed to get CallDNS stats:', error);
+      console.warn('Failed to get Tessera stats:', error);
     }
   }, []);
 
@@ -74,7 +74,7 @@ export function useCallDNSStats() {
     refreshStats();
 
     try {
-      const client = CallDNSClient.getInstance();
+      const client = TesseraClient.getInstance();
 
       const handleCacheUpdate = () => {
         refreshStats();
@@ -88,7 +88,7 @@ export function useCallDNSStats() {
         client.off('verification-completed', handleCacheUpdate);
       };
     } catch (error) {
-      console.warn('Failed to set up CallDNS event listeners:', error);
+      console.warn('Failed to set up Tessera event listeners:', error);
     }
   }, [refreshStats]);
 
@@ -99,7 +99,7 @@ export function useCallDNSStats() {
 }
 
 // React Hook for proof generation
-export function useCallDNSProofGeneration() {
+export function useTesseraProofGeneration() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -108,7 +108,7 @@ export function useCallDNSProofGeneration() {
     setError(null);
 
     try {
-      const client = CallDNSClient.getInstance();
+      const client = TesseraClient.getInstance();
       const proof = await client.generateCallProof(callContext);
       return proof;
     } catch (err) {

@@ -1,5 +1,5 @@
 """
-CallDNS key management module.
+Tessera key management module.
 Provides secure key storage, rotation, and lifecycle management.
 """
 

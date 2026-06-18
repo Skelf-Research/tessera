@@ -1,10 +1,10 @@
 # Customer Onboarding Guide
 
-This guide explains how to set up CallDNS for both end-users (customers) and organizations (callers like banks, healthcare providers, etc.).
+This guide explains how to set up Tessera for both end-users (customers) and organizations (callers like banks, healthcare providers, etc.).
 
 ## Overview
 
-CallDNS uses a **commitment-based registration** system that enables:
+Tessera uses a **commitment-based registration** system that enables:
 - **Multi-device support**: Verify calls on any registered device
 - **Privacy preservation**: Organizations can only reach customers who have explicitly linked
 - **Cryptographic security**: Each device has its own keypair and commitment
@@ -17,7 +17,7 @@ CallDNS uses a **commitment-based registration** system that enables:
 └─────────────────────────────────────────────────────────────────────┘
 
 ┌──────────────┐     ┌──────────────┐     ┌──────────────┐
-│   Customer   │     │   CallDNS    │     │ Organization │
+│   Customer   │     │   Tessera    │     │ Organization │
 │   Device     │     │   Service    │     │   (Bank)     │
 └──────────────┘     └──────────────┘     └──────────────┘
        │                    │                     │
@@ -49,12 +49,12 @@ CallDNS uses a **commitment-based registration** system that enables:
 
 ### Step 1: Install the App
 
-Download the CallDNS-enabled app from your service provider (e.g., your bank's mobile app with CallDNS integration).
+Download the Tessera-enabled app from your service provider (e.g., your bank's mobile app with Tessera integration).
 
 ### Step 2: Register Your Device
 
 ```python
-from calldns.sdk import DeviceRegistration
+from tessera.sdk import DeviceRegistration
 import requests
 
 # Create device registration
@@ -66,14 +66,14 @@ commitment = device.generate_commitment()
 # Get registration payload
 payload = device.get_registration_payload()
 
-# Register with CallDNS service
+# Register with Tessera service
 response = requests.post(
-    "https://calldns.example.com/customers/register",
+    "https://tessera.example.com/customers/register",
     json={"customer_id": "your_customer_id"}
 )
 
 response = requests.post(
-    f"https://calldns.example.com/customers/your_customer_id/devices",
+    f"https://tessera.example.com/customers/your_customer_id/devices",
     json=payload
 )
 
@@ -95,12 +95,12 @@ print(f"Share this token with your bank: {token}")
 
 ### Step 4: Complete Linking
 
-The bank submits your token to CallDNS to establish the link:
+The bank submits your token to Tessera to establish the link:
 
 ```python
 # Bank's system calls this endpoint with your token
 response = requests.post(
-    f"https://calldns.example.com/customers/your_customer_id/link",
+    f"https://tessera.example.com/customers/your_customer_id/link",
     json={
         "organization_id": "org_barclays",
         "linking_token": token
@@ -113,7 +113,7 @@ response = requests.post(
 When your bank calls, your device automatically verifies the proof:
 
 ```python
-from calldns.sdk import Verifier
+from tessera.sdk import Verifier
 
 verifier = Verifier()
 
@@ -136,9 +136,9 @@ else:
 ```python
 import requests
 
-# Register organization with CallDNS
+# Register organization with Tessera
 response = requests.post(
-    "https://calldns.example.com/organizations/register",
+    "https://tessera.example.com/organizations/register",
     json={
         "organization_id": "org_barclays",
         "organization_name": "Barclays Bank PLC",
@@ -163,18 +163,18 @@ Provide customers with a way to link their devices to your organization:
 # Customer scans QR code in your app
 # Your app generates linking token on customer's device
 # Customer's device sends token to your backend
-# Your backend submits to CallDNS
+# Your backend submits to Tessera
 ```
 
 #### Option B: Token Entry Flow
 ```python
-# Customer generates token in their CallDNS app
+# Customer generates token in their Tessera app
 # Customer enters token on your website
-# Your backend submits to CallDNS
+# Your backend submits to Tessera
 
 def complete_customer_linking(customer_id: str, linking_token: str):
     response = requests.post(
-        f"https://calldns.example.com/customers/{customer_id}/link",
+        f"https://tessera.example.com/customers/{customer_id}/link",
         json={
             "organization_id": "org_barclays",
             "linking_token": linking_token
@@ -192,7 +192,7 @@ Before making a call, retrieve all device commitments for the customer:
 def get_customer_commitments(customer_id: str) -> list:
     """Get all device commitments for a customer."""
     response = requests.get(
-        f"https://calldns.example.com/organizations/org_barclays/customers/{customer_id}/commitments",
+        f"https://tessera.example.com/organizations/org_barclays/customers/{customer_id}/commitments",
         headers={"Authorization": f"Bearer {api_key}"}
     )
 
@@ -203,7 +203,7 @@ def get_customer_commitments(customer_id: str) -> list:
 ### Step 4: Generate and Broadcast Proof
 
 ```python
-from calldns.sdk import Caller
+from tessera.sdk import Caller
 import base64
 
 def make_verified_call(customer_id: str, call_metadata: dict):
@@ -233,7 +233,7 @@ def make_verified_call(customer_id: str, call_metadata: dict):
 
         # Broadcast to network
         requests.post(
-            "https://calldns.example.com/proofs/broadcast",
+            "https://tessera.example.com/proofs/broadcast",
             json={
                 "proof": encrypted,
                 "recipients": [customer_id],
@@ -278,7 +278,7 @@ browser_payload = browser.get_registration_payload()
 # Register all devices
 for payload in [iphone_payload, ipad_payload, browser_payload]:
     requests.post(
-        f"https://calldns.example.com/customers/{customer_id}/devices",
+        f"https://tessera.example.com/customers/{customer_id}/devices",
         json=payload
     )
 
@@ -344,7 +344,7 @@ for payload in [iphone_payload, ipad_payload, browser_payload]:
 **"Device not receiving verification"**
 - Check device is registered: `GET /customers/{id}/devices`
 - Check organization is linked: Verify linking was successful
-- Check network connectivity to CallDNS service
+- Check network connectivity to Tessera service
 
 **"Cannot link to organization"**
 - Token may be expired (1 hour validity)
@@ -372,12 +372,12 @@ for payload in [iphone_payload, ipad_payload, browser_payload]:
 Complete example: Bank calling customer with verification
 """
 
-from calldns.sdk import Caller, DeviceRegistration
+from tessera.sdk import Caller, DeviceRegistration
 import requests
 import base64
 import time
 
-CALLDNS_URL = "https://calldns.example.com"
+CALLDNS_URL = "https://tessera.example.com"
 API_KEY = "your_org_api_key"
 ORG_ID = "org_barclays"
 
@@ -462,7 +462,7 @@ For instant notification when proofs arrive, devices can connect via WebSocket i
 
 ```javascript
 // Connect to WebSocket
-const socket = io('https://calldns.example.com');
+const socket = io('https://tessera.example.com');
 
 // Subscribe to device commitments
 socket.emit('subscribe', {
@@ -506,7 +506,7 @@ sio = socketio.Client()
 
 @sio.on('connect')
 def on_connect():
-    print('Connected to CallDNS')
+    print('Connected to Tessera')
     sio.emit('subscribe', {
         'device_id': device.device_id,
         'commitments': [device.get_registration_payload()['commitment']]
@@ -517,7 +517,7 @@ def on_proof(data):
     print(f"Proof received: {data}")
 
     # Verify proof
-    from calldns.sdk import Verifier
+    from tessera.sdk import Verifier
     verifier = Verifier()
 
     if verifier.verify_call_proof(data['proof']):
@@ -530,7 +530,7 @@ def on_subscribed(data):
     print(f"Subscribed to {data['count']} commitments")
 
 # Connect
-sio.connect('https://calldns.example.com')
+sio.connect('https://tessera.example.com')
 sio.wait()
 ```
 
@@ -542,7 +542,7 @@ sio.wait()
 import io.socket.client.IO
 import io.socket.client.Socket
 
-class CallDNSWebSocket(private val serverUrl: String) {
+class TesseraWebSocket(private val serverUrl: String) {
     private lateinit var socket: Socket
 
     fun connect(deviceId: String, commitments: List<String>) {
@@ -564,7 +564,7 @@ class CallDNSWebSocket(private val serverUrl: String) {
 
         socket.on("subscribed") { args ->
             val data = args[0] as JSONObject
-            Log.d("CallDNS", "Subscribed to ${data.getInt("count")} commitments")
+            Log.d("Tessera", "Subscribed to ${data.getInt("count")} commitments")
         }
 
         socket.connect()
@@ -594,13 +594,13 @@ class CallDNSWebSocket(private val serverUrl: String) {
 
 import SocketIO
 
-class CallDNSWebSocket {
+class TesseraWebSocket {
     private var manager: SocketManager!
     private var socket: SocketIOClient!
 
     func connect(deviceId: String, commitments: [String]) {
         manager = SocketManager(
-            socketURL: URL(string: "https://calldns.example.com")!,
+            socketURL: URL(string: "https://tessera.example.com")!,
             config: [.log(true), .compress]
         )
 
@@ -652,14 +652,14 @@ class CallDNSWebSocket {
 ```bash
 # Start service with WebSocket support
 poetry run python -c "
-from calldns.service.web import service
+from tessera.service.web import service
 service.run(host='0.0.0.0', port=8000, websocket=True)
 "
 
 # Or use the standalone async WebSocket server
 poetry run python -c "
 import asyncio
-from calldns.service.websocket import run_websocket_server
+from tessera.service.websocket import run_websocket_server
 asyncio.run(run_websocket_server(port=8001))
 "
 ```
@@ -682,4 +682,4 @@ The WebSocket server handles:
 
 ---
 
-*CallDNS - Verified caller identity for regulated industries*
+*Tessera - Verified caller identity for regulated industries*

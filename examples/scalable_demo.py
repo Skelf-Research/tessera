@@ -1,40 +1,40 @@
 """
-Scalable demo for CallDNS.
+Scalable demo for Tessera.
 Demonstrates privacy-preserving proof matching in a multi-user environment.
 """
 
 import time
 import base64
-from calldns.sdk.caller import Caller
-from calldns.sdk.verifier import Verifier
-from calldns.network.enhanced_broadcast import EnhancedBroadcast
+from tessera.sdk.sender import Sender
+from tessera.sdk.verifier import Verifier
+from tessera.network.enhanced_broadcast import EnhancedBroadcast
 
 
-def simulate_caller(caller_id: int, broadcast_system: EnhancedBroadcast, target_commitment: bytes):
-    """Simulate a caller making a call."""
-    print(f"[Caller {caller_id}] Generating call proof...")
+def simulate_caller(sender_id: int, broadcast_system: EnhancedBroadcast, target_commitment: bytes):
+    """Simulate a sender making a call."""
+    print(f"[Sender {sender_id}] Generating call proof...")
     
-    # Create caller
-    caller = Caller()
+    # Create sender
+    sender = Sender()
     
     # Generate metadata
     metadata = {
         "timestamp": int(time.time()),
         "call_type": "voice",
-        "session_id": f"session_{caller_id}"
+        "session_id": f"session_{sender_id}"
     }
     
     # Generate ZK proof
-    proof = caller.generate_call_proof(metadata)
+    proof = sender.generate_call_proof(metadata)
     
     # Encrypt proof for target callee
-    encrypted_proof = caller.encrypt_proof_for_callee(proof, target_commitment, metadata)
+    encrypted_proof = sender.encrypt_proof_for_callee(proof, target_commitment, metadata)
     
     # Broadcast encrypted proof
-    broadcast_system.broadcast_proof(encrypted_proof, f"region_{caller_id % 3}")
+    broadcast_system.broadcast_proof(encrypted_proof, f"region_{sender_id % 3}")
     
-    print(f"[Caller {caller_id}] Proof broadcasted")
-    return caller.get_public_key()
+    print(f"[Sender {sender_id}] Proof broadcasted")
+    return sender.get_public_key()
 
 
 def simulate_verifier(verifier_id: int, broadcast_system: EnhancedBroadcast, expected_callers: int):
@@ -79,7 +79,7 @@ def simulate_verifier(verifier_id: int, broadcast_system: EnhancedBroadcast, exp
 
 def main():
     """Main demo function."""
-    print("CallDNS Scalable Matching Demo")
+    print("Tessera Scalable Matching Demo")
     print("=" * 40)
     
     # Create broadcast system
@@ -129,7 +129,7 @@ def main():
     print("Demo Summary:")
     print(f"- {caller_count} calls made to {verifier_count} verifiers")
     print(f"- {total_valid} calls successfully verified")
-    print("- Privacy preserved: Network cannot identify caller-receiver pairs")
+    print("- Privacy preserved: Network cannot identify sender-receiver pairs")
     print("- Scalable matching: Verifiers only process relevant proofs")
     
     # Show how bloom filters helped with efficiency

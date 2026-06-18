@@ -2,8 +2,8 @@
 
 ## Core Modules
 
-### calldns.sdk
-Client SDK for integrating CallDNS into applications.
+### tessera.sdk
+Client SDK for integrating Tessera into applications.
 
 #### Caller
 ```python
@@ -76,7 +76,7 @@ class ContactCenterVerifier:
     async def lookup_customer_commitment(self, customer_id: str) -> Optional[str]
 ```
 
-### calldns.crypto
+### tessera.crypto
 Cryptographic implementations for zero-knowledge proofs.
 
 #### ZKProver
@@ -102,8 +102,8 @@ class CryptoUtils:
     def hash_data(*args)
 ```
 
-### calldns.privacy
-Privacy-preserving features for CallDNS.
+### tessera.privacy
+Privacy-preserving features for Tessera.
 
 #### PrivacyPreserver
 ```python
@@ -116,8 +116,8 @@ class PrivacyPreserver:
     def obfuscate_timestamp(timestamp)
 ```
 
-### calldns.network
-Network functionality for CallDNS.
+### tessera.network
+Network functionality for Tessera.
 
 #### EnhancedBroadcast
 ```python
@@ -140,48 +140,48 @@ class BloomFilter:
 
 ### Main Commands
 ```bash
-calldns <command> [args...]
+tessera <command> [args...]
 ```
 
 #### verify
 Verify an incoming call
 ```bash
-calldns verify
+tessera verify
 ```
 
 #### register
 Register your identity
 ```bash
-calldns register
+tessera register
 ```
 
 #### call
 Make a verified call
 ```bash
-calldns call <phone_number>
+tessera call <phone_number>
 ```
 
 #### identity
 Manage your identity
 ```bash
-calldns identity show
-calldns identity export
-calldns identity import <file>
+tessera identity show
+tessera identity export
+tessera identity import <file>
 ```
 
 #### contacts
 Manage contacts
 ```bash
-calldns contacts list
-calldns contacts add <name> <commitment>
-calldns contacts remove <name>
+tessera contacts list
+tessera contacts add <name> <commitment>
+tessera contacts remove <name>
 ```
 
 ## Web Service API
 
 ### Authentication
 
-CallDNS uses a split authentication model:
+Tessera uses a split authentication model:
 
 | Node Type | Authentication | Rate Limiting |
 |-----------|----------------|---------------|
@@ -205,7 +205,7 @@ Response:
 ```json
 {
   "status": "healthy",
-  "service": "CallDNS"
+  "service": "Tessera"
 }
 ```
 
@@ -366,11 +366,11 @@ CALLDNS_PADDING_SIZE=1024
 CALLDNS_COVER_TRAFFIC_RATIO=0.3
 
 # Security settings
-CALLDNS_KEY_STORAGE_PATH=~/.calldns/keys
+CALLDNS_KEY_STORAGE_PATH=~/.tessera/keys
 ```
 
 ### Configuration File
-Create `~/.calldns/config.json`:
+Create `~/.tessera/config.json`:
 ```json
 {
   "network": {
@@ -382,7 +382,7 @@ Create `~/.calldns/config.json`:
     "cover_traffic_ratio": 0.3
   },
   "security": {
-    "key_storage_path": "~/.calldns/keys"
+    "key_storage_path": "~/.tessera/keys"
   }
 }
 ```

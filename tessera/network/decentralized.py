@@ -1,5 +1,5 @@
 """
-Decentralized network architecture for CallDNS.
+Decentralized network architecture for Tessera.
 Implements privacy-preserving proof routing with bucketed subscriptions.
 """
 
@@ -17,7 +17,7 @@ from .storage import NodeStorage
 
 
 class NodeType(Enum):
-    CORE = "core"           # High-availability, run by CallDNS
+    CORE = "core"           # High-availability, run by Tessera
     ORGANIZATION = "org"    # Run by banks, healthcare providers, etc.
     CUSTOMER = "customer"   # Run by end users (mobile/desktop app)
 
@@ -175,7 +175,7 @@ class Subscription:
 
 class DecentralizedNode:
     """
-    Decentralized CallDNS node.
+    Decentralized Tessera node.
 
     Can be run as:
     - Core node: High availability, routes proofs between nodes
@@ -190,7 +190,7 @@ class DecentralizedNode:
 
         # Setup data directory
         if data_dir is None:
-            data_dir = f"./calldns_data/{node_id}"
+            data_dir = f"./tessera_data/{node_id}"
         self.data_dir = Path(data_dir)
         self.data_dir.mkdir(parents=True, exist_ok=True)
 
@@ -593,9 +593,9 @@ class CustomerNodeClient:
         self.commitment = commitment
         self.subscription = Subscription(commitment, linked_orgs)
         self.core_node_urls = [
-            "core1.calldns.network",
-            "core2.calldns.network",
-            "core3.calldns.network"
+            "core1.tessera.network",
+            "core2.tessera.network",
+            "core3.tessera.network"
         ]
 
     def get_subscription_data(self) -> dict:

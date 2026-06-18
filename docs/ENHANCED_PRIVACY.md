@@ -1,8 +1,8 @@
-# Enhanced Privacy Features in CallDNS
+# Enhanced Privacy Features in Tessera
 
 ## Overview
 
-We have successfully implemented advanced privacy features in CallDNS that prevent network-level traffic analysis, making it extremely difficult for the network to map user activities or relationships.
+We have successfully implemented advanced privacy features in Tessera that prevent network-level traffic analysis, making it extremely difficult for the network to map user activities or relationships.
 
 ## Key Privacy Enhancements
 
@@ -67,7 +67,7 @@ class TrafficManager:
 
 ## Comparison to Traditional Systems
 
-| Feature | Traditional VoIP | CallDNS Enhanced |
+| Feature | Traditional VoIP | Tessera Enhanced |
 |---------|------------------|------------------|
 | Call Logs | Detailed records created | No logs generated |
 | Call Volume | Visible to network | Obfuscated by dummy traffic |
@@ -99,7 +99,7 @@ class TrafficManager:
 
 ## Conclusion
 
-These privacy enhancements make CallDNS resistant to sophisticated traffic analysis while maintaining usability. The network can no longer:
+These privacy enhancements make Tessera resistant to sophisticated traffic analysis while maintaining usability. The network can no longer:
 - Count actual calls made
 - Identify calling patterns or behaviors
 - Map social relationships between users

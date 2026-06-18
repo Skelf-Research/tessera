@@ -1,4 +1,4 @@
-package com.calldns.example
+package com.tessera.example
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -14,11 +14,11 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.lifecycleScope
-import com.calldns.sdk.CallDNSClient
-import com.calldns.sdk.CallDNSConfig
-import com.calldns.sdk.CallContext
-import com.calldns.sdk.CallType
-import com.calldns.sdk.ui.CallVerificationWidget
+import com.tessera.sdk.TesseraClient
+import com.tessera.sdk.TesseraConfig
+import com.tessera.sdk.CallContext
+import com.tessera.sdk.CallType
+import com.tessera.sdk.ui.SenderVerificationWidget
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -27,27 +27,27 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // Initialize CallDNS
-        val config = CallDNSConfig(
+        // Initialize Tessera
+        val config = TesseraConfig(
             apiKey = "demo-api-key",
-            baseUrl = "https://demo.calldns.com",
+            baseUrl = "https://demo.tessera.com",
             enableLogging = true
         )
 
         lifecycleScope.launch {
-            CallDNSClient.initialize(this@MainActivity, config)
+            TesseraClient.initialize(this@MainActivity, config)
         }
 
         setContent {
-            CallDNSExampleTheme {
-                CallDNSDemo()
+            TesseraExampleTheme {
+                TesseraDemo()
             }
         }
     }
 }
 
 @Composable
-fun CallDNSDemo() {
+fun TesseraDemo() {
     var selectedCallType by remember { mutableStateOf<CallType?>(null) }
     var callerId by remember { mutableStateOf("+1 (555) 123-4567") }
     var showWidget by remember { mutableStateOf(false) }
@@ -59,7 +59,7 @@ fun CallDNSDemo() {
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         Text(
-            text = "🛡️ CallDNS Android Demo",
+            text = "🛡️ Tessera Android Demo",
             style = MaterialTheme.typography.headlineMedium,
             fontWeight = FontWeight.Bold
         )
@@ -123,7 +123,7 @@ fun CallDNSDemo() {
 
                     Spacer(modifier = Modifier.height(12.dp))
 
-                    CallVerificationWidget(
+                    SenderVerificationWidget(
                         callContext = CallContext(
                             callerId = callerId,
                             callType = selectedCallType!!,
@@ -308,6 +308,6 @@ fun getCallTypeDescription(callType: CallType): String {
 }
 
 @Composable
-fun CallDNSExampleTheme(content: @Composable () -> Unit) {
+fun TesseraExampleTheme(content: @Composable () -> Unit) {
     MaterialTheme(content = content)
 }

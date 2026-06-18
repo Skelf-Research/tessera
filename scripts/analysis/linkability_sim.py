@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-E3 — Traffic-analysis linkability simulation for CallDNS cover traffic.
+E3 — Traffic-analysis linkability simulation for Tessera cover traffic.
 
 Validates the metadata-privacy guarantee of Workstream C
 (see ../calldns-paper/spec/metadata_privacy.md).
@@ -37,7 +37,7 @@ import random
 from datetime import datetime, timezone
 from pathlib import Path
 
-from calldns.sdk.traffic_manager import DPCoverTraffic
+from tessera.sdk.traffic_manager import DPCoverTraffic
 
 PAPER = Path(__file__).resolve().parents[3] / "calldns-paper"
 DEFAULT_RESULTS = PAPER / "results"
@@ -180,7 +180,7 @@ def _maybe_plot(results):
 
 
 def main():
-    ap = argparse.ArgumentParser(description="CallDNS linkability simulation (E3)")
+    ap = argparse.ArgumentParser(description="Tessera linkability simulation (E3)")
     ap.add_argument("--samples", type=int, default=20000, help="samples per world")
     ap.add_argument("--num-buckets", type=int, default=64)
     ap.add_argument("--delta", type=float, default=1e-6)

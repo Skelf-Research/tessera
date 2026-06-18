@@ -2,7 +2,7 @@
 Test to verify ZK proof verification works correctly.
 """
 
-from calldns.crypto.crypto_utils import CryptoUtils, ZKProver, ZKVerifier
+from tessera.crypto.crypto_utils import CryptoUtils, ZKProver, ZKVerifier
 
 
 def test_zk_verification():

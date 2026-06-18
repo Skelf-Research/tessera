@@ -1,8 +1,8 @@
-# CallDNS Network Economics
+# Tessera Network Economics
 
 ## Overview
 
-CallDNS uses a **Consortium + Fee Hybrid** model to incentivize core node operation while ensuring network sustainability and neutrality.
+Tessera uses a **Consortium + Fee Hybrid** model to incentivize core node operation while ensuring network sustainability and neutrality.
 
 ## The Challenge
 
@@ -20,7 +20,7 @@ Without incentives, operators have costs but no direct benefit, leading to free-
 
 ```
 ┌─────────────────────────────────────────────────────────┐
-│                   CallDNS Foundation                     │
+│                   Tessera Foundation                     │
 │                   (Non-profit governance)                │
 └─────────────────────┬───────────────────────────────────┘
                       │
@@ -213,7 +213,7 @@ Small Org (e.g., credit union)
 
 ```bash
 # 1. Register with foundation
-curl -X POST https://foundation.calldns.network/orgs/register \
+curl -X POST https://foundation.tessera.network/orgs/register \
   -d '{"name": "Acme Credit Union", "contact": "tech@acme-cu.com"}'
 
 # 2. Receive network API key for billing
@@ -221,10 +221,10 @@ curl -X POST https://foundation.calldns.network/orgs/register \
 export CALLDNS_JWT_SECRET="your-jwt-secret"
 export CALLDNS_NETWORK_API_KEY="key-from-foundation"
 
-calldns-node start --type org --id acme-creditunion \
+tessera-node start --type org --id acme-creditunion \
   --port 8100 --api-port 8101 \
-  --peer core-1@network.calldns.org:8100 \
-  --peer core-2@network.calldns.org:8100
+  --peer core-1@network.tessera.org:8100 \
+  --peer core-2@network.tessera.org:8100
 
 # 4. Billing starts on first proof broadcast
 ```
@@ -264,7 +264,7 @@ Small orgs only pay when they broadcast proofs to customers (e.g., when the bank
 ### For Consortium Membership
 
 1. **Expression of Interest**
-   - Contact foundation@calldns.network
+   - Contact foundation@tessera.network
    - Provide organization details
 
 2. **Technical Assessment**
@@ -337,7 +337,7 @@ Organizations pay because they benefit from:
 
 ## Contact
 
-- **Consortium inquiries**: consortium@calldns.network
-- **Organization signup**: onboarding@calldns.network
-- **Technical support**: support@calldns.network
-- **Foundation**: foundation@calldns.network
+- **Consortium inquiries**: consortium@tessera.network
+- **Organization signup**: onboarding@tessera.network
+- **Technical support**: support@tessera.network
+- **Foundation**: foundation@tessera.network

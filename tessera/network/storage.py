@@ -1,5 +1,5 @@
 """
-SQLite persistence layer for CallDNS decentralized nodes.
+SQLite persistence layer for Tessera decentralized nodes.
 Provides durable storage for proofs, subscriptions, and peer information.
 """
 
@@ -14,7 +14,7 @@ from pathlib import Path
 
 class NodeStorage:
     """
-    SQLite-based storage for CallDNS nodes.
+    SQLite-based storage for Tessera nodes.
 
     Handles persistence for:
     - Proof cache with TTL
@@ -24,7 +24,7 @@ class NodeStorage:
     - Node statistics
     """
 
-    def __init__(self, db_path: str = "calldns_node.db"):
+    def __init__(self, db_path: str = "tessera_node.db"):
         """
         Initialize node storage.
 

@@ -64,8 +64,8 @@ venv.bak/
 ehthumbs.db
 Thumbs.db
 
-# CallDNS specific
-.calldns/
+# Tessera specific
+.tessera/
 logs/
 *.log
 *.key

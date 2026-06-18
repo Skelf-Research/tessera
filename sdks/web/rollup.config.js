@@ -33,7 +33,7 @@ export default [
     output: {
       file: 'dist/index.js',
       format: 'umd',
-      name: 'CallDNS',
+      name: 'Tessera',
       sourcemap: true,
       globals: {
         'crypto-js': 'CryptoJS'

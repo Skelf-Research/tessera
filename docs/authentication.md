@@ -1,6 +1,6 @@
-# CallDNS Authentication Model
+# Tessera Authentication Model
 
-CallDNS uses a split authentication model that preserves privacy while enabling secure operations.
+Tessera uses a split authentication model that preserves privacy while enabling secure operations.
 
 ## Design Principles
 
@@ -21,12 +21,12 @@ Core nodes don't require authentication to maintain customer anonymity:
 
 ```bash
 # No auth header needed
-curl -X POST https://core.calldns.network/proofs/broadcast \
+curl -X POST https://core.tessera.network/proofs/broadcast \
   -H "Content-Type: application/json" \
   -d '{"proof": {...}, "decoys": 3}'
 
 # Rate limited by IP
-curl https://core.calldns.network/proofs/{subscriber_id}
+curl https://core.tessera.network/proofs/{subscriber_id}
 ```
 
 ### Rate Limiting
@@ -68,7 +68,7 @@ curl -X POST https://bank-node.example.com/customers/register \
 {
   "sub": "customer_id",
   "iss": "bank-identity-service",
-  "aud": "calldns-org-node",
+  "aud": "tessera-org-node",
   "exp": 1700000000,
   "iat": 1699996400,
   "scope": ["register", "verify"]
@@ -80,23 +80,23 @@ curl -X POST https://bank-node.example.com/customers/register \
 Banks issue JWT tokens through their existing identity systems:
 
 1. **Mobile App Login** → Bank's OAuth/OIDC service
-2. **Token Exchange** → Bank issues CallDNS-scoped JWT
+2. **Token Exchange** → Bank issues Tessera-scoped JWT
 3. **SDK Usage** → Token passed to `orgAuthToken` config
 
 Example integration with bank's OAuth:
 
 ```python
 # Bank's backend service
-@app.post("/calldns/token")
-async def issue_calldns_token(user_id: str):
+@app.post("/tessera/token")
+async def issue_tessera_token(user_id: str):
     # Verify user is authenticated
     user = await get_authenticated_user()
 
-    # Issue CallDNS-scoped token
+    # Issue Tessera-scoped token
     token = jwt.encode({
         "sub": user.customer_id,
         "iss": "natwest-identity",
-        "aud": "calldns-org-node",
+        "aud": "tessera-org-node",
         "exp": datetime.utcnow() + timedelta(hours=1),
         "scope": ["register", "verify"]
     }, JWT_SECRET, algorithm="HS256")
@@ -112,8 +112,8 @@ SDKs connect to core nodes without authentication:
 
 ```typescript
 // Web SDK
-const client = CallDNSClient.initialize({
-  coreNodeUrl: 'https://core.calldns.network',
+const client = TesseraClient.initialize({
+  coreNodeUrl: 'https://core.tessera.network',
   // No auth needed for core node
 });
 
@@ -127,8 +127,8 @@ await client.prepareVerifiedCall({
 ### JWT for Org Node Registration
 
 ```typescript
-const client = CallDNSClient.initialize({
-  coreNodeUrl: 'https://core.calldns.network',
+const client = TesseraClient.initialize({
+  coreNodeUrl: 'https://core.tessera.network',
   orgNodeUrl: 'https://org.natwest.com:8101',
   orgAuthToken: 'eyJhbGciOiJIUzI1NiIs...' // From bank's auth
 });
@@ -144,25 +144,25 @@ await client.registerCommitment(
 ### Android Example
 
 ```kotlin
-val config = CallDNSConfig(
-    coreNodeUrl = "https://core.calldns.network",
+val config = TesseraConfig(
+    coreNodeUrl = "https://core.tessera.network",
     orgNodeUrl = "https://org.natwest.com:8101",
-    orgAuthToken = bankAuthService.getCallDNSToken()
+    orgAuthToken = bankAuthService.getTesseraToken()
 )
 
-val client = CallDNSClient.initialize(context, config)
+val client = TesseraClient.initialize(context, config)
 ```
 
 ### iOS Example
 
 ```swift
-let config = CallDNSConfig(
-    coreNodeUrl: "https://core.calldns.network",
+let config = TesseraConfig(
+    coreNodeUrl: "https://core.tessera.network",
     orgNodeUrl: "https://org.natwest.com:8101",
-    orgAuthToken: bankAuthService.getCallDNSToken()
+    orgAuthToken: bankAuthService.getTesseraToken()
 )
 
-CallDNSClient.shared.initialize(config: config)
+TesseraClient.shared.initialize(config: config)
 ```
 
 ## Node Configuration
@@ -171,7 +171,7 @@ CallDNSClient.shared.initialize(config: config)
 
 ```bash
 # Start with rate limiting (default: 60 req/min)
-calldns-node start \
+tessera-node start \
   --type core \
   --id core-1 \
   --port 8100 \
@@ -183,20 +183,20 @@ calldns-node start \
 
 ```bash
 # Start with JWT validation
-calldns-node start \
+tessera-node start \
   --type org \
   --id natwest-uk \
   --port 8100 \
   --api-port 8101 \
   --jwt-secret "your-secret-key" \
-  --peer core-1@core.calldns.network:8100
+  --peer core-1@core.tessera.network:8100
 ```
 
 For production, use environment variables:
 
 ```bash
 export CALLDNS_JWT_SECRET="your-production-secret"
-calldns-node start --type org --id natwest-uk --port 8100 --api-port 8101
+tessera-node start --type org --id natwest-uk --port 8100 --api-port 8101
 ```
 
 ### CLI Reference
@@ -210,7 +210,7 @@ calldns-node start --type org --id natwest-uk --port 8100 --api-port 8101
 | `--jwt-secret` | JWT secret for org node auth | None |
 | `--rate-limit` | Requests per minute | 60 |
 | `--peer` | Initial peer (format: `id@host:port`) | None |
-| `--data-dir` | Data directory | `./calldns_data/<id>` |
+| `--data-dir` | Data directory | `./tessera_data/<id>` |
 
 ## Security Considerations
 
@@ -239,7 +239,7 @@ For local development, org nodes can run without JWT:
 
 ```bash
 # Dev mode - no auth required
-calldns-node start --type org --id test-bank --port 8100 --api-port 8101
+tessera-node start --type org --id test-bank --port 8100 --api-port 8101
 # Warning: Commitment storage configured without JWT secret
 ```
 

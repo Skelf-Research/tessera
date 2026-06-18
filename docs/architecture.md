@@ -1,13 +1,13 @@
-# CallDNS Architecture
+# Tessera Architecture
 
 ## Overview
-This document outlines the architecture for CallDNS, a zero-knowledge caller verification system that works above existing VoIP/communication layers to verify callers while maintaining privacy.
+This document outlines the architecture for Tessera, a zero-knowledge caller verification system that works above existing VoIP/communication layers to verify callers while maintaining privacy.
 
 ## System Components
 
 ### 1. Core Architecture
 
-CallDNS supports **bidirectional verification**:
+Tessera supports **bidirectional verification**:
 
 **Bank → Customer (Inbound)**
 ```mermaid
@@ -77,7 +77,7 @@ We'll use a Schnorr-based signature scheme for fast ZK proofs:
 
 ### 4. Privacy Implementation
 
-To ensure CallDNS cannot identify originator or receiver:
+To ensure Tessera cannot identify originator or receiver:
 
 1. **No Centralized Identity Mapping**:
    - Caller identities are self-sovereign
@@ -117,7 +117,7 @@ For optimal performance, we'll implement:
 ### 6. Python Package Structure
 
 ```
-calldns/
+tessera/
 ├── __init__.py
 ├── sdk/
 │   ├── __init__.py
@@ -213,8 +213,8 @@ class PrivacyPreserver:
 ## Security Considerations
 
 ### 8. Privacy Guarantees
-1. **Caller Anonymity**: CallDNS cannot identify who is calling
-2. **Receiver Privacy**: CallDNS cannot identify who is being called
+1. **Caller Anonymity**: Tessera cannot identify who is calling
+2. **Receiver Privacy**: Tessera cannot identify who is being called
 3. **Call Linkability**: Prevent linking multiple calls from same caller
 4. **Metadata Protection**: Minimize information leakage
 

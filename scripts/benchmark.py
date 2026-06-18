@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-CallDNS Load Testing Benchmark.
+Tessera Load Testing Benchmark.
 Tests proof broadcasting, routing, and subscription performance.
 """
 
@@ -17,7 +17,7 @@ from dataclasses import dataclass, field
 
 import websockets
 
-from calldns.network.decentralized import Subscription, make_routing_fields
+from tessera.network.decentralized import Subscription, make_routing_fields
 
 
 @dataclass
@@ -327,7 +327,7 @@ async def run_full_benchmark(node_uri: str, scale: str = "small"):
 
     params = scales.get(scale, scales["small"])
 
-    print(f"\nCallDNS Benchmark Suite - {scale.upper()} scale")
+    print(f"\nTessera Benchmark Suite - {scale.upper()} scale")
     print(f"Target node: {node_uri}")
     print("="*50)
 
@@ -392,7 +392,7 @@ async def run_full_benchmark(node_uri: str, scale: str = "small"):
 
 def main():
     parser = argparse.ArgumentParser(
-        description="CallDNS Load Testing Benchmark"
+        description="Tessera Load Testing Benchmark"
     )
     parser.add_argument(
         "--node", "-n",
@@ -414,7 +414,7 @@ def main():
 
     args = parser.parse_args()
 
-    print("CallDNS Load Testing Benchmark")
+    print("Tessera Load Testing Benchmark")
     print("==============================")
 
     asyncio.run(run_full_benchmark(args.node, args.scale))

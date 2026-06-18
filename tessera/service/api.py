@@ -1,5 +1,5 @@
 """
-FastAPI-based CallDNS service.
+FastAPI-based Tessera service.
 High-performance async API for the decentralized network.
 """
 
@@ -15,7 +15,7 @@ from pydantic import BaseModel, Field
 
 from ..network.async_storage import AsyncNodeStorage
 from ..network.decentralized import NodeType, BloomFilter
-from ..sdk import Caller, Verifier
+from ..sdk import Sender, Verifier
 
 
 # ─────────────────────────────────────────────────────────────
@@ -64,20 +64,20 @@ class PrometheusMetrics:
 
         # Counters
         for name, value in self.counters.items():
-            lines.append(f"# TYPE calldns_{name} counter")
-            lines.append(f"calldns_{name} {value}")
+            lines.append(f"# TYPE tessera_{name} counter")
+            lines.append(f"tessera_{name} {value}")
 
         # Gauges
         for name, value in self.gauges.items():
-            lines.append(f"# TYPE calldns_{name} gauge")
-            lines.append(f"calldns_{name} {value}")
+            lines.append(f"# TYPE tessera_{name} gauge")
+            lines.append(f"tessera_{name} {value}")
 
         # Histograms (simplified - just show count and sum)
         for name, values in self.histograms.items():
             if values:
-                lines.append(f"# TYPE calldns_{name} summary")
-                lines.append(f"calldns_{name}_count {len(values)}")
-                lines.append(f"calldns_{name}_sum {sum(values):.6f}")
+                lines.append(f"# TYPE tessera_{name} summary")
+                lines.append(f"tessera_{name}_count {len(values)}")
+                lines.append(f"tessera_{name}_sum {sum(values):.6f}")
 
         return "\n".join(lines) + "\n"
 
@@ -199,7 +199,7 @@ class AppState:
         self.organizations: Dict[str, Dict] = {}
         self.bucket_subscribers: Dict[int, set] = {}
 
-    async def initialize(self, db_path: str = "calldns_api.db"):
+    async def initialize(self, db_path: str = "tessera_api.db"):
         self.storage = AsyncNodeStorage(db_path)
         await self.storage.initialize()
 
@@ -225,7 +225,7 @@ async def lifespan(app: FastAPI):
     """Manage application lifespan."""
     # Startup
     await state.initialize()
-    print("CallDNS API initialized")
+    print("Tessera API initialized")
 
     # Start background tasks
     cleanup_task = asyncio.create_task(periodic_cleanup())
@@ -236,7 +236,7 @@ async def lifespan(app: FastAPI):
     cleanup_task.cancel()
     if state.storage:
         await state.storage.vacuum()
-    print("CallDNS API shutdown")
+    print("Tessera API shutdown")
 
 
 async def periodic_cleanup():
@@ -259,8 +259,8 @@ async def periodic_cleanup():
 # ─────────────────────────────────────────────────────────────
 
 app = FastAPI(
-    title="CallDNS API",
-    description="Decentralized caller verification network",
+    title="Tessera API",
+    description="Decentralized sender verification network",
     version="0.2.0",
     lifespan=lifespan
 )
@@ -287,7 +287,7 @@ async def health_check():
 
     return {
         "status": "healthy",
-        "service": "CallDNS",
+        "service": "Tessera",
         "version": "0.2.0",
         "timestamp": int(time.time()),
         "database": db_stats,

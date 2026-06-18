@@ -1,21 +1,21 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: calldns-api
-  namespace: calldns
+  name: tessera-api
+  namespace: tessera
   labels:
-    app: calldns
+    app: tessera
     component: api
 spec:
   replicas: 2
   selector:
     matchLabels:
-      app: calldns
+      app: tessera
       component: api
   template:
     metadata:
       labels:
-        app: calldns
+        app: tessera
         component: api
       annotations:
         prometheus.io/scrape: "true"
@@ -24,8 +24,8 @@ spec:
     spec:
       containers:
         - name: api
-          image: calldns:latest
-          command: ["python", "-m", "calldns.service.api"]
+          image: tessera:latest
+          command: ["python", "-m", "tessera.service.api"]
           env:
             - name: CALLDNS_HOST
               value: "0.0.0.0"
@@ -58,15 +58,15 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: calldns-api
-  namespace: calldns
+  name: tessera-api
+  namespace: tessera
   labels:
-    app: calldns
+    app: tessera
     component: api
 spec:
   type: ClusterIP
   selector:
-    app: calldns
+    app: tessera
     component: api
   ports:
     - port: 8000
@@ -76,22 +76,22 @@ spec:
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: calldns-api
-  namespace: calldns
+  name: tessera-api
+  namespace: tessera
   labels:
-    app: calldns
+    app: tessera
     component: api
   annotations:
-    nginx.ingress.kubernetes.io/websocket-services: "calldns-api"
+    nginx.ingress.kubernetes.io/websocket-services: "tessera-api"
 spec:
   rules:
-    - host: api.calldns.network
+    - host: api.tessera.network
       http:
         paths:
           - path: /
             pathType: Prefix
             backend:
               service:
-                name: calldns-api
+                name: tessera-api
                 port:
                   number: 8000

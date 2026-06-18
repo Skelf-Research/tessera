@@ -12,7 +12,7 @@ class TestRateLimiter:
 
     def test_rate_limiter_allows_requests_under_limit(self):
         """Requests under rate limit should be allowed."""
-        from calldns.network.embedded_api import RateLimiter
+        from tessera.network.embedded_api import RateLimiter
 
         limiter = RateLimiter(requests_per_minute=60, burst_size=10)
         client_ip = "192.168.1.1"
@@ -23,7 +23,7 @@ class TestRateLimiter:
 
     def test_rate_limiter_blocks_burst_overflow(self):
         """Requests exceeding burst should be blocked."""
-        from calldns.network.embedded_api import RateLimiter
+        from tessera.network.embedded_api import RateLimiter
 
         limiter = RateLimiter(requests_per_minute=60, burst_size=5)
         client_ip = "192.168.1.1"
@@ -37,7 +37,7 @@ class TestRateLimiter:
 
     def test_rate_limiter_different_ips(self):
         """Different IPs should have separate limits."""
-        from calldns.network.embedded_api import RateLimiter
+        from tessera.network.embedded_api import RateLimiter
 
         limiter = RateLimiter(requests_per_minute=60, burst_size=2)
 
@@ -52,7 +52,7 @@ class TestRateLimiter:
 
     def test_rate_limiter_time_window_reset(self):
         """Old requests should be cleaned up after time window."""
-        from calldns.network.embedded_api import RateLimiter
+        from tessera.network.embedded_api import RateLimiter
 
         limiter = RateLimiter(requests_per_minute=60, burst_size=2)
         client_ip = "192.168.1.1"
@@ -71,7 +71,7 @@ class TestRateLimiter:
 
     def test_get_retry_after(self):
         """Should return correct retry-after time."""
-        from calldns.network.embedded_api import RateLimiter
+        from tessera.network.embedded_api import RateLimiter
 
         limiter = RateLimiter(requests_per_minute=60, burst_size=1)
         client_ip = "192.168.1.1"
@@ -89,7 +89,7 @@ class TestJWTValidator:
 
     def test_validate_valid_token(self):
         """Valid JWT should be accepted."""
-        from calldns.network.embedded_api import JWTValidator
+        from tessera.network.embedded_api import JWTValidator
         import jwt
         import datetime
 
@@ -113,7 +113,7 @@ class TestJWTValidator:
 
     def test_validate_expired_token(self):
         """Expired JWT should be rejected."""
-        from calldns.network.embedded_api import JWTValidator
+        from tessera.network.embedded_api import JWTValidator
         import jwt
         import datetime
 
@@ -133,7 +133,7 @@ class TestJWTValidator:
 
     def test_validate_wrong_secret(self):
         """Token with wrong secret should be rejected."""
-        from calldns.network.embedded_api import JWTValidator
+        from tessera.network.embedded_api import JWTValidator
         import jwt
         import datetime
 
@@ -151,7 +151,7 @@ class TestJWTValidator:
 
     def test_validate_invalid_token_format(self):
         """Malformed token should be rejected."""
-        from calldns.network.embedded_api import JWTValidator
+        from tessera.network.embedded_api import JWTValidator
 
         validator = JWTValidator("test-secret")
 
@@ -190,7 +190,7 @@ class TestAuthenticationIntegration:
 
     def test_api_requires_jwt_for_org_endpoints(self, mock_node, mock_commitment_storage):
         """Org node endpoints should require JWT when configured."""
-        from calldns.network.embedded_api import create_embedded_api
+        from tessera.network.embedded_api import create_embedded_api
         from fastapi.testclient import TestClient
 
         app = create_embedded_api(
@@ -214,7 +214,7 @@ class TestAuthenticationIntegration:
 
     def test_api_rate_limits_requests(self, mock_node):
         """Core endpoints should be rate limited."""
-        from calldns.network.embedded_api import create_embedded_api
+        from tessera.network.embedded_api import create_embedded_api
         from fastapi.testclient import TestClient
 
         app = create_embedded_api(
@@ -236,7 +236,7 @@ class TestAuthenticationIntegration:
 
     def test_api_accepts_valid_jwt(self, mock_node, mock_commitment_storage):
         """Valid JWT should allow access to protected endpoints."""
-        from calldns.network.embedded_api import create_embedded_api
+        from tessera.network.embedded_api import create_embedded_api
         from fastapi.testclient import TestClient
         import jwt
         import datetime

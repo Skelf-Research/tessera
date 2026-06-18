@@ -1,11 +1,11 @@
 #!/bin/bash
 
-# CallDNS Test Runner Script
+# Tessera Test Runner Script
 # Runs the complete test suite with coverage reporting
 
 set -e
 
-echo "🧪 Running CallDNS Test Suite"
+echo "🧪 Running Tessera Test Suite"
 echo "=============================="
 
 # Ensure we're in the project root
@@ -13,7 +13,7 @@ cd "$(dirname "$0")/.."
 
 # Run tests with coverage
 echo "Running tests with coverage..."
-poetry run pytest tests/ -v --cov=calldns --cov-report=html --cov-report=term
+poetry run pytest tests/ -v --cov=tessera --cov-report=html --cov-report=term
 
 echo ""
 echo "✅ Tests completed successfully!"

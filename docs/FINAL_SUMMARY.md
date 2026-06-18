@@ -1,8 +1,8 @@
-# CallDNS Implementation - Final Summary
+# Tessera Implementation - Final Summary
 
 ## Overview
 
-We have successfully implemented a comprehensive solution for CallDNS that addresses all the requirements in the original specs.md file, with particular attention to the scalability challenge of matching proofs in a large-scale deployment.
+We have successfully implemented a comprehensive solution for Tessera that addresses all the requirements in the original specs.md file, with particular attention to the scalability challenge of matching proofs in a large-scale deployment.
 
 ## Key Accomplishments
 
@@ -64,7 +64,7 @@ We implemented a three-layer privacy-preserving routing system:
 
 ### Package Structure
 ```
-calldns/
+tessera/
 ├── sdk/          # Device SDK components
 ├── crypto/       # Cryptographic implementations
 ├── privacy/      # Privacy preservation mechanisms
@@ -119,7 +119,7 @@ The implementation successfully addresses all requirements from the original spe
 ✅ Addresses deepfake and SS7 security issues
 ✅ Zero-knowledge proof verification
 ✅ Works across different scenarios (call centers, apps, users)
-✅ Ensures client-side privacy (CallDNS cannot identify originator or receiver)
+✅ Ensures client-side privacy (Tessera cannot identify originator or receiver)
 ✅ Supports multiple calls from the same caller
 ✅ Provides device SDK for initiating and verifying calls
 ✅ **SOLVES THE SCALABLE MATCHING PROBLEM** without compromising privacy

@@ -1,7 +1,7 @@
 """
-CallDNS Network module.
+Tessera Network module.
 
-This module provides network functionality for CallDNS.
+This module provides network functionality for Tessera.
 """
 
 from .enhanced_broadcast import EnhancedBroadcast, BloomFilter

@@ -1,14 +1,14 @@
 [tool.poetry]
-name = "calldns"
+name = "tessera"
 version = "0.1.0"
-description = "A zero-knowledge caller verification system that works above existing VoIP/communication layers to verify callers while maintaining privacy."
+description = "Authenticated, metadata-private one-to-one delivery: Schnorr zero-knowledge identity proofs with per-recipient key blinding, encrypted bucketed broadcast, and differentially-private cover traffic."
 authors = ["Dipankar Sarkar <me@dipankar.name>"]
 license = "MIT"
 readme = "README.md"
-homepage = "https://github.com/dipankar/calldns"
-repository = "https://github.com/dipankar/calldns"
-documentation = "https://github.com/dipankar/calldns"
-keywords = ["zero-knowledge", "caller-id", "privacy", "authentication", "voip", "security"]
+homepage = "https://github.com/dipankar/tessera"
+repository = "https://github.com/dipankar/tessera"
+documentation = "https://github.com/dipankar/tessera"
+keywords = ["zero-knowledge", "privacy", "metadata-private", "authentication", "messaging", "differential-privacy"]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
@@ -21,7 +21,7 @@ classifiers = [
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Topic :: Security :: Cryptography",
-    "Topic :: Communications :: Telephony"
+    "Topic :: Communications"
 ]
 
 [tool.poetry.dependencies]
@@ -48,7 +48,7 @@ flake8 = "^4.0.0"
 httpx = "^0.25.0"
 
 [tool.poetry.scripts]
-calldns = "calldns.cli.main:main"
+tessera = "tessera.cli.main:main"
 
 [build-system]
 requires = ["poetry-core"]

@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """
-E2 — Spatial-anonymity analysis of CallDNS bucket + bloom routing.
+E2 — Spatial-anonymity analysis of Tessera bucket + bloom routing.
 
 Complements E3 (which covers temporal/count privacy). Here we quantify the *spatial*
-anonymity provided by the routing layer in calldns/network/decentralized.py:
+anonymity provided by the routing layer in tessera/network/decentralized.py:
 
   Part A — Bucket k-anonymity.
     commitment -> bucket = int(SHA256(commitment)[:2]) mod B  (B = 64).
@@ -32,7 +32,7 @@ from collections import Counter
 from datetime import datetime, timezone
 from pathlib import Path
 
-from calldns.network.decentralized import BloomFilter
+from tessera.network.decentralized import BloomFilter
 
 PAPER = Path(__file__).resolve().parents[3] / "calldns-paper"
 DEFAULT_RESULTS = PAPER / "results"
@@ -153,7 +153,7 @@ def write_outputs(r):
 
 
 def main():
-    ap = argparse.ArgumentParser(description="CallDNS spatial-anonymity analysis (E2)")
+    ap = argparse.ArgumentParser(description="Tessera spatial-anonymity analysis (E2)")
     ap.add_argument("--num-buckets", type=int, default=64)
     ap.add_argument("--k-threshold", type=int, default=20)
     ap.add_argument("--user-sweep", type=int, nargs="+",

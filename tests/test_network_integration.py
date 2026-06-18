@@ -1,5 +1,5 @@
 """
-Integration tests for CallDNS decentralized network.
+Integration tests for Tessera decentralized network.
 Tests node communication, proof routing, and subscription matching.
 """
 
@@ -14,14 +14,14 @@ import tempfile
 import shutil
 from pathlib import Path
 
-from calldns.network.async_node import AsyncDecentralizedNode, AsyncPrivacyPreservingBroadcaster
-from calldns.network.decentralized import NodeType, Subscription, make_routing_fields
+from tessera.network.async_node import AsyncDecentralizedNode, AsyncPrivacyPreservingBroadcaster
+from tessera.network.decentralized import NodeType, Subscription, make_routing_fields
 
 
 @pytest.fixture
 def temp_data_dir():
     """Create temporary data directory for tests."""
-    temp_dir = tempfile.mkdtemp(prefix="calldns_test_")
+    temp_dir = tempfile.mkdtemp(prefix="tessera_test_")
     yield temp_dir
     shutil.rmtree(temp_dir)
 
@@ -80,7 +80,7 @@ def create_test_proof(commitment: bytes, org_hint: str = "test-org") -> dict:
     """Create a test proof whose routing fields match a commitment's subscription.
 
     Uses the canonical producer helper so bucket and fingerprint are derived exactly
-    as a real caller/org would (and exactly as the subscriber indexes them).
+    as a real sender/org would (and exactly as the subscriber indexes them).
     """
     return {
         **make_routing_fields(commitment),

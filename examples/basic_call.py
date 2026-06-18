@@ -1,26 +1,26 @@
 """
-Basic call example for CallDNS.
+Basic call example for Tessera.
 Demonstrates the core functionality.
 """
 
 import time
-from calldns.sdk.caller import Caller
-from calldns.sdk.verifier import Verifier
-from calldns.network.broadcast import Broadcast
+from tessera.sdk.sender import Sender
+from tessera.sdk.verifier import Verifier
+from tessera.network.broadcast import Broadcast
 
 
 def main():
     # Create components
-    caller = Caller()
+    sender = Sender()
     verifier = Verifier()
     broadcast = Broadcast()
     
-    print("CallDNS Demo")
+    print("Tessera Demo")
     print("=" * 30)
     
-    # Get caller's public key
-    caller_public_key = caller.get_public_key()
-    print(f"Caller public key: {caller_public_key.hex()[:32]}...")
+    # Get sender's public key
+    caller_public_key = sender.get_public_key()
+    print(f"Sender public key: {caller_public_key.hex()[:32]}...")
     
     # Generate metadata for the call
     metadata = {
@@ -31,7 +31,7 @@ def main():
     
     # Generate ZK proof
     print("\nGenerating ZK proof...")
-    proof = caller.generate_call_proof(metadata)
+    proof = sender.generate_call_proof(metadata)
     print(f"Proof generated with R: {proof['R'][:16].hex()}...")
     
     # Broadcast the proof

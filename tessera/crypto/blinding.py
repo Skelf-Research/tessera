@@ -1,20 +1,20 @@
 """
-Per-call key blinding for caller unlinkability (resolves finding F11).
+Per-call key blinding for sender unlinkability (resolves finding F11).
 
-The base ZK proof (crypto_utils.ZKProver) hides the caller's secret key x but transmits
+The base ZK proof (crypto_utils.ZKProver) hides the sender's secret key x but transmits
 the public key Y in the clear, so a callee that decrypts the proof could link every call
-from the same caller by Y. This module makes the *statement* unlinkable too:
+from the same sender by Y. This module makes the *statement* unlinkable too:
 
-For each call the caller presents a blinded pseudonym
+For each call the sender presents a blinded pseudonym
     Y' = Y + t*G,   t = H(shared_seed || session_id) mod q
 and proves knowledge of the blinded secret x' = x + t (which it can compute). The callee,
 holding the contact's registered key Y and the per-contact ``shared_seed`` established at
-enrolment, recomputes t and checks Y' == Y + t*G — authenticating the caller as "the entity
+enrolment, recomputes t and checks Y' == Y + t*G — authenticating the sender as "the entity
 I share this seed with" while:
 
   * a third party / the network sees a fresh, uniform Y' per call (unlinkable);
   * a *different* callee (with a different seed) cannot recompute Y' (no cross-callee linkage);
-  * no central registry maps caller <-> callee — the binding is pairwise and local.
+  * no central registry maps sender <-> callee — the binding is pairwise and local.
 
 See ../../calldns-paper/formal/security_proofs.md (F11) and ../../calldns-paper/spec/protocol_spec.md.
 """
@@ -48,7 +48,7 @@ def blind_public_key(public_key_bytes: bytes, t: int) -> bytes:
 
 
 class BlindedCaller:
-    """Caller side: produce a per-call proof under a fresh blinded pseudonym."""
+    """Sender side: produce a per-call proof under a fresh blinded pseudonym."""
 
     def __init__(self, private_key_int: int, public_key_bytes: bytes):
         self.x = private_key_int

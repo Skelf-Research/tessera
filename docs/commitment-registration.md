@@ -1,10 +1,10 @@
 # Commitment Registration
 
-This document explains how customers register their commitments with organizations in CallDNS, enabling verified call delivery.
+This document explains how customers register their commitments with organizations in Tessera, enabling verified call delivery.
 
 ## Overview
 
-In CallDNS, a **commitment** is a cryptographic hash derived from the customer's phone number (plus salt). Organizations need to know customer commitments to broadcast proofs to them. There are two approaches:
+In Tessera, a **commitment** is a cryptographic hash derived from the customer's phone number (plus salt). Organizations need to know customer commitments to broadcast proofs to them. There are two approaches:
 
 1. **Out-of-band registration** - Commitment shared through existing channels
 2. **Direct registration** - Commitment registered directly to org's node API
@@ -22,7 +22,7 @@ The simplest and most privacy-preserving approach. The commitment exchange happe
 └──────┬──────┘                     └──────┬──────┘
        │                                   │
        │  1. Generate commitment           │
-       │  calldns proof commitment         │
+       │  tessera proof commitment         │
        │  +1234567890                       │
        │                                   │
        │  2. Share via banking app         │
@@ -33,7 +33,7 @@ The simplest and most privacy-preserving approach. The commitment exchange happe
        │                                   │  customer_id → commitment
        │                                   │
        │  4. Subscribe to network          │
-       │  calldns node start ...           │
+       │  tessera node start ...           │
        │                                   │
        │                                   │  5. Broadcast proof
        │  ◄─────────────────────────────   │  to commitment
@@ -47,15 +47,15 @@ The simplest and most privacy-preserving approach. The commitment exchange happe
 
 ```bash
 # Generate commitment
-$ calldns proof commitment +1234567890
+$ tessera proof commitment +1234567890
 Input: +1234567890
 Salt: a1b2c3d4e5f6...
 Commitment: 7f8e9d0c1b2a3f4e5d6c7b8a9f0e1d2c3b4a5f6e7d8c9b0a1f2e3d4c5b6a7f8e
 Bucket: 42
 
 # Subscribe to network
-$ calldns-node start --type customer --id my-device --port 8102 \
-    --peer core-1@seed.calldns.network:8100
+$ tessera-node start --type customer --id my-device --port 8102 \
+    --peer core-1@seed.tessera.network:8100
 ```
 
 **Customer shares commitment** via:
@@ -83,7 +83,7 @@ broadcast_to_network(proof)
 
 ### Advantages
 
-- **Privacy-preserving**: CallDNS network never sees customer-org relationship
+- **Privacy-preserving**: Tessera network never sees customer-org relationship
 - **Simple**: Uses existing customer channels
 - **Flexible**: Works with any org's existing systems
 
@@ -219,9 +219,9 @@ Response:
 
 ```bash
 export CALLDNS_JWT_SECRET="your-secret-key"
-calldns-node start --type org --id acme-bank --port 8100 \
+tessera-node start --type org --id acme-bank --port 8100 \
     --api-port 8101 \
-    --peer core-1@seed.calldns.network:8100
+    --peer core-1@seed.tessera.network:8100
 ```
 
 **Customer registers (from mobile app):**
@@ -351,13 +351,13 @@ The mobile SDKs handle most of this automatically:
 
 ```swift
 // iOS example
-let calldns = CallDNS(orgNode: "https://api.acme-bank.com:8000")
+let tessera = Tessera(orgNode: "https://api.acme-bank.com:8000")
 
 // Generates commitment and registers
-calldns.register(phone: "+1234567890", customerId: "cust-12345")
+tessera.register(phone: "+1234567890", customerId: "cust-12345")
 
 // Subscribes to network automatically
-calldns.startListening { proof in
+tessera.startListening { proof in
     // Handle incoming verified call
     showVerificationBadge(proof)
 }

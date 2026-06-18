@@ -1,14 +1,14 @@
-import { CallDNSClient, CallContext, CallDNSWidgetConfig, VerificationResult, CallType } from './index';
+import { TesseraClient, CallContext, TesseraWidgetConfig, VerificationResult, CallType } from './index';
 
 // Web Widget Implementation
-export class CallDNSWidget {
+export class TesseraWidget {
   private container: HTMLElement;
-  private config: CallDNSWidgetConfig;
-  private client: CallDNSClient;
+  private config: TesseraWidgetConfig;
+  private client: TesseraClient;
 
   constructor(
     container: HTMLElement | string,
-    config: CallDNSWidgetConfig = {}
+    config: TesseraWidgetConfig = {}
   ) {
     this.container = typeof container === 'string'
       ? document.getElementById(container)!
@@ -29,7 +29,7 @@ export class CallDNSWidget {
       ...config,
     };
 
-    this.client = CallDNSClient.getInstance();
+    this.client = TesseraClient.getInstance();
     this.setupStyles();
   }
 
@@ -64,10 +64,10 @@ export class CallDNSWidget {
 
   private createWidget(): HTMLElement {
     const widget = document.createElement('div');
-    widget.className = `calldns-widget calldns-${this.config.theme} calldns-${this.config.size}`;
+    widget.className = `tessera-widget tessera-${this.config.theme} tessera-${this.config.size}`;
 
     if (this.config.position) {
-      widget.classList.add(`calldns-${this.config.position}`);
+      widget.classList.add(`tessera-${this.config.position}`);
     }
 
     // Apply custom styles
@@ -80,12 +80,12 @@ export class CallDNSWidget {
 
   private showLoadingState(widget: HTMLElement, callContext: CallContext): void {
     widget.innerHTML = `
-      <div class="calldns-content calldns-loading">
-        <div class="calldns-header">
-          <div class="calldns-spinner"></div>
-          <span class="calldns-status">Verifying ${this.getCallTypeDisplayName(callContext.callType)}...</span>
+      <div class="tessera-content tessera-loading">
+        <div class="tessera-header">
+          <div class="tessera-spinner"></div>
+          <span class="tessera-status">Verifying ${this.getCallTypeDisplayName(callContext.callType)}...</span>
         </div>
-        <div class="calldns-subtext">CallDNS Security Check</div>
+        <div class="tessera-subtext">Tessera Security Check</div>
       </div>
     `;
   }
@@ -96,14 +96,14 @@ export class CallDNSWidget {
     const statusText = result.isVerified ? 'Verified Call' : 'Unverified Call';
 
     let content = `
-      <div class="calldns-content calldns-${statusClass}">
-        <div class="calldns-header">
-          <span class="calldns-icon">${icon}</span>
-          <span class="calldns-status">${statusText}</span>
+      <div class="tessera-content tessera-${statusClass}">
+        <div class="tessera-header">
+          <span class="tessera-icon">${icon}</span>
+          <span class="tessera-status">${statusText}</span>
     `;
 
     if (this.config.showVerificationBadge && result.confidence) {
-      content += `<span class="calldns-badge">${result.confidence}</span>`;
+      content += `<span class="tessera-badge">${result.confidence}</span>`;
     }
 
     content += '</div>';
@@ -111,30 +111,30 @@ export class CallDNSWidget {
     // Add caller info if available
     if (result.callerInfo) {
       if (this.config.showOrganization && result.callerInfo.organization) {
-        content += `<div class="calldns-organization">${result.callerInfo.organization}</div>`;
+        content += `<div class="tessera-organization">${result.callerInfo.organization}</div>`;
       }
 
       if (result.callerInfo.displayName) {
-        content += `<div class="calldns-name">${result.callerInfo.displayName}</div>`;
+        content += `<div class="tessera-name">${result.callerInfo.displayName}</div>`;
       }
 
       if (this.config.showTrustScore && result.callerInfo.trustScore !== undefined) {
         const trustPercent = Math.round(result.callerInfo.trustScore * 100);
         content += `
-          <div class="calldns-trust-score">
-            <span class="calldns-trust-label">Trust Score:</span>
-            <div class="calldns-trust-bar">
-              <div class="calldns-trust-fill" style="width: ${trustPercent}%"></div>
+          <div class="tessera-trust-score">
+            <span class="tessera-trust-label">Trust Score:</span>
+            <div class="tessera-trust-bar">
+              <div class="tessera-trust-fill" style="width: ${trustPercent}%"></div>
             </div>
-            <span class="calldns-trust-percent">${trustPercent}%</span>
+            <span class="tessera-trust-percent">${trustPercent}%</span>
           </div>
         `;
       }
     } else if (!result.isVerified) {
-      content += `<div class="calldns-subtext">This ${this.getCallTypeDisplayName(result.callType)} could not be verified</div>`;
+      content += `<div class="tessera-subtext">This ${this.getCallTypeDisplayName(result.callType)} could not be verified</div>`;
     }
 
-    content += '<div class="calldns-powered">CallDNS Protected</div>';
+    content += '<div class="tessera-powered">Tessera Protected</div>';
     content += '</div>';
 
     widget.innerHTML = content;
@@ -152,12 +152,12 @@ export class CallDNSWidget {
 
   private showError(widget: HTMLElement, message: string): void {
     widget.innerHTML = `
-      <div class="calldns-content calldns-error">
-        <div class="calldns-header">
-          <span class="calldns-icon">✕</span>
-          <span class="calldns-status">Verification Error</span>
+      <div class="tessera-content tessera-error">
+        <div class="tessera-header">
+          <span class="tessera-icon">✕</span>
+          <span class="tessera-status">Verification Error</span>
         </div>
-        <div class="calldns-subtext">${message}</div>
+        <div class="tessera-subtext">${message}</div>
       </div>
     `;
   }
@@ -185,14 +185,14 @@ export class CallDNSWidget {
 
   private setupStyles(): void {
     // Check if styles are already added
-    if (document.getElementById('calldns-widget-styles')) {
+    if (document.getElementById('tessera-widget-styles')) {
       return;
     }
 
     const styles = document.createElement('style');
-    styles.id = 'calldns-widget-styles';
+    styles.id = 'tessera-widget-styles';
     styles.textContent = `
-      .calldns-widget {
+      .tessera-widget {
         font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
         border-radius: 12px;
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
@@ -202,69 +202,69 @@ export class CallDNSWidget {
         position: relative;
       }
 
-      .calldns-widget.calldns-light {
+      .tessera-widget.tessera-light {
         background: rgba(255, 255, 255, 0.95);
         color: #333;
         border: 1px solid rgba(0, 0, 0, 0.1);
       }
 
-      .calldns-widget.calldns-dark {
+      .tessera-widget.tessera-dark {
         background: rgba(30, 30, 30, 0.95);
         color: #fff;
         border: 1px solid rgba(255, 255, 255, 0.1);
       }
 
-      .calldns-widget.calldns-auto {
+      .tessera-widget.tessera-auto {
         background: rgba(255, 255, 255, 0.95);
         color: #333;
         border: 1px solid rgba(0, 0, 0, 0.1);
       }
 
       @media (prefers-color-scheme: dark) {
-        .calldns-widget.calldns-auto {
+        .tessera-widget.tessera-auto {
           background: rgba(30, 30, 30, 0.95);
           color: #fff;
           border: 1px solid rgba(255, 255, 255, 0.1);
         }
       }
 
-      .calldns-widget.calldns-small {
+      .tessera-widget.tessera-small {
         font-size: 12px;
         padding: 12px;
       }
 
-      .calldns-widget.calldns-medium {
+      .tessera-widget.tessera-medium {
         font-size: 14px;
         padding: 16px;
       }
 
-      .calldns-widget.calldns-large {
+      .tessera-widget.tessera-large {
         font-size: 16px;
         padding: 20px;
       }
 
-      .calldns-content {
+      .tessera-content {
         position: relative;
       }
 
-      .calldns-header {
+      .tessera-header {
         display: flex;
         align-items: center;
         gap: 8px;
         margin-bottom: 8px;
       }
 
-      .calldns-icon {
+      .tessera-icon {
         font-size: 1.2em;
         font-weight: bold;
       }
 
-      .calldns-status {
+      .tessera-status {
         font-weight: 600;
         flex: 1;
       }
 
-      .calldns-badge {
+      .tessera-badge {
         background: rgba(0, 0, 0, 0.1);
         padding: 2px 6px;
         border-radius: 8px;
@@ -273,49 +273,49 @@ export class CallDNSWidget {
         text-transform: uppercase;
       }
 
-      .calldns-verified .calldns-icon {
+      .tessera-verified .tessera-icon {
         color: #4CAF50;
       }
 
-      .calldns-verified .calldns-status {
+      .tessera-verified .tessera-status {
         color: #4CAF50;
       }
 
-      .calldns-verified .calldns-badge {
+      .tessera-verified .tessera-badge {
         background: rgba(76, 175, 80, 0.2);
         color: #4CAF50;
       }
 
-      .calldns-unverified .calldns-icon {
+      .tessera-unverified .tessera-icon {
         color: #FF9800;
       }
 
-      .calldns-error .calldns-icon {
+      .tessera-error .tessera-icon {
         color: #F44336;
       }
 
-      .calldns-error .calldns-status {
+      .tessera-error .tessera-status {
         color: #F44336;
       }
 
-      .calldns-organization {
+      .tessera-organization {
         font-weight: 500;
         margin-bottom: 4px;
       }
 
-      .calldns-name {
+      .tessera-name {
         font-size: 0.9em;
         opacity: 0.8;
         margin-bottom: 8px;
       }
 
-      .calldns-subtext {
+      .tessera-subtext {
         font-size: 0.9em;
         opacity: 0.7;
         margin-bottom: 8px;
       }
 
-      .calldns-trust-score {
+      .tessera-trust-score {
         display: flex;
         align-items: center;
         gap: 8px;
@@ -323,11 +323,11 @@ export class CallDNSWidget {
         font-size: 0.8em;
       }
 
-      .calldns-trust-label {
+      .tessera-trust-label {
         opacity: 0.7;
       }
 
-      .calldns-trust-bar {
+      .tessera-trust-bar {
         flex: 1;
         height: 4px;
         background: rgba(0, 0, 0, 0.1);
@@ -335,66 +335,66 @@ export class CallDNSWidget {
         overflow: hidden;
       }
 
-      .calldns-trust-fill {
+      .tessera-trust-fill {
         height: 100%;
         background: #4CAF50;
         transition: width 0.3s ease;
       }
 
-      .calldns-trust-percent {
+      .tessera-trust-percent {
         opacity: 0.7;
         min-width: 30px;
         text-align: right;
       }
 
-      .calldns-powered {
+      .tessera-powered {
         font-size: 0.75em;
         opacity: 0.5;
         text-align: right;
         margin-top: 8px;
       }
 
-      .calldns-spinner {
+      .tessera-spinner {
         width: 16px;
         height: 16px;
         border: 2px solid rgba(0, 0, 0, 0.1);
         border-left-color: #4CAF50;
         border-radius: 50%;
-        animation: calldns-spin 1s linear infinite;
+        animation: tessera-spin 1s linear infinite;
       }
 
-      @keyframes calldns-spin {
+      @keyframes tessera-spin {
         to {
           transform: rotate(360deg);
         }
       }
 
       /* Position utilities */
-      .calldns-top-left {
+      .tessera-top-left {
         position: fixed;
         top: 20px;
         left: 20px;
       }
 
-      .calldns-top-right {
+      .tessera-top-right {
         position: fixed;
         top: 20px;
         right: 20px;
       }
 
-      .calldns-bottom-left {
+      .tessera-bottom-left {
         position: fixed;
         bottom: 20px;
         left: 20px;
       }
 
-      .calldns-bottom-right {
+      .tessera-bottom-right {
         position: fixed;
         bottom: 20px;
         right: 20px;
       }
 
-      .calldns-center {
+      .tessera-center {
         position: fixed;
         top: 50%;
         left: 50%;
@@ -407,17 +407,17 @@ export class CallDNSWidget {
 }
 
 // Convenience function for quick widget creation
-export function createCallDNSWidget(
+export function createTesseraWidget(
   container: HTMLElement | string,
-  config?: CallDNSWidgetConfig
-): CallDNSWidget {
-  return new CallDNSWidget(container, config);
+  config?: TesseraWidgetConfig
+): TesseraWidget {
+  return new TesseraWidget(container, config);
 }
 
 // Auto-initialization for script tag usage
 if (typeof window !== 'undefined') {
   // @ts-ignore
-  window.CallDNSWidget = CallDNSWidget;
+  window.TesseraWidget = TesseraWidget;
   // @ts-ignore
-  window.createCallDNSWidget = createCallDNSWidget;
+  window.createTesseraWidget = createTesseraWidget;
 }

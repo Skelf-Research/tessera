@@ -1,8 +1,8 @@
-# Complete Zero-Knowledge Proof Implementation in CallDNS
+# Complete Zero-Knowledge Proof Implementation in Tessera
 
 ## Overview
 
-We have successfully implemented a complete and proper Schnorr-based zero-knowledge proof system for CallDNS that provides strong cryptographic guarantees for caller verification without revealing sensitive information.
+We have successfully implemented a complete and proper Schnorr-based zero-knowledge proof system for Tessera that provides strong cryptographic guarantees for caller verification without revealing sensitive information.
 
 ## Mathematical Foundation
 
@@ -123,7 +123,7 @@ Wrong key proof verification: ✓ PASS (correctly signed)
 - **Soundness**: Dishonest provers cannot convince verifiers (except with negligible probability)
 - **Zero-Knowledge**: Verifiers learn nothing beyond the statement's validity
 
-## Integration with CallDNS
+## Integration with Tessera
 
 ### Caller Side
 ```python
@@ -171,7 +171,7 @@ def verify_proof(self, proof):
 
 ## Conclusion
 
-The zero-knowledge proof implementation in CallDNS is now:
+The zero-knowledge proof implementation in Tessera is now:
 
 ✅ **Mathematically Complete**: Full Schnorr verification implemented
 ✅ **Cryptographically Secure**: Based on well-established principles

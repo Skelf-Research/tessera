@@ -1,7 +1,7 @@
 {
-  "name": "@calldns/web",
+  "name": "@tessera/web",
   "version": "0.1.0",
-  "description": "CallDNS Web SDK for zero-knowledge caller verification",
+  "description": "Tessera Web SDK for zero-knowledge caller verification",
   "main": "dist/index.js",
   "module": "dist/index.esm.js",
   "types": "dist/index.d.ts",
@@ -18,7 +18,7 @@
     "prepare": "npm run build"
   },
   "keywords": [
-    "calldns",
+    "tessera",
     "web",
     "webrtc",
     "verification",
@@ -29,13 +29,13 @@
   ],
   "author": "Dipankar Sarkar <me@dipankar.name>",
   "license": "MIT",
-  "homepage": "https://github.com/dipankar/calldns#readme",
+  "homepage": "https://github.com/dipankar/tessera#readme",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/dipankar/calldns.git"
+    "url": "git+https://github.com/dipankar/tessera.git"
   },
   "bugs": {
-    "url": "https://github.com/dipankar/calldns/issues"
+    "url": "https://github.com/dipankar/tessera/issues"
   },
   "dependencies": {
     "crypto-js": "^4.2.0"

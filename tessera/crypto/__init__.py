@@ -1,5 +1,5 @@
 """
-CallDNS Crypto module.
+Tessera Crypto module.
 
 This module provides cryptographic implementations for zero-knowledge proofs
 and secure AEAD encryption for proof routing.

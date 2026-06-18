@@ -1,5 +1,5 @@
 """
-Kademlia-style DHT for CallDNS peer discovery.
+Kademlia-style DHT for Tessera peer discovery.
 Provides decentralized peer lookup without central coordination.
 """
 

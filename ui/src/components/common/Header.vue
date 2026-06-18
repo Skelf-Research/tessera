@@ -93,7 +93,7 @@ const pageTitles = {
   '/settings': 'Settings'
 }
 
-const pageTitle = computed(() => pageTitles[route.path] || 'CallDNS')
+const pageTitle = computed(() => pageTitles[route.path] || 'Tessera')
 
 const themeTitle = computed(() =>
   appStore.isDarkMode ? 'Switch to light mode' : 'Switch to dark mode'

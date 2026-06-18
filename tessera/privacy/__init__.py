@@ -1,7 +1,7 @@
 """
-CallDNS Privacy module.
+Tessera Privacy module.
 
-This module provides privacy-preserving features for CallDNS.
+This module provides privacy-preserving features for Tessera.
 """
 
 from .privacy_preserver import PrivacyPreserver

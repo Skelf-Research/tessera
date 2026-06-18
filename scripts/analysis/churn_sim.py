@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """
-E5 — Churn-resilience sweep for the CallDNS gossip network.
+E5 — Churn-resilience sweep for the Tessera gossip network.
 
 Measures end-to-end proof delivery while a fraction of nodes are offline, for two
-topologies, using the real in-process multi-node cluster (calldns/deploy/cluster.py)
+topologies, using the real in-process multi-node cluster (tessera/deploy/cluster.py)
 with real WebSocket gossip.
 
 Per trial: register a subscriber on a random *live* node S, submit a matching proof to a
@@ -27,8 +27,8 @@ from pathlib import Path
 
 import websockets
 
-from calldns.deploy.cluster import LocalCluster
-from calldns.network.decentralized import Subscription, make_routing_fields
+from tessera.deploy.cluster import LocalCluster
+from tessera.network.decentralized import Subscription, make_routing_fields
 
 PAPER = Path(__file__).resolve().parents[3] / "calldns-paper"
 DEFAULT_RESULTS = PAPER / "results"
@@ -101,7 +101,7 @@ async def run(args):
 
 
 def main():
-    ap = argparse.ArgumentParser(description="CallDNS churn-resilience sweep (E5)")
+    ap = argparse.ArgumentParser(description="Tessera churn-resilience sweep (E5)")
     ap.add_argument("--nodes", type=int, default=8)
     ap.add_argument("--trials", type=int, default=30)
     ap.add_argument("--offline-fracs", type=float, nargs="+", default=[0.0, 0.125, 0.25, 0.5])

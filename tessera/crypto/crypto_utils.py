@@ -1,5 +1,5 @@
 """
-Cryptographic utilities for CallDNS.
+Cryptographic utilities for Tessera.
 Implements Schnorr-based zero-knowledge proofs for fast verification using ECDSA library.
 Includes secure AEAD encryption for proof routing.
 """

@@ -1,5 +1,5 @@
 """
-Metrics collection and monitoring for CallDNS.
+Metrics collection and monitoring for Tessera.
 Tracks performance, usage, and system health metrics.
 """
 
@@ -81,7 +81,7 @@ class MetricsCollector:
 
         # Set up metrics directory
         if metrics_dir is None:
-            metrics_dir = os.path.expanduser("~/.calldns/metrics")
+            metrics_dir = os.path.expanduser("~/.tessera/metrics")
 
         self.metrics_dir = Path(metrics_dir)
         self.metrics_dir.mkdir(parents=True, exist_ok=True)

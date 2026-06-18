@@ -1,6 +1,6 @@
 """
-CallDNS web service module.
-Provides REST API endpoints for CallDNS network operations.
+Tessera web service module.
+Provides REST API endpoints for Tessera network operations.
 """
 
 import json
@@ -8,15 +8,15 @@ import time
 import base64
 from typing import Dict, Any
 from flask import Flask, request, jsonify
-from ..sdk import Caller, Verifier
+from ..sdk import Sender, Verifier
 from ..sdk.commitment_manager import CommitmentManager
 from ..sdk.device_registration import CustomerRegistrationManager
 from ..network.enhanced_broadcast import EnhancedBroadcast
 from .websocket import ws_manager, create_socketio_handlers, broadcast_to_room
 
 
-class CallDNSService:
-    """Main CallDNS web service class."""
+class TesseraService:
+    """Main Tessera web service class."""
     
     def __init__(self):
         self.app = Flask(__name__)
@@ -61,7 +61,7 @@ class CallDNSService:
         """Health check endpoint."""
         return jsonify({
             "status": "healthy",
-            "service": "CallDNS",
+            "service": "Tessera",
             "version": "0.1.0",
             "timestamp": int(time.time()),
             "active_commitments": len(self.active_commitments),
@@ -674,7 +674,7 @@ class CallDNSService:
 
 
 # Create a default service instance
-service = CallDNSService()
+service = TesseraService()
 
 
 if __name__ == '__main__':

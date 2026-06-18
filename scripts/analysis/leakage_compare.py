@@ -7,11 +7,11 @@ Produces a JSON matrix + a LaTeX comparison table for the paper (§related-work 
 This is the SoK-style table that makes the privacy contribution legible against deployed and
 academic alternatives; the per-cell rationale is in the `notes` field.
 
-Schemes:   STIR/SHAKEN (FCC), AuthentiCall (USENIX'17), CallDNS (this work).
+Schemes:   STIR/SHAKEN (FCC), AuthentiCall (USENIX'17), Tessera (this work).
 Observers: Central authority (carrier/CA/enrolment server), Network eavesdropper,
            The callee, Colluding other callees.
-Leaked items (per observer): caller identity, callee identity, caller<->callee link,
-           call timing, cross-call linkability of a caller.
+Leaked items (per observer): sender identity, callee identity, sender<->callee link,
+           call timing, cross-call linkability of a sender.
 
 A cell is "leak" (1) / "no leak" (0) / "intended" (disclosure that is the point of the
 system, counted separately). Lower total leakage = stronger metadata privacy.
@@ -27,72 +27,72 @@ from pathlib import Path
 PAPER = Path(__file__).resolve().parents[3] / "calldns-paper"
 DEFAULT_RESULTS = PAPER / "results"
 
-ITEMS = ["caller_id", "callee_id", "caller_callee_link", "call_timing", "cross_call_link"]
+ITEMS = ["sender_id", "callee_id", "caller_callee_link", "call_timing", "cross_call_link"]
 
 # value: "leak" | "none" | "intended" | "n/a"
 MATRIX = {
     "STIR/SHAKEN": {
         "central_authority": {  # carriers + certificate authorities mediate every call
-            "caller_id": "leak", "callee_id": "leak", "caller_callee_link": "leak",
+            "sender_id": "leak", "callee_id": "leak", "caller_callee_link": "leak",
             "call_timing": "leak", "cross_call_link": "leak",
             "_note": "Carriers/CAs sign & verify every call; full call-graph visibility.",
         },
         "network": {  # SS7/SIP signaling frequently in clear
-            "caller_id": "leak", "callee_id": "leak", "caller_callee_link": "leak",
+            "sender_id": "leak", "callee_id": "leak", "caller_callee_link": "leak",
             "call_timing": "leak", "cross_call_link": "leak",
             "_note": "Signaling metadata commonly observable on-path.",
         },
         "callee": {
-            "caller_id": "intended", "callee_id": "n/a", "caller_callee_link": "intended",
+            "sender_id": "intended", "callee_id": "n/a", "caller_callee_link": "intended",
             "call_timing": "leak", "cross_call_link": "leak",
-            "_note": "Stable caller number -> callee links all calls from a caller.",
+            "_note": "Stable sender number -> callee links all calls from a sender.",
         },
         "colluding_callees": {
-            "caller_id": "leak", "callee_id": "leak", "caller_callee_link": "leak",
+            "sender_id": "leak", "callee_id": "leak", "caller_callee_link": "leak",
             "call_timing": "leak", "cross_call_link": "leak",
-            "_note": "Shared global caller number links a caller across callees.",
+            "_note": "Shared global sender number links a sender across callees.",
         },
     },
     "AuthentiCall": {
         "central_authority": {  # central enrolment + handshake service
-            "caller_id": "leak", "callee_id": "leak", "caller_callee_link": "leak",
+            "sender_id": "leak", "callee_id": "leak", "caller_callee_link": "leak",
             "call_timing": "leak", "cross_call_link": "leak",
             "_note": "Central enrolment/handshake server sees who authenticates to whom.",
         },
         "network": {
-            "caller_id": "none", "callee_id": "none", "caller_callee_link": "none",
+            "sender_id": "none", "callee_id": "none", "caller_callee_link": "none",
             "call_timing": "leak", "cross_call_link": "none",
             "_note": "Handshake over an encrypted data channel; timing still observable.",
         },
         "callee": {
-            "caller_id": "intended", "callee_id": "n/a", "caller_callee_link": "intended",
+            "sender_id": "intended", "callee_id": "n/a", "caller_callee_link": "intended",
             "call_timing": "leak", "cross_call_link": "leak",
             "_note": "Enrolled long-term identity -> cross-call linkage.",
         },
         "colluding_callees": {
-            "caller_id": "leak", "callee_id": "leak", "caller_callee_link": "leak",
+            "sender_id": "leak", "callee_id": "leak", "caller_callee_link": "leak",
             "call_timing": "leak", "cross_call_link": "leak",
             "_note": "Enrolled identity is global -> linkable across callees.",
         },
     },
-    "CallDNS": {
+    "Tessera": {
         "central_authority": {  # there is none: pairwise local enrolment
-            "caller_id": "n/a", "callee_id": "n/a", "caller_callee_link": "n/a",
+            "sender_id": "n/a", "callee_id": "n/a", "caller_callee_link": "n/a",
             "call_timing": "n/a", "cross_call_link": "n/a",
             "_note": "No central party exists; bindings are pairwise/local.",
         },
         "network": {  # encrypted proofs + DP cover traffic in buckets
-            "caller_id": "none", "callee_id": "none", "caller_callee_link": "none",
+            "sender_id": "none", "callee_id": "none", "caller_callee_link": "none",
             "call_timing": "none", "cross_call_link": "none",
             "_note": "Proofs encrypted; (eps,delta)-DP bucket counts; blinded keys.",
         },
         "callee": {
-            "caller_id": "intended", "callee_id": "n/a", "caller_callee_link": "intended",
+            "sender_id": "intended", "callee_id": "n/a", "caller_callee_link": "intended",
             "call_timing": "intended", "cross_call_link": "intended",
             "_note": "Callee authenticates its own contact (the point); nothing more.",
         },
         "colluding_callees": {
-            "caller_id": "none", "callee_id": "none", "caller_callee_link": "none",
+            "sender_id": "none", "callee_id": "none", "caller_callee_link": "none",
             "call_timing": "none", "cross_call_link": "none",
             "_note": "Per-callee blinded pseudonym Y' -> no cross-callee linkage.",
         },
@@ -100,9 +100,9 @@ MATRIX = {
 }
 
 COMPLIANCE = {
-    "note": "Minimising caller<->callee metadata supports GDPR data-minimisation (Art. 5(1)(c)) "
+    "note": "Minimising sender<->callee metadata supports GDPR data-minimisation (Art. 5(1)(c)) "
             "and reduces the call-detail-record footprint relevant to PSD2 SCA and FCA Consumer "
-            "Duty obligations; CallDNS keeps verification logs without a central communication graph.",
+            "Duty obligations; Tessera keeps verification logs without a central communication graph.",
 }
 
 
@@ -131,13 +131,13 @@ def latex_table():
         "% Auto-generated by scripts/analysis/leakage_compare.py (E7).",
         "% legend: $\\bullet$ leaked, $\\odot$ intended disclosure, $\\circ$ not leaked, -- n/a",
         "\\begin{table}[t]\\centering",
-        "\\caption{Caller$\\leftrightarrow$callee metadata leakage by observer. "
+        "\\caption{Sender$\\leftrightarrow$callee metadata leakage by observer. "
         "Lower is more private.}",
         "\\label{tab:leakage}",
         "\\begin{tabular}{ll" + "c" * len(ITEMS) + "}",
         "\\toprule",
         "Scheme & Observer & " + " & ".join(
-            ["caller", "callee", "link", "timing", "x-call"]) + " \\\\",
+            ["sender", "callee", "link", "timing", "x-call"]) + " \\\\",
         "\\midrule",
     ]
     for scheme, observers in MATRIX.items():
@@ -161,7 +161,7 @@ def print_report():
 
 
 def main():
-    ap = argparse.ArgumentParser(description="CallDNS comparative leakage (E7)")
+    ap = argparse.ArgumentParser(description="Tessera comparative leakage (E7)")
     ap.add_argument("--out-dir", type=Path, default=DEFAULT_RESULTS)
     ap.add_argument("--no-write", action="store_true")
     args = ap.parse_args()

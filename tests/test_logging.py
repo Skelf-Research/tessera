@@ -1,5 +1,5 @@
 """
-Tests for CallDNS logging and monitoring system.
+Tests for Tessera logging and monitoring system.
 """
 
 import os
@@ -10,19 +10,19 @@ import json
 from pathlib import Path
 from unittest.mock import Mock, patch
 
-from calldns.logging import (
-    CallDNSLogger, SecurityLogger, MetricsCollector,
+from tessera.logging import (
+    TesseraLogger, SecurityLogger, MetricsCollector,
     SecurityMonitor, PerformanceMonitor
 )
 
 
-class TestCallDNSLogger(unittest.TestCase):
+class TestTesseraLogger(unittest.TestCase):
     """Test main logging functionality."""
 
     def setUp(self):
         """Set up test fixtures."""
         self.temp_dir = tempfile.mkdtemp()
-        self.logger = CallDNSLogger("test_logger", self.temp_dir)
+        self.logger = TesseraLogger("test_logger", self.temp_dir)
 
     def tearDown(self):
         """Clean up test fixtures."""
@@ -63,7 +63,7 @@ class TestCallDNSLogger(unittest.TestCase):
     def test_log_rotation(self):
         """Test log file rotation."""
         # Create a logger with small max bytes for testing
-        logger = CallDNSLogger("rotation_test", self.temp_dir, max_bytes=1024)
+        logger = TesseraLogger("rotation_test", self.temp_dir, max_bytes=1024)
 
         # Generate enough logs to trigger rotation
         for i in range(100):
@@ -121,7 +121,7 @@ class TestSecurityLogger(unittest.TestCase):
 
         failed_event = [e for e in events if not e['proof_valid']][0]
         self.assertEqual(failed_event['verifier_id'], "verifier456")
-        self.assertEqual(failed_event['caller_id'], "caller789")
+        self.assertEqual(failed_event['sender_id'], "caller789")
 
     def test_security_violation_logging(self):
         """Test security violation logging."""

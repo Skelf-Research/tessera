@@ -1,5 +1,5 @@
 """
-Tests for CallDNS key management system.
+Tests for Tessera key management system.
 """
 
 import os
@@ -7,9 +7,9 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from calldns.keystore import KeyManager, KeyRotationManager, FileKeyStore, EncryptedKeyStore
-from calldns.keystore.utils import KeyDerivation, KeyBackup
-from calldns.utils.exceptions import IdentityError, EncryptionError
+from tessera.keystore import KeyManager, KeyRotationManager, FileKeyStore, EncryptedKeyStore
+from tessera.keystore.utils import KeyDerivation, KeyBackup
+from tessera.utils.exceptions import IdentityError, EncryptionError
 
 
 class TestKeyManager(unittest.TestCase):

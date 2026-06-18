@@ -3,15 +3,15 @@ import { ref, computed, watch } from 'vue'
 
 export const useAppStore = defineStore('app', () => {
   // Node mode: 'regular' or 'organization'
-  const mode = ref(localStorage.getItem('calldns-mode') || 'regular')
+  const mode = ref(localStorage.getItem('tessera-mode') || 'regular')
 
   // Theme: 'light', 'dark', or 'system'
-  const theme = ref(localStorage.getItem('calldns-theme') || 'system')
+  const theme = ref(localStorage.getItem('tessera-theme') || 'system')
 
   // API configuration
-  const apiUrl = ref(localStorage.getItem('calldns-api-url') || '/api')
-  const orgId = ref(localStorage.getItem('calldns-org-id') || '')
-  const apiKey = ref(localStorage.getItem('calldns-api-key') || '')
+  const apiUrl = ref(localStorage.getItem('tessera-api-url') || '/api')
+  const orgId = ref(localStorage.getItem('tessera-org-id') || '')
+  const apiKey = ref(localStorage.getItem('tessera-api-key') || '')
 
   // Sidebar collapsed state
   const sidebarCollapsed = ref(false)
@@ -28,12 +28,12 @@ export const useAppStore = defineStore('app', () => {
   // Actions
   function setMode(newMode) {
     mode.value = newMode
-    localStorage.setItem('calldns-mode', newMode)
+    localStorage.setItem('tessera-mode', newMode)
   }
 
   function setTheme(newTheme) {
     theme.value = newTheme
-    localStorage.setItem('calldns-theme', newTheme)
+    localStorage.setItem('tessera-theme', newTheme)
     applyTheme()
   }
 
@@ -48,15 +48,15 @@ export const useAppStore = defineStore('app', () => {
   function setApiConfig({ url, organizationId, key }) {
     if (url !== undefined) {
       apiUrl.value = url
-      localStorage.setItem('calldns-api-url', url)
+      localStorage.setItem('tessera-api-url', url)
     }
     if (organizationId !== undefined) {
       orgId.value = organizationId
-      localStorage.setItem('calldns-org-id', organizationId)
+      localStorage.setItem('tessera-org-id', organizationId)
     }
     if (key !== undefined) {
       apiKey.value = key
-      localStorage.setItem('calldns-api-key', key)
+      localStorage.setItem('tessera-api-key', key)
     }
   }
 

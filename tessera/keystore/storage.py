@@ -1,5 +1,5 @@
 """
-Key storage backends for CallDNS.
+Key storage backends for Tessera.
 Provides secure storage for cryptographic keys with various backends.
 """
 
@@ -59,10 +59,10 @@ class FileKeyStore(KeyStore):
         Initialize file-based key storage.
 
         Args:
-            storage_dir: Directory to store keys (defaults to ~/.calldns/keys)
+            storage_dir: Directory to store keys (defaults to ~/.tessera/keys)
         """
         if storage_dir is None:
-            storage_dir = os.path.expanduser("~/.calldns/keys")
+            storage_dir = os.path.expanduser("~/.tessera/keys")
 
         self.storage_dir = Path(storage_dir)
         self.storage_dir.mkdir(parents=True, exist_ok=True)
@@ -203,7 +203,7 @@ class EncryptedKeyStore(KeyStore):
             default_iterations: PBKDF2 iterations for key derivation
         """
         if storage_dir is None:
-            storage_dir = os.path.expanduser("~/.calldns/secure_keys")
+            storage_dir = os.path.expanduser("~/.tessera/secure_keys")
 
         self.storage_dir = Path(storage_dir)
         self.storage_dir.mkdir(parents=True, exist_ok=True)

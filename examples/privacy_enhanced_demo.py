@@ -1,18 +1,18 @@
 """
-Privacy-enhanced demo for CallDNS.
+Privacy-enhanced demo for Tessera.
 Demonstrates traffic padding and cover traffic for enhanced privacy.
 """
 
 import time
 import secrets
-from calldns.sdk.caller import Caller
-from calldns.sdk.verifier import Verifier
-from calldns.network.enhanced_broadcast import EnhancedBroadcast
+from tessera.sdk.sender import Sender
+from tessera.sdk.verifier import Verifier
+from tessera.network.enhanced_broadcast import EnhancedBroadcast
 
 
 def demo_traffic_privacy():
     """Demonstrate traffic padding and cover traffic."""
-    print("CallDNS Privacy-Enhanced Demo")
+    print("Tessera Privacy-Enhanced Demo")
     print("=" * 35)
     
     # Create broadcast system
@@ -24,9 +24,9 @@ def demo_traffic_privacy():
     commitment = verifier.generate_reception_commitment("enhanced_session")
     print(f"   Generated commitment: {commitment.hex()[:16]}...")
     
-    # Create caller
-    print("\n2. Caller preparing calls...")
-    caller = Caller()
+    # Create sender
+    print("\n2. Sender preparing calls...")
+    sender = Sender()
     
     # Generate multiple proofs
     real_proofs = []
@@ -38,11 +38,11 @@ def demo_traffic_privacy():
             "session_id": f"call_{i}"
         }
         
-        proof = caller.generate_call_proof(metadata)
-        encrypted_proof = caller.encrypt_proof_for_callee(proof, commitment, metadata)
+        proof = sender.generate_call_proof(metadata)
+        encrypted_proof = sender.encrypt_proof_for_callee(proof, commitment, metadata)
         
         # Add traffic padding
-        padded_proof = caller.prepare_proof_for_transmission(encrypted_proof)
+        padded_proof = sender.prepare_proof_for_transmission(encrypted_proof)
         real_proofs.append(padded_proof)
         
         print(f"   Prepared call {i+1} with padding (size: {padded_proof['_padded_size']} bytes)")
@@ -51,7 +51,7 @@ def demo_traffic_privacy():
     
     # Mix with cover traffic
     print("\n4. Adding cover traffic...")
-    mixed_proofs = caller.schedule_batch_transmission(real_proofs)
+    mixed_proofs = sender.schedule_batch_transmission(real_proofs)
     
     print(f"   After mixing: {len(mixed_proofs)} total proofs")
     print("   (Includes real proofs and dummy cover traffic)")
@@ -87,14 +87,14 @@ def demo_traffic_privacy():
     print("   - All packets same size due to padding")
     print("   - Dummy traffic obscures real call volume")
     print("   - Timing obfuscation prevents pattern analysis")
-    print("   - No caller-callee relationships visible")
+    print("   - No sender-callee relationships visible")
     
     # Show statistics
     print("\n8. Traffic Statistics:")
-    stats = caller.traffic_manager.get_transmission_stats()
+    stats = sender.traffic_manager.get_transmission_stats()
     print(f"   Padding size: {stats['padding_size']} bytes")
     print(f"   Cover traffic ratio: {stats['cover_traffic_ratio']:.1%}")
-    print(f"   Transmission interval: {caller.traffic_manager.transmission_interval}s")
+    print(f"   Transmission interval: {sender.traffic_manager.transmission_interval}s")
 
 
 def demo_traffic_analysis_resistance():
@@ -120,10 +120,10 @@ def demo_traffic_analysis_resistance():
     print("Traditional VoIP:")
     print("  ❌ Detailed call logs created")
     print("  ❌ Call timing recorded")
-    print("  ❌ Caller-callee relationships mapped")
+    print("  ❌ Sender-callee relationships mapped")
     print("  ❌ Volume and patterns analyzed")
     
-    print("CallDNS Enhanced Privacy:")
+    print("Tessera Enhanced Privacy:")
     print("  ✅ No call logs generated")
     print("  ✅ Timing patterns obscured")
     print("  ✅ No relationship mapping possible")

@@ -1,4 +1,4 @@
-# CallDNS for Healthcare
+# Tessera for Healthcare
 
 ## Regulatory Landscape
 
@@ -12,7 +12,7 @@ Requires covered entities to:
 - Implement minimum necessary standards for PHI disclosure
 - Provide patients with access to their health records
 
-**How CallDNS helps**: Zero-knowledge verification confirms provider identity without creating logs of patient-provider relationships.
+**How Tessera helps**: Zero-knowledge verification confirms provider identity without creating logs of patient-provider relationships.
 
 #### HIPAA Security Rule
 Requires implementation of:
@@ -20,7 +20,7 @@ Requires implementation of:
 - Access controls and audit trails
 - Transmission security
 
-**How CallDNS helps**: AES-GCM encryption, comprehensive audit logging, and secure key management meet technical safeguard requirements.
+**How Tessera helps**: AES-GCM encryption, comprehensive audit logging, and secure key management meet technical safeguard requirements.
 
 #### HITECH Act
 Strengthens HIPAA enforcement with:
@@ -28,17 +28,17 @@ Strengthens HIPAA enforcement with:
 - Increased penalties for violations
 - Business associate accountability
 
-**How CallDNS helps**: Cryptographic proofs provide non-repudiable evidence of communication authenticity, supporting incident investigation.
+**How Tessera helps**: Cryptographic proofs provide non-repudiable evidence of communication authenticity, supporting incident investigation.
 
 #### State Privacy Laws
 Various state laws (California CCPA/CPRA, state health privacy laws) add additional requirements for health information protection.
 
-**How CallDNS helps**: Privacy-by-design architecture with no central registry satisfies strict state privacy requirements.
+**How Tessera helps**: Privacy-by-design architecture with no central registry satisfies strict state privacy requirements.
 
 #### CMS Conditions of Participation
 Medicare/Medicaid participation requires patient safety and communication standards.
 
-**How CallDNS helps**: Enables patients to verify legitimate provider communications, reducing fraud risk.
+**How Tessera helps**: Enables patients to verify legitimate provider communications, reducing fraud risk.
 
 ---
 
@@ -57,7 +57,7 @@ Healthcare organizations face a fundamental tension:
 - **Need to verify**: Patients should confirm caller is legitimate provider
 - **Must preserve privacy**: Verification cannot create centralized logs of patient-provider relationships
 
-CallDNS resolves this paradox through zero-knowledge proofs that verify without revealing.
+Tessera resolves this paradox through zero-knowledge proofs that verify without revealing.
 
 ---
 
@@ -68,7 +68,7 @@ CallDNS resolves this paradox through zero-knowledge proofs that verify without 
 #### Appointment Reminders and Follow-ups
 
 ```python
-from calldns.sdk import Caller
+from tessera.sdk import Caller
 
 class HealthcareOutreach:
     def __init__(self, provider_npi: str, organization_name: str):
@@ -151,7 +151,7 @@ function VerifyProviderCall({ patientId }) {
 #### Provider-to-Provider Communication
 
 ```python
-from calldns.sdk import Caller, Verifier
+from tessera.sdk import Caller, Verifier
 
 class CareCoordination:
     def __init__(self, provider_npi: str, facility_name: str):
@@ -234,7 +234,7 @@ struct IncomingProviderCall: View {
         }
         .onAppear {
             Task {
-                verification = await CallDNS.verify(callerId: callerId)
+                verification = await Tessera.verify(callerId: callerId)
             }
         }
     }
@@ -248,7 +248,7 @@ struct IncomingProviderCall: View {
 #### Prescription Verification
 
 ```python
-from calldns.sdk import Caller
+from tessera.sdk import Caller
 
 class PharmacyCaller:
     def __init__(self, pharmacy_npi: str, pharmacy_name: str):
@@ -290,7 +290,7 @@ class TelehealthVerification(
     private val providerNPI: String,
     private val practiceName: String
 ) {
-    private val caller = CallDNS.createCaller("provider_$providerNPI")
+    private val caller = Tessera.createCaller("provider_$providerNPI")
 
     fun generateVisitProof(visitType: String): Proof {
         return caller.generateProof(
@@ -315,7 +315,7 @@ fun TelehealthWaitingRoom(
     var verification by remember { mutableStateOf<VerificationResult?>(null) }
 
     LaunchedEffect(appointmentId) {
-        verification = CallDNS.verifyTelehealthSession(appointmentId)
+        verification = Tessera.verifyTelehealthSession(appointmentId)
     }
 
     Column(
@@ -357,17 +357,17 @@ fun TelehealthWaitingRoom(
 
 ### No Central Registry
 
-CallDNS is architecturally designed to protect healthcare privacy:
+Tessera is architecturally designed to protect healthcare privacy:
 
 ```
-Traditional Verification              CallDNS Verification
+Traditional Verification              Tessera Verification
 ─────────────────────────            ────────────────────────
 
 Provider ──┐                         Provider ──┐
            │                                    │
            ▼                                    ▼
     ┌─────────────┐                      ┌─────────────┐
-    │   Central   │  ← Stores all        │   CallDNS   │  ← Cannot see
+    │   Central   │  ← Stores all        │   Tessera   │  ← Cannot see
     │   Registry  │    patient-provider  │   Service   │    relationships
     │             │    relationships     │             │
     └─────────────┘                      └─────────────┘
@@ -381,7 +381,7 @@ exposes all relationships               zero-knowledge design
 
 ### HIPAA Technical Safeguards Compliance
 
-| HIPAA Requirement | CallDNS Implementation |
+| HIPAA Requirement | Tessera Implementation |
 |-------------------|------------------------|
 | Access Controls | Role-based key access, MFA support |
 | Audit Controls | Comprehensive logging with PHI sanitization |
@@ -395,7 +395,7 @@ exposes all relationships               zero-knowledge design
 ### HIPAA Audit Support
 
 ```python
-from calldns.logging import ComplianceLogger
+from tessera.logging import ComplianceLogger
 
 class HIPAACompliance:
     def __init__(self):
@@ -441,7 +441,7 @@ class HIPAACompliance:
 
 ```
 ┌─────────────────┐     ┌──────────────┐     ┌─────────────────┐
-│  Provider       │────▶│   CallDNS    │────▶│  Patient        │
+│  Provider       │────▶│   Tessera    │────▶│  Patient        │
 │  EHR System     │     │   Service    │     │  Portal/App     │
 │                 │     │              │     │                 │
 │  - Epic         │     │  - Proof     │     │  - MyChart      │
@@ -464,7 +464,7 @@ class HIPAACompliance:
 ### Key Management
 
 ```python
-from calldns.keystore import EncryptedKeyStore
+from tessera.keystore import EncryptedKeyStore
 
 # HIPAA-compliant key management
 keystore = EncryptedKeyStore(
@@ -486,7 +486,7 @@ keystore = EncryptedKeyStore(
 
 ### Minimum Necessary Principle
 
-CallDNS supports HIPAA's minimum necessary standard:
+Tessera supports HIPAA's minimum necessary standard:
 - Proofs contain only metadata needed for verification
 - No PHI transmitted in proofs
 - No patient-provider relationship data stored centrally
@@ -522,15 +522,15 @@ CallDNS supports HIPAA's minimum necessary standard:
 ### Pilot Program
 
 1. **Select pilot scope**: Start with appointment reminders or pharmacy calls
-2. **Integration**: Connect CallDNS to EHR/scheduling system and patient portal
+2. **Integration**: Connect Tessera to EHR/scheduling system and patient portal
 3. **Staff training**: Train staff on proof generation workflow
 4. **Patient education**: Inform patients about new verification feature
 5. **Monitor**: Track verification rates, patient feedback, fraud prevention
 
 ### Contact
 
-For healthcare deployment support and HIPAA compliance consultation, contact your CallDNS representative.
+For healthcare deployment support and HIPAA compliance consultation, contact your Tessera representative.
 
 ---
 
-*CallDNS helps healthcare organizations protect patient privacy while enabling secure verification of provider communications.*
+*Tessera helps healthcare organizations protect patient privacy while enabling secure verification of provider communications.*

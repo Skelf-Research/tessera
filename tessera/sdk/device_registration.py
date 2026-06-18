@@ -1,5 +1,5 @@
 """
-Device registration for CallDNS.
+Device registration for Tessera.
 Handles device-specific commitment registration and multi-device support.
 """
 
@@ -60,7 +60,7 @@ class DeviceRegistration:
 
     def get_registration_payload(self) -> Dict:
         """
-        Get the payload for registering this device with CallDNS service.
+        Get the payload for registering this device with Tessera service.
 
         Returns:
             dict: Registration payload
@@ -252,7 +252,7 @@ class CustomerRegistrationManager:
     """
     Manages customer registrations across multiple devices.
 
-    This is used by the CallDNS service to track customer-device relationships.
+    This is used by the Tessera service to track customer-device relationships.
     """
 
     def __init__(self):

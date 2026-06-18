@@ -1,4 +1,4 @@
-# CallDNS Use Cases
+# Tessera Use Cases
 
 ## 1. Bank Website Verification
 
@@ -6,20 +6,20 @@
 Users receive suspicious calls claiming to be from their bank. How can they verify the call is legitimate?
 
 ### Solution
-CallDNS enables banks and users to cryptographically verify calls without compromising privacy.
+Tessera enables banks and users to cryptographically verify calls without compromising privacy.
 
 ### How It Works
 
 #### Bank Side (One-time Setup)
 1. Bank generates cryptographic identity key pair
-2. Bank registers commitment with CallDNS network
+2. Bank registers commitment with Tessera network
 3. Bank publishes public commitment for users to reference
 
 #### User Verification Process
 1. User receives incoming call from suspected bank
 2. User visits bank's official website/app
 3. User enters their phone number in verification section
-4. Website queries CallDNS network for recent proofs to that number
+4. Website queries Tessera network for recent proofs to that number
 5. Website verifies proofs against bank's registered commitment
 6. Website displays: "Yes, we called you 5 minutes ago about account verification"
 
@@ -67,20 +67,20 @@ def verify_recent_call(user_phone, bank_commitment):
 Alice calls Bob, but Bob wants to verify it's actually Alice (not an impersonator).
 
 ### Solution
-CallDNS app enables real-time caller verification between users with installed apps.
+Tessera app enables real-time caller verification between users with installed apps.
 
 ### How It Works
 
 #### Setup Phase
-1. Both Alice and Bob install CallDNS app
+1. Both Alice and Bob install Tessera app
 2. Each generates long-term identity key pairs
-3. Each registers commitments with CallDNS network
+3. Each registers commitments with Tessera network
 4. Users optionally exchange contact commitments for enhanced UX
 
 #### Call Process
-1. Alice opens CallDNS app and selects "Verified Call" to Bob
+1. Alice opens Tessera app and selects "Verified Call" to Bob
 2. Alice's app generates ZK proof with her identity
-3. Proof is broadcast to CallDNS network
+3. Proof is broadcast to Tessera network
 4. Bob's app receives/queries the proof
 5. Bob's app verifies proof against Alice's known commitment
 6. Bob sees "Verified: Alice Johnson" on his phone display
@@ -122,7 +122,7 @@ def handle_incoming_call(caller_phone):
 ### Enhanced Features
 
 #### Contact List Integration
-- Contacts synced with CallDNS commitments
+- Contacts synced with Tessera commitments
 - Automatic verification for known contacts
 - Visual indicators for verified callers
 - Warning alerts for unverified calls
@@ -153,7 +153,7 @@ def add_verified_contact(qr_code):
 ## Technical Architecture
 
 ### Zero-Knowledge Proofs
-CallDNS uses Schnorr-based zero-knowledge proofs:
+Tessera uses Schnorr-based zero-knowledge proofs:
 ```
 Proof Generation:
 1. Choose random nonce: r ← Z_q

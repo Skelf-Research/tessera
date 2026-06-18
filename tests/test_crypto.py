@@ -1,11 +1,11 @@
 """
-Tests for CallDNS cryptographic components.
+Tests for Tessera cryptographic components.
 """
 
 import unittest
-from calldns.crypto.crypto_utils import CryptoUtils, ZKProver, ZKVerifier
-from calldns.sdk.identity_manager import IdentityManager
-from calldns.utils.exceptions import ProofError, ValidationError
+from tessera.crypto.crypto_utils import CryptoUtils, ZKProver, ZKVerifier
+from tessera.sdk.identity_manager import IdentityManager
+from tessera.utils.exceptions import ProofError, ValidationError
 
 
 class TestCryptoUtils(unittest.TestCase):

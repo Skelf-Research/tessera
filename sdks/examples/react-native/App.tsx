@@ -12,14 +12,14 @@ import {
 } from 'react-native';
 
 import {
-  CallDNSClient,
-  CallVerificationWidget,
-  useCallDNSVerification,
-  useCallDNSStats,
+  TesseraClient,
+  SenderVerificationWidget,
+  useTesseraVerification,
+  useTesseraStats,
   CallType,
   CallContext,
-  CallDNSWidgetConfig,
-} from '@calldns/react-native';
+  TesseraWidgetConfig,
+} from '@tessera/react-native';
 
 const CALL_TYPES = [
   { type: CallType.VOICE_CALL, icon: '📞', name: 'Voice Call', desc: 'Traditional phone call' },
@@ -55,13 +55,13 @@ export default function App() {
   const [showWidget, setShowWidget] = useState(false);
   const [callContext, setCallContext] = useState<CallContext | null>(null);
 
-  const { stats } = useCallDNSStats();
+  const { stats } = useTesseraStats();
 
   useEffect(() => {
-    // Initialize CallDNS
-    CallDNSClient.initialize({
+    // Initialize Tessera
+    TesseraClient.initialize({
       apiKey: 'demo-api-key',
-      baseUrl: 'https://demo.calldns.com',
+      baseUrl: 'https://demo.tessera.com',
       enableLogging: true,
     }).catch((error) => {
       Alert.alert('Initialization Error', error.message);
@@ -97,7 +97,7 @@ export default function App() {
         <View style={styles.content}>
           {/* Header */}
           <View style={styles.header}>
-            <Text style={styles.title}>🛡️ CallDNS React Native Demo</Text>
+            <Text style={styles.title}>🛡️ Tessera React Native Demo</Text>
             <Text style={styles.subtitle}>
               Experience zero-knowledge caller verification in React Native
             </Text>
@@ -217,7 +217,7 @@ function VerificationSection({
   callContext: CallContext;
   onClose: () => void;
 }) {
-  const config: CallDNSWidgetConfig = {
+  const config: TesseraWidgetConfig = {
     showTrustScore: true,
     showOrganization: true,
     showVerificationBadge: true,
@@ -233,7 +233,7 @@ function VerificationSection({
         </TouchableOpacity>
       </View>
 
-      <CallVerificationWidget callContext={callContext} config={config} />
+      <SenderVerificationWidget callContext={callContext} config={config} />
     </View>
   );
 }

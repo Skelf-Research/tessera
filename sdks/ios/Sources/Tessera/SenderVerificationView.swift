@@ -3,9 +3,9 @@ import SwiftUI
 /**
  * SwiftUI View for call verification widget
  */
-public struct CallVerificationView: View {
+public struct SenderVerificationView: View {
     let callContext: CallContext
-    let config: CallDNSWidgetConfig
+    let config: TesseraWidgetConfig
     let onVerificationComplete: ((VerificationResult) -> Void)?
 
     @State private var verificationState: VerificationState = .loading
@@ -13,7 +13,7 @@ public struct CallVerificationView: View {
 
     public init(
         callContext: CallContext,
-        config: CallDNSWidgetConfig = CallDNSWidgetConfig(),
+        config: TesseraWidgetConfig = TesseraWidgetConfig(),
         onVerificationComplete: ((VerificationResult) -> Void)? = nil
     ) {
         self.callContext = callContext
@@ -66,7 +66,7 @@ public struct CallVerificationView: View {
     }
 
     private func startVerification() {
-        CallDNSClient.shared.verifyIncomingCall(callContext: callContext) { result in
+        TesseraClient.shared.verifyIncomingCall(callContext: callContext) { result in
             withAnimation(.easeInOut(duration: 0.3)) {
                 verificationState = result.isVerified
                     ? .verified(result)
@@ -81,7 +81,7 @@ public struct CallVerificationView: View {
 
 private struct LoadingView: View {
     let callContext: CallContext
-    let config: CallDNSWidgetConfig
+    let config: TesseraWidgetConfig
 
     var body: some View {
         HStack(spacing: 12) {
@@ -93,7 +93,7 @@ private struct LoadingView: View {
                     .font(.system(size: 14, weight: .medium))
                     .foregroundColor(.primary)
 
-                Text("CallDNS Security Check")
+                Text("Tessera Security Check")
                     .font(.system(size: 12))
                     .foregroundColor(.secondary)
             }
@@ -106,7 +106,7 @@ private struct LoadingView: View {
 
 private struct VerifiedView: View {
     let result: VerificationResult
-    let config: CallDNSWidgetConfig
+    let config: TesseraWidgetConfig
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -145,7 +145,7 @@ private struct VerifiedView: View {
                 }
             }
 
-            Text("CallDNS Protected")
+            Text("Tessera Protected")
                 .font(.system(size: 10))
                 .foregroundColor(.secondary)
         }
@@ -169,7 +169,7 @@ private struct VerifiedView: View {
 
 private struct UnverifiedView: View {
     let result: VerificationResult
-    let config: CallDNSWidgetConfig
+    let config: TesseraWidgetConfig
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -197,7 +197,7 @@ private struct UnverifiedView: View {
 
 private struct ErrorView: View {
     let message: String
-    let config: CallDNSWidgetConfig
+    let config: TesseraWidgetConfig
 
     var body: some View {
         HStack {
@@ -293,7 +293,7 @@ extension CallType {
 struct CallVerificationView_Previews: PreviewProvider {
     static var previews: some View {
         VStack(spacing: 20) {
-            CallVerificationView(
+            SenderVerificationView(
                 callContext: CallContext(
                     callerId: "+1234567890",
                     calleeId: nil,
@@ -306,7 +306,7 @@ struct CallVerificationView_Previews: PreviewProvider {
                 )
             )
 
-            CallVerificationView(
+            SenderVerificationView(
                 callContext: CallContext(
                     callerId: "+1234567890",
                     calleeId: nil,
@@ -317,7 +317,7 @@ struct CallVerificationView_Previews: PreviewProvider {
                     appContext: "WhatsApp",
                     networkInfo: nil
                 ),
-                config: CallDNSWidgetConfig(theme: .dark)
+                config: TesseraWidgetConfig(theme: .dark)
             )
         }
         .padding()

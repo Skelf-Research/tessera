@@ -1,5 +1,5 @@
 """
-Local multi-node cluster launcher for CallDNS (Workstream D2).
+Local multi-node cluster launcher for Tessera (Workstream D2).
 
 Spins up ``n`` AsyncDecentralizedNodes in one process, each served over WebSocket and
 wired to peers (mesh or ring) with real WSPeerTransport gossip. Intended for local
@@ -15,7 +15,7 @@ As a library:
     await cluster.stop()
 
 As a launcher:
-    poetry run python -m calldns.deploy.cluster --nodes 5 --topology ring
+    poetry run python -m tessera.deploy.cluster --nodes 5 --topology ring
 """
 
 import argparse
@@ -42,7 +42,7 @@ class _NodeHandle:
 
 
 class LocalCluster:
-    """A set of peered CallDNS nodes running in the current event loop."""
+    """A set of peered Tessera nodes running in the current event loop."""
 
     def __init__(self, n: int = 3, topology: str = "mesh",
                  host: str = "127.0.0.1", base_dir: str = None):
@@ -52,7 +52,7 @@ class LocalCluster:
         self.topology = topology
         self.host = host
         self._owns_base = base_dir is None
-        self.base_dir = base_dir or tempfile.mkdtemp(prefix="calldns_cluster_")
+        self.base_dir = base_dir or tempfile.mkdtemp(prefix="tessera_cluster_")
         self.handles: dict = {}
 
     def _peers_of(self, idx: int):
@@ -120,7 +120,7 @@ async def _run_forever(args):
     cluster = LocalCluster(n=args.nodes, topology=args.topology,
                            base_dir=str(Path(args.data_dir).resolve()) if args.data_dir else None)
     await cluster.start()
-    print(f"CallDNS local cluster up ({args.nodes} nodes, {args.topology}):")
+    print(f"Tessera local cluster up ({args.nodes} nodes, {args.topology}):")
     for name, uri in cluster.uris().items():
         print(f"  {name}: {uri}")
     try:
@@ -130,7 +130,7 @@ async def _run_forever(args):
 
 
 def main():
-    ap = argparse.ArgumentParser(description="Run a local CallDNS cluster")
+    ap = argparse.ArgumentParser(description="Run a local Tessera cluster")
     ap.add_argument("--nodes", type=int, default=3)
     ap.add_argument("--topology", default="mesh", choices=["mesh", "ring"])
     ap.add_argument("--data-dir", default=None)

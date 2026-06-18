@@ -1,5 +1,5 @@
 """
-Node discovery service for CallDNS network.
+Node discovery service for Tessera network.
 Supports seed nodes, peer exchange, and automatic reconnection.
 """
 
@@ -35,7 +35,7 @@ class PeerInfo:
 
 class NodeDiscovery:
     """
-    Handles peer discovery for CallDNS nodes.
+    Handles peer discovery for Tessera nodes.
 
     Features:
     - Seed node bootstrap
@@ -298,15 +298,15 @@ class SeedNodeRegistry:
 
     # Default seed nodes for mainnet
     MAINNET_SEEDS = [
-        {"peer_id": "seed-1", "host": "seed1.calldns.network", "port": 8100},
-        {"peer_id": "seed-2", "host": "seed2.calldns.network", "port": 8100},
-        {"peer_id": "seed-3", "host": "seed3.calldns.network", "port": 8100},
+        {"peer_id": "seed-1", "host": "seed1.tessera.network", "port": 8100},
+        {"peer_id": "seed-2", "host": "seed2.tessera.network", "port": 8100},
+        {"peer_id": "seed-3", "host": "seed3.tessera.network", "port": 8100},
     ]
 
     # Seed nodes for testnet
     TESTNET_SEEDS = [
-        {"peer_id": "seed-test-1", "host": "testnet1.calldns.network", "port": 8100},
-        {"peer_id": "seed-test-2", "host": "testnet2.calldns.network", "port": 8100},
+        {"peer_id": "seed-test-1", "host": "testnet1.tessera.network", "port": 8100},
+        {"peer_id": "seed-test-2", "host": "testnet2.tessera.network", "port": 8100},
     ]
 
     # Local development seeds

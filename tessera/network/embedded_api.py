@@ -1,5 +1,5 @@
 """
-Embedded HTTP API for CallDNS nodes.
+Embedded HTTP API for Tessera nodes.
 Provides REST endpoints when a node is started with --api-port.
 """
 
@@ -129,7 +129,7 @@ class ProofLookup(BaseModel):
 
 class CallerVerification(BaseModel):
     customer_id: str
-    caller_id: Optional[str] = None
+    sender_id: Optional[str] = None
 
 
 def create_embedded_api(
@@ -150,8 +150,8 @@ def create_embedded_api(
     """
 
     app = FastAPI(
-        title=f"CallDNS Node API - {node.node_id}",
-        description="Embedded HTTP API for CallDNS node",
+        title=f"Tessera Node API - {node.node_id}",
+        description="Embedded HTTP API for Tessera node",
         version="0.4.0"
     )
 
@@ -241,16 +241,16 @@ def create_embedded_api(
     async def prometheus_metrics():
         stats = await node.get_stats()
         lines = [
-            f"# TYPE calldns_peers gauge",
-            f"calldns_peers {stats.get('peers', 0)}",
-            f"# TYPE calldns_subscriptions gauge",
-            f"calldns_subscriptions {stats.get('subscriptions', 0)}",
-            f"# TYPE calldns_cached_proofs gauge",
-            f"calldns_cached_proofs {stats.get('cached_proofs', 0)}",
-            f"# TYPE calldns_pending_proofs gauge",
-            f"calldns_pending_proofs {stats.get('pending_proofs', 0)}",
-            f"# TYPE calldns_api_requests counter",
-            f"calldns_api_requests {metrics['requests']}",
+            f"# TYPE tessera_peers gauge",
+            f"tessera_peers {stats.get('peers', 0)}",
+            f"# TYPE tessera_subscriptions gauge",
+            f"tessera_subscriptions {stats.get('subscriptions', 0)}",
+            f"# TYPE tessera_cached_proofs gauge",
+            f"tessera_cached_proofs {stats.get('cached_proofs', 0)}",
+            f"# TYPE tessera_pending_proofs gauge",
+            f"tessera_pending_proofs {stats.get('pending_proofs', 0)}",
+            f"# TYPE tessera_api_requests counter",
+            f"tessera_api_requests {metrics['requests']}",
         ]
         return Response(
             content="\n".join(lines) + "\n",
@@ -326,7 +326,7 @@ def create_embedded_api(
 
         # Return MQTT topics to subscribe to
         topics = [
-            f"calldns/proofs/{c}" for c in sub.commitments
+            f"tessera/proofs/{c}" for c in sub.commitments
         ]
 
         return {
@@ -532,10 +532,10 @@ def create_embedded_api(
             "count": len(matching_proofs)
         }
 
-    @app.post("/verify/incoming-caller")
+    @app.post("/verify/incoming-sender")
     async def verify_incoming_caller(verification: CallerVerification):
         """
-        Verify an incoming caller using their registered commitment.
+        Verify an incoming sender using their registered commitment.
 
         Contact centers use this to verify customer identity.
         """

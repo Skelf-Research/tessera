@@ -1,13 +1,13 @@
 """
-Tests for CallDNS validation and error handling.
+Tests for Tessera validation and error handling.
 """
 
 import unittest
 import base64
-from calldns.utils.validation import InputValidator
-from calldns.utils.exceptions import ValidationError, ProofError, EncryptionError
-from calldns.crypto.crypto_utils import SecureEncryption, ZKProver, ZKVerifier
-from calldns.sdk import Caller
+from tessera.utils.validation import InputValidator
+from tessera.utils.exceptions import ValidationError, ProofError, EncryptionError
+from tessera.crypto.crypto_utils import SecureEncryption, ZKProver, ZKVerifier
+from tessera.sdk import Sender
 
 
 class TestInputValidator(unittest.TestCase):
@@ -234,16 +234,16 @@ class TestIntegratedValidation(unittest.TestCase):
     """Test validation in integrated scenarios."""
 
     def test_caller_with_invalid_metadata(self):
-        """Test Caller with invalid metadata."""
-        caller = Caller()
+        """Test Sender with invalid metadata."""
+        sender = Sender()
 
         # Invalid metadata should raise ValidationError
         with self.assertRaises(ProofError):
-            caller.generate_call_proof({'call_type': 'invalid_type'})
+            sender.generate_call_proof({'call_type': 'invalid_type'})
 
     def test_end_to_end_validation(self):
         """Test end-to-end validation in normal flow."""
-        caller = Caller()
+        sender = Sender()
 
         # Valid metadata should work
         valid_metadata = {
@@ -253,7 +253,7 @@ class TestIntegratedValidation(unittest.TestCase):
             'message': 'Test call'
         }
 
-        proof = caller.generate_call_proof(valid_metadata)
+        proof = sender.generate_call_proof(valid_metadata)
         self.assertIn('R', proof)
         self.assertIn('s', proof)
         self.assertIn('public_key', proof)

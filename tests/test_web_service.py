@@ -1,12 +1,12 @@
 """
-Tests for CallDNS web service components.
+Tests for Tessera web service components.
 """
 
 import unittest
 import json
 import base64
-from calldns.service.web import CallDNSService
-from calldns.sdk import Caller
+from tessera.service.web import TesseraService
+from tessera.sdk import Sender
 
 
 def proof_to_json_serializable(proof):
@@ -36,7 +36,7 @@ class TestWebService(unittest.TestCase):
 
     def setUp(self):
         """Set up test fixtures."""
-        self.service = CallDNSService()
+        self.service = TesseraService()
         self.app = self.service.app.test_client()
         self.app.testing = True
 
@@ -47,7 +47,7 @@ class TestWebService(unittest.TestCase):
 
         data = json.loads(response.data)
         self.assertEqual(data['status'], 'healthy')
-        self.assertEqual(data['service'], 'CallDNS')
+        self.assertEqual(data['service'], 'Tessera')
         self.assertIn('timestamp', data)
 
     def test_register_commitment(self):
@@ -101,8 +101,8 @@ class TestWebService(unittest.TestCase):
     def test_verify_proof(self):
         """Test proof verification endpoint."""
         # Generate a valid proof
-        caller = Caller()
-        proof = caller.generate_call_proof({'test': 'data'})
+        sender = Sender()
+        proof = sender.generate_call_proof({'test': 'data'})
 
         # Convert to JSON serializable format
         serializable_proof = proof_to_json_serializable(proof)
@@ -139,8 +139,8 @@ class TestWebService(unittest.TestCase):
     def test_broadcast_proof(self):
         """Test proof broadcasting endpoint."""
         # Generate a valid proof
-        caller = Caller()
-        proof = caller.generate_call_proof({'test': 'broadcast'})
+        sender = Sender()
+        proof = sender.generate_call_proof({'test': 'broadcast'})
 
         # Convert to JSON serializable format
         serializable_proof = proof_to_json_serializable(proof)

@@ -1,6 +1,6 @@
 """
-CallDNS Node CLI.
-Commands for running and managing CallDNS network nodes.
+Tessera Node CLI.
+Commands for running and managing Tessera network nodes.
 """
 
 import argparse
@@ -18,34 +18,34 @@ from .transport import NodeTransport
 
 
 def main():
-    """Main entry point for the CallDNS node CLI."""
+    """Main entry point for the Tessera node CLI."""
     parser = argparse.ArgumentParser(
-        prog='calldns-node',
-        description='CallDNS Node - Run a decentralized network node',
+        prog='tessera-node',
+        description='Tessera Node - Run a decentralized network node',
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
   # Start a core node
-  calldns-node start --type core --id core-1 --port 8100
+  tessera-node start --type core --id core-1 --port 8100
 
   # Start an organization node
-  calldns-node start --type org --id acme-bank --port 8101 --peer core-1@localhost:8100
+  tessera-node start --type org --id acme-bank --port 8101 --peer core-1@localhost:8100
 
   # Start a customer node
-  calldns-node start --type customer --id device-123 --port 8102 --peer core-1@localhost:8100
+  tessera-node start --type customer --id device-123 --port 8102 --peer core-1@localhost:8100
 
   # Check node status
-  calldns-node status --port 8100
+  tessera-node status --port 8100
 
   # List peers
-  calldns-node peers --port 8100
+  tessera-node peers --port 8100
         """
     )
 
     subparsers = parser.add_subparsers(dest='command', help='Available commands')
 
     # Start command
-    start_parser = subparsers.add_parser('start', help='Start a CallDNS node')
+    start_parser = subparsers.add_parser('start', help='Start a Tessera node')
     start_parser.add_argument('--type', '-t', required=True,
                               choices=['core', 'org', 'customer'],
                               help='Node type')
@@ -55,7 +55,7 @@ Examples:
     start_parser.add_argument('--host', default='0.0.0.0',
                               help='Host to bind to (default: 0.0.0.0)')
     start_parser.add_argument('--data-dir', '-d',
-                              help='Data directory (default: ./calldns_data/<node_id>)')
+                              help='Data directory (default: ./tessera_data/<node_id>)')
     start_parser.add_argument('--peer', action='append', default=[],
                               help='Peer to connect to (format: id@host:port)')
     start_parser.add_argument('--api-port', type=int,
@@ -96,11 +96,11 @@ Examples:
 
 
 async def handle_start_command(args):
-    """Start a CallDNS node."""
+    """Start a Tessera node."""
     node_type = NodeType(args.type)
     node_id = args.id
 
-    print(f"Starting CallDNS {args.type} node: {node_id}")
+    print(f"Starting Tessera {args.type} node: {node_id}")
     print(f"  Host: {args.host}")
     print(f"  Port: {args.port}")
 

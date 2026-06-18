@@ -1,17 +1,17 @@
 version: '3.8'
 
 services:
-  # Core nodes - run by CallDNS infrastructure
+  # Core nodes - run by Tessera infrastructure
   core-1:
     build: .
-    container_name: calldns-core-1
+    container_name: tessera-core-1
     command: ["start", "--type", "core", "--id", "core-1", "--port", "8100", "--host", "0.0.0.0", "--data-dir", "/data"]
     ports:
       - "8100:8100"
     volumes:
       - core1-data:/data
     networks:
-      - calldns-network
+      - tessera-network
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "python", "-c", "import websockets; import asyncio; asyncio.run(websockets.connect('ws://localhost:8100'))"]
@@ -21,14 +21,14 @@ services:
 
   core-2:
     build: .
-    container_name: calldns-core-2
+    container_name: tessera-core-2
     command: ["start", "--type", "core", "--id", "core-2", "--port", "8100", "--host", "0.0.0.0", "--data-dir", "/data", "--peer", "core-1@core-1:8100"]
     ports:
       - "8101:8100"
     volumes:
       - core2-data:/data
     networks:
-      - calldns-network
+      - tessera-network
     depends_on:
       core-1:
         condition: service_healthy
@@ -37,14 +37,14 @@ services:
   # Example organization node - run by a bank/org
   org-bank-a:
     build: .
-    container_name: calldns-org-bank-a
+    container_name: tessera-org-bank-a
     command: ["start", "--type", "org", "--id", "bank-a", "--port", "8100", "--host", "0.0.0.0", "--data-dir", "/data", "--peer", "core-1@core-1:8100", "--peer", "core-2@core-2:8100"]
     ports:
       - "8200:8100"
     volumes:
       - org-bank-a-data:/data
     networks:
-      - calldns-network
+      - tessera-network
     depends_on:
       - core-1
       - core-2
@@ -53,8 +53,8 @@ services:
   # FastAPI service for HTTP/WebSocket API
   api:
     build: .
-    container_name: calldns-api
-    entrypoint: ["python", "-m", "calldns.service.api"]
+    container_name: tessera-api
+    entrypoint: ["python", "-m", "tessera.service.api"]
     environment:
       - CALLDNS_HOST=0.0.0.0
       - CALLDNS_PORT=8000
@@ -63,7 +63,7 @@ services:
     volumes:
       - api-data:/data
     networks:
-      - calldns-network
+      - tessera-network
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
@@ -74,27 +74,27 @@ services:
   # Prometheus for metrics (optional)
   prometheus:
     image: prom/prometheus:latest
-    container_name: calldns-prometheus
+    container_name: tessera-prometheus
     ports:
       - "9090:9090"
     volumes:
       - ./deploy/prometheus.yml:/etc/prometheus/prometheus.yml:ro
       - prometheus-data:/prometheus
     networks:
-      - calldns-network
+      - tessera-network
     profiles:
       - monitoring
 
   # Grafana for dashboards (optional)
   grafana:
     image: grafana/grafana:latest
-    container_name: calldns-grafana
+    container_name: tessera-grafana
     ports:
       - "3000:3000"
     volumes:
       - grafana-data:/var/lib/grafana
     networks:
-      - calldns-network
+      - tessera-network
     profiles:
       - monitoring
     environment:
@@ -109,5 +109,5 @@ volumes:
   grafana-data:
 
 networks:
-  calldns-network:
+  tessera-network:
     driver: bridge

@@ -1,4 +1,4 @@
-# CallDNS for Financial Services
+# Tessera for Financial Services
 
 ## Regulatory Landscape
 
@@ -12,17 +12,17 @@ The Consumer Duty requires firms to:
 - Take reasonable steps to avoid foreseeable harm
 - Enable customers to pursue their financial objectives
 
-**How CallDNS helps**: Provides cryptographic proof that protects customers from impersonation fraud, demonstrating proactive harm prevention.
+**How Tessera helps**: Provides cryptographic proof that protects customers from impersonation fraud, demonstrating proactive harm prevention.
 
 #### Reg E / CFPB (US)
 Electronic Fund Transfer Act places liability on financial institutions for unauthorized transactions, including those initiated through social engineering.
 
-**How CallDNS helps**: Reduces liability exposure by enabling customers to verify caller identity before authorizing transactions.
+**How Tessera helps**: Reduces liability exposure by enabling customers to verify caller identity before authorizing transactions.
 
 #### PSD2 Strong Customer Authentication
 Requires strong authentication for electronic payment transactions and account access.
 
-**How CallDNS helps**: Adds a cryptographic verification layer to voice channel communications, supporting multi-factor authentication requirements.
+**How Tessera helps**: Adds a cryptographic verification layer to voice channel communications, supporting multi-factor authentication requirements.
 
 #### MiFID II
 Investment services regulation requiring:
@@ -30,12 +30,12 @@ Investment services regulation requiring:
 - 7-year retention of records
 - Audit trails for all client interactions
 
-**How CallDNS helps**: Generates immutable, timestamped proofs that can be stored alongside call recordings for compliance.
+**How Tessera helps**: Generates immutable, timestamped proofs that can be stored alongside call recordings for compliance.
 
 #### GDPR Article 25 - Privacy by Design
 Requires data protection to be designed into systems from the outset.
 
-**How CallDNS helps**: Zero-knowledge proofs verify identity without transmitting or storing PII. No central registry of caller-callee relationships.
+**How Tessera helps**: Zero-knowledge proofs verify identity without transmitting or storing PII. No central registry of caller-callee relationships.
 
 #### GLBA / SOX
 Gramm-Leach-Bliley Act and Sarbanes-Oxley require:
@@ -43,7 +43,7 @@ Gramm-Leach-Bliley Act and Sarbanes-Oxley require:
 - Internal controls over financial reporting
 - Audit trails and access controls
 
-**How CallDNS helps**: Enterprise-grade key management with rotation, access controls, and comprehensive audit logging.
+**How Tessera helps**: Enterprise-grade key management with rotation, access controls, and comprehensive audit logging.
 
 ---
 
@@ -55,7 +55,7 @@ Gramm-Leach-Bliley Act and Sarbanes-Oxley require:
 When your contact center calls customers, enable them to verify legitimacy:
 
 ```python
-from calldns.sdk import Caller
+from tessera.sdk import Caller
 
 # Contact center generates proof before outbound call
 caller = Caller(identity="bank_contact_center_001")
@@ -82,7 +82,7 @@ fun IncomingCallScreen(callerId: String) {
     val verificationState = remember { mutableStateOf<VerificationResult?>(null) }
 
     LaunchedEffect(callerId) {
-        verificationState.value = CallDNS.verify(
+        verificationState.value = Tessera.verify(
             CallContext(
                 callerId = callerId,
                 metadata = mapOf("expected_firm" to "FCA123456")
@@ -145,7 +145,7 @@ function RecentCallVerification({ phoneNumber }) {
 #### MiFID II Compliant Advisory Calls
 
 ```python
-from calldns.sdk import Caller
+from tessera.sdk import Caller
 from datetime import datetime
 
 class MiFIDCompliantCaller:
@@ -210,7 +210,7 @@ struct AdvisorCallVerification: View {
         }
         .onAppear {
             Task {
-                verificationResult = await CallDNS.verify(
+                verificationResult = await Tessera.verify(
                     callerId: incomingCallerId
                 )
             }
@@ -227,7 +227,7 @@ struct AdvisorCallVerification: View {
 High-value transactions require enhanced verification:
 
 ```python
-from calldns.sdk import Caller, Verifier
+from tessera.sdk import Caller, Verifier
 
 class TreasuryCallVerification:
     def __init__(self):
@@ -281,7 +281,7 @@ class TreasuryCallVerification:
 ### Audit Trail Generation
 
 ```python
-from calldns.logging import ComplianceLogger
+from tessera.logging import ComplianceLogger
 
 class ComplianceReporter:
     def __init__(self):
@@ -323,7 +323,7 @@ class ComplianceReporter:
 
 ```
 ┌─────────────────┐     ┌──────────────┐     ┌─────────────────┐
-│  Agent Desktop  │────▶│   CallDNS    │────▶│  Customer App   │
+│  Agent Desktop  │────▶│   Tessera    │────▶│  Customer App   │
 │                 │     │   Service    │     │                 │
 │  - Generate     │     │              │     │  - Verify       │
 │    proof before │     │  - Proof     │     │    incoming     │
@@ -344,7 +344,7 @@ class ComplianceReporter:
 ### Key Management for Enterprise
 
 ```python
-from calldns.keystore import EncryptedKeyStore
+from tessera.keystore import EncryptedKeyStore
 
 # Production deployment with HSM integration
 keystore = EncryptedKeyStore(
@@ -394,15 +394,15 @@ keystore = EncryptedKeyStore(
 ### Pilot Program
 
 1. **Select pilot scope**: Start with high-risk call types (fraud alerts, transaction verification)
-2. **Integration**: Deploy CallDNS service, integrate with contact center and mobile app
+2. **Integration**: Deploy Tessera service, integrate with contact center and mobile app
 3. **Staff training**: Educate agents on proof generation workflow
 4. **Customer communication**: Inform customers about new verification capability
 5. **Monitor and iterate**: Track verification rates, customer feedback, fraud prevention
 
 ### Contact
 
-For enterprise deployment support and compliance consultation, contact your CallDNS representative.
+For enterprise deployment support and compliance consultation, contact your Tessera representative.
 
 ---
 
-*CallDNS helps financial services firms meet regulatory obligations while protecting customers from voice-based fraud.*
+*Tessera helps financial services firms meet regulatory obligations while protecting customers from voice-based fraud.*

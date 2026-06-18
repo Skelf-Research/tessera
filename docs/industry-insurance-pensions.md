@@ -1,4 +1,4 @@
-# CallDNS for Insurance & Pensions
+# Tessera for Insurance & Pensions
 
 ## Regulatory Landscape
 
@@ -12,7 +12,7 @@ The Consumer Duty requires firms to:
 - Take particular care with vulnerable customers
 - Ensure communications are clear and not misleading
 
-**How CallDNS helps**: Enables customers to verify legitimate provider calls, protecting vulnerable populations from impersonation fraud.
+**How Tessera helps**: Enables customers to verify legitimate provider calls, protecting vulnerable populations from impersonation fraud.
 
 #### The Pensions Regulator (TPR) Requirements
 TPR expects schemes to:
@@ -20,7 +20,7 @@ TPR expects schemes to:
 - Protect members from scams
 - Provide clear information about benefits
 
-**How CallDNS helps**: Members can verify pension scheme communications are legitimate before sharing personal information.
+**How Tessera helps**: Members can verify pension scheme communications are legitimate before sharing personal information.
 
 #### Pension Schemes Act 2021
 Introduces requirements for:
@@ -28,7 +28,7 @@ Introduces requirements for:
 - Scam prevention measures
 - Trustee oversight of member interactions
 
-**How CallDNS helps**: Cryptographic verification demonstrates proactive scam prevention measures.
+**How Tessera helps**: Cryptographic verification demonstrates proactive scam prevention measures.
 
 #### Insurance Distribution Directive (IDD)
 Requires insurers to:
@@ -36,7 +36,7 @@ Requires insurers to:
 - Ensure marketing communications are clear and not misleading
 - Document customer interactions
 
-**How CallDNS helps**: Proof generation creates auditable records of legitimate customer communications.
+**How Tessera helps**: Proof generation creates auditable records of legitimate customer communications.
 
 #### GDPR / Data Protection Act 2018
 Requires:
@@ -44,7 +44,7 @@ Requires:
 - Data minimization
 - Protection of personal data
 
-**How CallDNS helps**: Zero-knowledge proofs verify identity without transmitting or storing personal data.
+**How Tessera helps**: Zero-knowledge proofs verify identity without transmitting or storing personal data.
 
 #### State Insurance Regulations (US)
 Various state departments of insurance require:
@@ -52,7 +52,7 @@ Various state departments of insurance require:
 - Fraud prevention programs
 - Clear communication standards
 
-**How CallDNS helps**: Demonstrates proactive fraud prevention in regulatory examinations.
+**How Tessera helps**: Demonstrates proactive fraud prevention in regulatory examinations.
 
 ---
 
@@ -83,7 +83,7 @@ Insurance and pension customers are particularly vulnerable to voice fraud:
 #### Member Outreach
 
 ```python
-from calldns.sdk import Caller
+from tessera.sdk import Caller
 
 class PensionSchemeOutreach:
     def __init__(self, scheme_name: str, tpr_reference: str):
@@ -184,7 +184,7 @@ function VerifySchemeCall({ memberId }) {
 #### Policy Service Calls
 
 ```python
-from calldns.sdk import Caller
+from tessera.sdk import Caller
 
 class InsuranceOutreach:
     def __init__(self, company_name: str, fca_reference: str):
@@ -229,7 +229,7 @@ fun VerifyInsurerCall(
     var verification by remember { mutableStateOf<VerificationResult?>(null) }
 
     LaunchedEffect(incomingCallerId) {
-        verification = CallDNS.verify(
+        verification = Tessera.verify(
             CallContext(
                 callerId = incomingCallerId,
                 metadata = mapOf("customer_id" to customerId)
@@ -323,7 +323,7 @@ fun VerifyInsurerCall(
 #### Annuity Provider Communications
 
 ```python
-from calldns.sdk import Caller
+from tessera.sdk import Caller
 
 class AnnuityProvider:
     def __init__(self, provider_name: str, fca_ref: str):
@@ -359,7 +359,7 @@ proof = provider.generate_annuity_call_proof("retirement_options")
 #### Enhanced Verification for Vulnerable Customers
 
 ```python
-from calldns.sdk import Caller
+from tessera.sdk import Caller
 
 class VulnerableCustomerOutreach:
     def __init__(self, company_name: str, fca_ref: str):
@@ -483,7 +483,7 @@ struct VulnerableCustomerVerification: View {
         .padding()
         .onAppear {
             Task {
-                verification = await CallDNS.verify(callerId: callerId)
+                verification = await Tessera.verify(callerId: callerId)
             }
         }
     }
@@ -502,7 +502,7 @@ struct VulnerableCustomerVerification: View {
 ### TPR and FCA Reporting
 
 ```python
-from calldns.logging import ComplianceLogger
+from tessera.logging import ComplianceLogger
 
 class PensionInsuranceCompliance:
     def __init__(self):
@@ -563,7 +563,7 @@ class PensionInsuranceCompliance:
 
 ```
 ┌─────────────────┐     ┌──────────────┐     ┌─────────────────┐
-│  Pension Admin  │────▶│   CallDNS    │────▶│  Member Portal  │
+│  Pension Admin  │────▶│   Tessera    │────▶│  Member Portal  │
 │  System         │     │   Service    │     │                 │
 │                 │     │              │     │  - Verify calls │
 │  - Generate     │     │  - Proof     │     │  - Report fraud │
@@ -621,15 +621,15 @@ class PensionInsuranceCompliance:
 ### Trustee Considerations
 
 For pension schemes, trustees should:
-- Review CallDNS as part of scam prevention measures
+- Review Tessera as part of scam prevention measures
 - Include in scheme governance reporting
 - Consider for cybersecurity risk assessment
 - Document as evidence of member protection efforts
 
 ### Contact
 
-For pension and insurance deployment support, contact your CallDNS representative.
+For pension and insurance deployment support, contact your Tessera representative.
 
 ---
 
-*CallDNS helps insurance and pension providers protect vulnerable customers while meeting Consumer Duty and TPR requirements.*
+*Tessera helps insurance and pension providers protect vulnerable customers while meeting Consumer Duty and TPR requirements.*

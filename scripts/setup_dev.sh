@@ -1,11 +1,11 @@
 #!/bin/bash
 
-# CallDNS Development Setup Script
+# Tessera Development Setup Script
 # Sets up the development environment
 
 set -e
 
-echo "🚀 Setting up CallDNS Development Environment"
+echo "🚀 Setting up Tessera Development Environment"
 echo "============================================="
 
 # Ensure we're in the project root
@@ -32,5 +32,5 @@ echo "✅ Development environment setup complete!"
 echo ""
 echo "🎯 Next steps:"
 echo "   • Run tests: ./scripts/run_tests.sh"
-echo "   • Start service: poetry run calldns-service"
+echo "   • Start service: poetry run tessera-service"
 echo "   • View docs: open docs/README.md"

@@ -1,5 +1,5 @@
 """
-Outbound caller verification for CallDNS.
+Outbound sender verification for Tessera.
 Enables customers to prove their identity when calling organizations (banks, etc.).
 """
 
@@ -9,7 +9,7 @@ import time
 from typing import Optional, Dict, Any
 from dataclasses import dataclass
 
-from .caller import Caller
+from .sender import Sender
 from .device_registration import DeviceRegistration
 
 
@@ -43,7 +43,7 @@ class OutboundCaller:
         device_registration: Optional[DeviceRegistration] = None
     ):
         self.core_node_url = core_node_url
-        self.caller = Caller()
+        self.sender = Sender()
         self.device_registration = device_registration
         self._pending_proofs: Dict[str, OutboundCallProof] = {}
 
@@ -72,10 +72,10 @@ class OutboundCaller:
             **(metadata or {})
         }
 
-        proof = self.caller.generate_call_proof(call_metadata)
+        proof = self.sender.generate_call_proof(call_metadata)
 
         # Encrypt for destination
-        encrypted = self.caller.encrypt_proof_for_callee(
+        encrypted = self.sender.encrypt_proof_for_callee(
             proof,
             destination_commitment,
             call_metadata
@@ -198,7 +198,7 @@ class ContactCenterVerifier:
     """
     Verifier for organization contact centers to verify incoming customer calls.
 
-    Integrates with the org's node to look up proofs by caller commitment.
+    Integrates with the org's node to look up proofs by sender commitment.
     """
 
     def __init__(self, org_node_url: str):
@@ -207,15 +207,15 @@ class ContactCenterVerifier:
     async def verify_incoming_caller(
         self,
         caller_commitment: str,
-        caller_id: Optional[str] = None,
+        sender_id: Optional[str] = None,
         timeout: int = 30
     ) -> Dict[str, Any]:
         """
-        Verify an incoming caller against broadcast proofs.
+        Verify an incoming sender against broadcast proofs.
 
         Args:
-            caller_commitment: The caller's commitment (from customer record)
-            caller_id: Optional caller ID for additional matching
+            caller_commitment: The sender's commitment (from customer record)
+            sender_id: Optional sender ID for additional matching
             timeout: How long to wait for proof (seconds)
 
         Returns:

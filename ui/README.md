@@ -1,6 +1,6 @@
-# CallDNS Node UI
+# Tessera Node UI
 
-A Vue 3 + TailwindCSS web interface for CallDNS nodes with dual-mode support:
+A Vue 3 + TailwindCSS web interface for Tessera nodes with dual-mode support:
 - **Regular Node**: Status-oriented dashboard for monitoring
 - **Organization Node**: Full management features for organizations
 
@@ -51,7 +51,7 @@ npm run dev
 
 The UI will be available at `http://localhost:3000`.
 
-By default, it proxies API requests to `http://localhost:8000` (the CallDNS service).
+By default, it proxies API requests to `http://localhost:8000` (the Tessera service).
 
 ### Using the Start Script
 
@@ -88,7 +88,7 @@ Configure the API endpoint in the Settings page:
 4. Click "Test Connection" to verify
 5. Save configuration
 
-The UI uses `/api` as the base URL which is proxied to the CallDNS service in development.
+The UI uses `/api` as the base URL which is proxied to the Tessera service in development.
 
 ### Mode Switching
 
@@ -155,7 +155,7 @@ ui/
 
 ## API Integration
 
-The UI integrates with the CallDNS service API with full pagination support:
+The UI integrates with the Tessera service API with full pagination support:
 
 ### Health & Stats
 - `GET /health` - Node health status

@@ -1,10 +1,10 @@
-# CallDNS Privacy Model
+# Tessera Privacy Model
 
-This document describes the privacy guarantees provided by CallDNS's decentralized architecture, focusing on the "last mile privacy" that protects customers even from the organizations they interact with.
+This document describes the privacy guarantees provided by Tessera's decentralized architecture, focusing on the "last mile privacy" that protects customers even from the organizations they interact with.
 
 ## Core Principle: Separation of Knowledge
 
-CallDNS is designed so that **no single party has complete knowledge** of a call verification:
+Tessera is designed so that **no single party has complete knowledge** of a call verification:
 
 | Party | Knows | Does NOT Know |
 |-------|-------|---------------|
@@ -168,7 +168,7 @@ proofs = await fetch_pending_proofs(subscriber_id)
 
 ## Threat Model
 
-### What CallDNS Protects Against
+### What Tessera Protects Against
 
 ✅ **Mass surveillance** - No central database of calls
 ✅ **Bank overreach** - Cannot track customer behavior
@@ -177,12 +177,12 @@ proofs = await fetch_pending_proofs(subscriber_id)
 ✅ **Correlation attacks** - Bucket anonymity sets
 ✅ **Insider threats** - Separation of knowledge
 
-### What CallDNS Does NOT Protect Against
+### What Tessera Does NOT Protect Against
 
 ❌ **Targeted attacks on specific customer** - If adversary knows commitment, they can watch that bucket
 ❌ **Long-term statistical analysis** - Patterns may emerge over months
 ❌ **Endpoint compromise** - If phone is hacked, proofs are exposed
-❌ **Org-side logging** - Bank knows they called you (outside CallDNS)
+❌ **Org-side logging** - Bank knows they called you (outside Tessera)
 
 ### Mitigations for Known Limitations
 
@@ -202,7 +202,7 @@ proofs = await fetch_pending_proofs(subscriber_id)
 
 ### vs. Centralized Verification Service
 
-| Aspect | Centralized | CallDNS |
+| Aspect | Centralized | Tessera |
 |--------|-------------|---------|
 | Single point of failure | Yes | No |
 | Operator sees all calls | Yes | No |
@@ -211,7 +211,7 @@ proofs = await fetch_pending_proofs(subscriber_id)
 
 ### vs. Direct Bank-to-Customer
 
-| Aspect | Direct | CallDNS |
+| Aspect | Direct | Tessera |
 |--------|--------|---------|
 | Bank tracks customer | Yes | No |
 | Delivery confirmation | Yes | No |
@@ -220,7 +220,7 @@ proofs = await fetch_pending_proofs(subscriber_id)
 
 ### vs. Blockchain-Based
 
-| Aspect | Blockchain | CallDNS |
+| Aspect | Blockchain | Tessera |
 |--------|------------|---------|
 | Public ledger | Yes | No |
 | Permanent record | Yes | TTL expiry |
@@ -229,7 +229,7 @@ proofs = await fetch_pending_proofs(subscriber_id)
 
 ## Regulatory Compliance
 
-CallDNS's privacy model supports compliance with:
+Tessera's privacy model supports compliance with:
 
 **GDPR (EU):**
 - Privacy by design (Article 25)
@@ -250,7 +250,7 @@ CallDNS's privacy model supports compliance with:
 
 ## Implementation Checklist
 
-For organizations deploying CallDNS:
+For organizations deploying Tessera:
 
 - [ ] Run org node with `--api-port` for registration only
 - [ ] Do NOT expose org node for proof delivery
@@ -270,7 +270,7 @@ For customers:
 
 ## Summary
 
-CallDNS provides **last-mile privacy** through architectural separation:
+Tessera provides **last-mile privacy** through architectural separation:
 
 1. **Banks broadcast but cannot observe** - no delivery confirmation
 2. **Core nodes route but cannot identify** - only see buckets

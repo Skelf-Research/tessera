@@ -1,6 +1,6 @@
 """
 Node transport layer using WebSockets.
-Handles peer-to-peer communication between CallDNS nodes.
+Handles peer-to-peer communication between Tessera nodes.
 """
 
 import asyncio

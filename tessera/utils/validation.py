@@ -1,5 +1,5 @@
 """
-Input validation utilities for CallDNS.
+Input validation utilities for Tessera.
 Provides comprehensive validation for all input types and data structures.
 """
 
@@ -11,7 +11,7 @@ from .exceptions import ValidationError
 
 
 class InputValidator:
-    """Comprehensive input validator for CallDNS operations."""
+    """Comprehensive input validator for Tessera operations."""
 
     # Regular expressions for validation
     PHONE_REGEX = re.compile(r'^\+?[1-9]\d{6,14}$')  # E.164 format (min 7 digits)

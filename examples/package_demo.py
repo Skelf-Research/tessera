@@ -1,19 +1,19 @@
 """
-Complete example demonstrating CallDNS package usage.
+Complete example demonstrating Tessera package usage.
 """
 
 import time
-from calldns import Caller, Verifier
+from tessera import Sender, Verifier
 
 
 def demo_complete_flow():
-    """Demonstrate a complete CallDNS flow."""
-    print("CallDNS Complete Package Demo")
+    """Demonstrate a complete Tessera flow."""
+    print("Tessera Complete Package Demo")
     print("=" * 30)
     
-    # Create caller and verifier
-    print("1. Initializing Caller and Verifier...")
-    caller = Caller()
+    # Create sender and verifier
+    print("1. Initializing Sender and Verifier...")
+    sender = Sender()
     verifier = Verifier()
     
     # Generate a call proof
@@ -21,12 +21,12 @@ def demo_complete_flow():
     metadata = {
         "timestamp": int(time.time()),
         "purpose": "demo_call",
-        "caller": "Alice",
+        "sender": "Alice",
         "recipient": "Bob"
     }
     
-    proof = caller.generate_call_proof(metadata)
-    print(f"   Generated proof with commitment: {caller.get_public_key().hex()[:16]}...")
+    proof = sender.generate_call_proof(metadata)
+    print(f"   Generated proof with commitment: {sender.get_public_key().hex()[:16]}...")
     
     # Verify the proof
     print("\n3. Verifying call proof...")
@@ -41,16 +41,16 @@ def demo_complete_flow():
     print(f"   Generated reception commitment: {commitment.hex()[:16]}...")
     
     # Show traffic padding
-    encrypted_proof = caller.encrypt_proof_for_callee(proof, commitment, metadata)
-    padded_proof = caller.prepare_proof_for_transmission(encrypted_proof)
+    encrypted_proof = sender.encrypt_proof_for_callee(proof, commitment, metadata)
+    padded_proof = sender.prepare_proof_for_transmission(encrypted_proof)
     print(f"   Padded proof size: {padded_proof['proof_size']} bytes")
     
     # Show cover traffic
-    batch = caller.schedule_batch_transmission([padded_proof])
+    batch = sender.schedule_batch_transmission([padded_proof])
     print(f"   Batch with cover traffic: {len(batch)} proofs")
     
     print("\n5. Demo complete!")
-    print("   CallDNS successfully demonstrated:")
+    print("   Tessera successfully demonstrated:")
     print("   - Zero-knowledge proof generation")
     print("   - Cryptographic verification")
     print("   - Privacy-preserving features")

@@ -6,7 +6,7 @@ import CryptoSwift
 import Alamofire
 
 /**
- * CallDNS iOS SDK
+ * Tessera iOS SDK
  *
  * Provides zero-knowledge proof verification for incoming calls of any type:
  * - Traditional phone calls (via CallKit integration)
@@ -15,18 +15,18 @@ import Alamofire
  * - Video calls
  * - Conference calls
  */
-@objc public class CallDNSClient: NSObject {
+@objc public class TesseraClient: NSObject {
 
     // MARK: - Singleton
-    @objc public static let shared = CallDNSClient()
+    @objc public static let shared = TesseraClient()
 
     // MARK: - Properties
-    private var config: CallDNSConfig?
-    private var apiService: CallDNSAPIService?
+    private var config: TesseraConfig?
+    private var apiService: TesseraAPIService?
     private var cryptoManager: CryptoManager?
     private var keyManager: KeyManager?
     private var verificationCache: [String: VerificationResult] = [:]
-    private let cacheQueue = DispatchQueue(label: "com.calldns.cache", attributes: .concurrent)
+    private let cacheQueue = DispatchQueue(label: "com.tessera.cache", attributes: .concurrent)
 
     // MARK: - Initialization
     private override init() {
@@ -34,17 +34,17 @@ import Alamofire
     }
 
     /**
-     * Initialize the CallDNS SDK
+     * Initialize the Tessera SDK
      */
-    @objc public func initialize(config: CallDNSConfig) {
+    @objc public func initialize(config: TesseraConfig) {
         self.config = config
-        self.apiService = CallDNSAPIService(config: config)
+        self.apiService = TesseraAPIService(config: config)
         self.cryptoManager = CryptoManager()
         self.keyManager = KeyManager()
 
         setupCallKitIntegration()
 
-        print("CallDNS iOS SDK initialized")
+        print("Tessera iOS SDK initialized")
     }
 
     // MARK: - Public Methods
@@ -59,7 +59,7 @@ import Alamofire
         guard let apiService = apiService,
               let cryptoManager = cryptoManager,
               let keyManager = keyManager else {
-            completion(.failure(CallDNSError.notInitialized))
+            completion(.failure(TesseraError.notInitialized))
             return
         }
 
@@ -186,7 +186,7 @@ import Alamofire
     ) {
         guard let apiService = apiService,
               let keyManager = keyManager else {
-            completion(.failure(CallDNSError.notInitialized))
+            completion(.failure(TesseraError.notInitialized))
             return
         }
 
@@ -288,7 +288,7 @@ import Alamofire
 }
 
 // MARK: - CallKit Integration Extension
-extension CallDNSClient: CXCallObserverDelegate {
+extension TesseraClient: CXCallObserverDelegate {
     public func callObserver(_ callObserver: CXCallObserver, callChanged call: CXCall) {
         if call.hasEnded || call.hasConnected {
             // Handle call state changes
@@ -318,6 +318,6 @@ extension CallDNSClient: CXCallObserverDelegate {
 
 // MARK: - Notification Names
 extension Notification.Name {
-    static let callDNSVerificationCompleted = Notification.Name("CallDNSVerificationCompleted")
-    static let callDNSProofGenerated = Notification.Name("CallDNSProofGenerated")
+    static let callDNSVerificationCompleted = Notification.Name("TesseraVerificationCompleted")
+    static let callDNSProofGenerated = Notification.Name("TesseraProofGenerated")
 }

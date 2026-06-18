@@ -8,7 +8,7 @@ import {
   ViewStyle,
   TextStyle,
 } from 'react-native';
-import { CallDNSClient, VerifiedCallDestination, OutboundCallResult } from './index';
+import { TesseraClient, VerifiedCallDestination, OutboundCallResult } from './index';
 
 interface VerifiedCallButtonProps {
   phoneNumber: string;
@@ -31,7 +31,7 @@ interface VerifiedCallButtonConfig {
 
 type ButtonState = 'ready' | 'generating' | 'broadcasting' | 'readyToDial' | 'error';
 
-export const VerifiedCallButton: React.FC<VerifiedCallButtonProps> = ({
+export const VerifiedSenderButton: React.FC<VerifiedCallButtonProps> = ({
   phoneNumber,
   destinationId,
   destinationName = 'Organization',
@@ -69,7 +69,7 @@ export const VerifiedCallButton: React.FC<VerifiedCallButtonProps> = ({
     setButtonState('generating');
 
     try {
-      const client = CallDNSClient.getInstance();
+      const client = TesseraClient.getInstance();
 
       const destination: VerifiedCallDestination = {
         destinationId,
@@ -226,4 +226,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default VerifiedCallButton;
+export default VerifiedSenderButton;

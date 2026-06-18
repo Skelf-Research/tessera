@@ -1,5 +1,5 @@
 """
-Verifier component for CallDNS.
+Verifier component for Tessera.
 Handles proof verification on callee device with commitment management and traffic privacy.
 """
 

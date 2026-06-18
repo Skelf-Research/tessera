@@ -1,6 +1,6 @@
-# Contributing to CallDNS
+# Contributing to Tessera
 
-Thank you for your interest in contributing to CallDNS! This document provides guidelines and information for contributors.
+Thank you for your interest in contributing to Tessera! This document provides guidelines and information for contributors.
 
 ## Table of Contents
 
@@ -35,8 +35,8 @@ This project follows a standard code of conduct. Be respectful, professional, an
 
 ```bash
 # Clone your fork
-git clone https://github.com/yourusername/calldns.git
-cd calldns
+git clone https://github.com/yourusername/tessera.git
+cd tessera
 
 # Run the setup script
 ./scripts/setup_dev.sh
@@ -92,7 +92,7 @@ Use conventional commit format:
 poetry run pytest tests/test_crypto.py -v
 
 # Run with coverage
-poetry run pytest tests/ --cov=calldns
+poetry run pytest tests/ --cov=tessera
 ```
 
 ### Writing Tests
@@ -153,7 +153,7 @@ Brief description of changes
 **DO NOT** open public issues for security vulnerabilities. Instead:
 
 1. Email security issues to: security@dipankar.name
-2. Include "CallDNS Security" in the subject line
+2. Include "Tessera Security" in the subject line
 3. Provide detailed information about the vulnerability
 4. Allow reasonable time for response before disclosure
 
@@ -202,4 +202,4 @@ Contributors will be acknowledged in:
 - Release notes
 - Project documentation
 
-Thank you for contributing to CallDNS!
+Thank you for contributing to Tessera!

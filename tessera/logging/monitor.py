@@ -1,5 +1,5 @@
 """
-System monitoring and alerting for CallDNS.
+System monitoring and alerting for Tessera.
 Provides real-time monitoring, health checks, and anomaly detection.
 """
 

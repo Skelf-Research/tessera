@@ -1,5 +1,5 @@
 """
-WebSocket transport server for a CallDNS decentralized node.
+WebSocket transport server for a Tessera decentralized node.
 
 Exposes an :class:`AsyncDecentralizedNode` over a real network socket so callers,
 organizations, and customer devices can subscribe, broadcast proofs, and fetch
@@ -18,7 +18,7 @@ Wire protocol (newline-free JSON request -> JSON response, one per message):
     ping      : {"type":"ping"}  -> {"type":"pong","timestamp":int}
 
 Run a node:
-    poetry run python -m calldns.network.ws_server --port 8765
+    poetry run python -m tessera.network.ws_server --port 8765
 """
 
 import argparse
@@ -137,7 +137,7 @@ async def serve(host: str, port: int, node_id: str, node_type: NodeType,
     server_obj = NodeWebSocketServer(node)
 
     async with websockets.serve(server_obj.handler, host, port):
-        print(f"CallDNS node '{node_id}' ({node_type.value}) on ws://{host}:{port}")
+        print(f"Tessera node '{node_id}' ({node_type.value}) on ws://{host}:{port}")
         try:
             await asyncio.Future()  # run until cancelled
         finally:
@@ -145,7 +145,7 @@ async def serve(host: str, port: int, node_id: str, node_type: NodeType,
 
 
 def main():
-    ap = argparse.ArgumentParser(description="Run a CallDNS WebSocket node")
+    ap = argparse.ArgumentParser(description="Run a Tessera WebSocket node")
     ap.add_argument("--host", default="127.0.0.1")
     ap.add_argument("--port", type=int, default=8765)
     ap.add_argument("--node-id", default="node-1")

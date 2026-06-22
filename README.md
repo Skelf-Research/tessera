@@ -1,7 +1,7 @@
 # Tessera
 
 **Authenticated, metadata-private one-to-one delivery.** A sender proves identity
-to a recipient with a Schnorr zero-knowledge proof under a per-call *blinded
+to a recipient with a Schnorr zero-knowledge proof under a per-recipient *blinded
 pseudonym*; the proof is AES-GCM encrypted and routed over a bucketed broadcast
 network whose cover traffic is calibrated to provide
 **(ε,δ)-differentially-private** sender↔recipient metadata.
@@ -45,7 +45,7 @@ poetry run python -m tessera.deploy.cluster --nodes 5      # local cluster (mesh
 
 ```
 tessera/
-  crypto/        Schnorr / Fiat-Shamir, AES-GCM, per-call key blinding
+  crypto/        Schnorr / Fiat-Shamir, AES-GCM, per-recipient key blinding
   sdk/           Sender, Verifier, commitment_manager, traffic_manager (DPCoverTraffic)
   network/       async_node + persistent SQLite, ws_server, WSPeerTransport, canonical routing
   deploy/        LocalCluster launcher (mesh / ring, runtime churn)

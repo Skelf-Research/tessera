@@ -7,7 +7,7 @@ Guidance for Claude Code (claude.ai/code) when working in this repo.
 Tessera is the protocol implementation behind two papers (see strategy memo
 `~/.claude/projects/-home-dipankar-Code-tessera/memory/`). The core primitive is
 **authenticated, metadata-private, one-to-one delivery**: a sender proves identity
-to a recipient using a Schnorr / Fiat–Shamir zero-knowledge proof under a per-call
+to a recipient using a Schnorr / Fiat–Shamir zero-knowledge proof under a per-recipient
 *blinded pseudonym* `Y' = Y + tG` (`t = H(seed ‖ session_id) mod q`); the proof is
 AES-GCM encrypted and routed over a bucketed broadcast network with calibrated
 **(ε,δ)-differentially-private cover traffic**. No central authority; pairwise
@@ -44,7 +44,7 @@ poetry run python -m tessera.deploy.cluster --nodes 5 --topology ring
 
 | Layer | Path | What |
 |---|---|---|
-| Crypto | `tessera/crypto/` | `ZKProver`/`ZKVerifier` (Schnorr FS), `SecureEncryption` (AES-GCM), `blinding.py` (per-call pseudonyms, `BlindedSender`/`BlindedVerifier`) |
+| Crypto | `tessera/crypto/` | `ZKProver`/`ZKVerifier` (Schnorr FS), `SecureEncryption` (AES-GCM), `blinding.py` (per-recipient pseudonyms, `BlindedSender`/`BlindedVerifier`) |
 | SDK | `tessera/sdk/` | `Sender`, `Verifier`, `commitment_manager`, `traffic_manager` (incl. `DPCoverTraffic`) |
 | Network | `tessera/network/` | `async_node.py` (in-memory cache + persistent SQLite via `async_storage.py`), `ws_server.py` (WS transport + `WSPeerTransport` gossip), `decentralized.py` (canonical routing: `compute_bucket`, `compute_fingerprint`, `make_routing_fields`), `dht.py` |
 | Deploy | `tessera/deploy/` | `LocalCluster` (N peered in-process nodes, mesh/ring, runtime churn) |

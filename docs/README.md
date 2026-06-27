@@ -1,53 +1,45 @@
 # Tessera Documentation
 
-This directory contains comprehensive documentation for the Tessera zero-knowledge caller verification system.
+Tessera is a one-to-one delivery protocol providing **sender authentication and
+metadata privacy together** (see top-level [`README.md`](../README.md) for the
+elevator pitch). These docs are for engineers building on or contributing to
+the implementation.
 
-## Core Documentation
+## Start here
 
-### Getting Started
-- [README](../README.md) - Main project overview
-- [Quickstart Guide](quickstart.md) - Quick start instructions
-- [API Reference](api.md) - Complete API documentation
+| Doc | What |
+|---|---|
+| [`quickstart.md`](quickstart.md) | Install, run a node, send and verify a proof, run a local cluster. |
+| [`architecture.md`](architecture.md) | The end-to-end picture: crypto / SDK / network / deploy layers. |
+| [`specs.md`](specs.md) | Pointers to the authoritative protocol spec, formal proofs, and paper. |
 
-### Architecture & Design
-- [Architecture Overview](architecture.md) - Basic system architecture
-- [Enhanced Architecture](enhanced_architecture.md) - Detailed architectural design
-- [Decentralized Network](decentralized_network.md) - Decentralized network implementation
-- [Specifications](specs.md) - Technical specifications
+## Protocol and security
 
-### Implementation Details
-- [Zero-Knowledge Implementation](COMPLETE_ZK_IMPLEMENTATION.md) - ZK proof system details
-- [Privacy Enhancements](ENHANCED_PRIVACY.md) - Privacy-preserving features
-- [Traffic Privacy](TRAFFIC_PRIVACY.md) - Traffic analysis resistance
-- [Matching Solution](MATCHING_SOLUTION.md) - Scalable proof matching
+| Doc | What |
+|---|---|
+| [`authentication.md`](authentication.md) | How a sender proves identity to a recipient: Schnorr ZK + per-recipient blinded pseudonym. |
+| [`commitment-registration.md`](commitment-registration.md) | The per-delivery commitment scheme that binds proof to delivery and prevents replay. |
+| [`mutual-authentication.md`](mutual-authentication.md) | Running two Tessera flows in opposite directions for mutual sender↔recipient authentication. |
+| [`privacy-model.md`](privacy-model.md) | The (ε,δ)-DP cover-traffic guarantee, per-recipient pseudonyms, threat model. |
 
-### Project Information
-- [Implementation Summary](IMPLEMENTATION_SUMMARY.md) - Implementation overview
-- [Package Summary](PACKAGE_SUMMARY.md) - Package structure and components
-- [Final Summary](FINAL_SUMMARY.md) - Complete project summary
-- [Use Cases](use_cases.md) - Practical use cases and applications
+## Network
 
-## Directory Structure
+| Doc | What |
+|---|---|
+| [`decentralized-architecture.md`](decentralized-architecture.md) | Relay overlay, bucketed broadcast, gossip, churn behaviour. |
+| [`network-economics.md`](network-economics.md) | Incentive design for a no-central-authority relay overlay. |
 
-```
-docs/
-├── README.md                       # This file
-├── api.md                         # API documentation
-├── quickstart.md                  # Getting started guide
-├── architecture.md                # Basic architecture
-├── enhanced_architecture.md       # Detailed architecture
-├── decentralized_network.md       # Network implementation
-├── specs.md                       # Technical specifications
-├── COMPLETE_ZK_IMPLEMENTATION.md  # ZK implementation
-├── ENHANCED_PRIVACY.md           # Privacy features
-├── TRAFFIC_PRIVACY.md            # Traffic analysis resistance
-├── MATCHING_SOLUTION.md          # Proof matching
-├── IMPLEMENTATION_SUMMARY.md     # Implementation overview
-├── PACKAGE_SUMMARY.md           # Package details
-├── FINAL_SUMMARY.md             # Project summary
-└── use_cases.md                 # Use cases
-```
+## Integration
 
-## Examples
+| Doc | What |
+|---|---|
+| [`api.md`](api.md) | Python SDK reference: `Sender`, `Verifier`, `BlindedSender`, `BlindedVerifier`, `LocalCluster`. |
+| [`ui.md`](ui.md) | Cross-platform SDK UI components (Android / iOS / RN / Web / Flutter). |
 
-See the [examples](../examples/) directory for practical code examples and demonstrations.
+## Research artifacts
+
+Live in the sibling repo [`tessera-paper-msg`](../../tessera-paper-msg):
+- `main.tex` — Paper A draft for PoPETs 2027.2.
+- `spec/protocol_spec.md`, `spec/metadata_privacy.md` — authoritative protocol + DP guarantee.
+- `formal/security_proofs.md`, `formal/tessera.pv` — game-based proofs + ProVerif model.
+- `results/`, `ARTIFACT.md` — reproducible experiments E1–E7.

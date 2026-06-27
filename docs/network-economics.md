@@ -1,343 +1,100 @@
-# Tessera Network Economics
-
-## Overview
-
-Tessera uses a **Consortium + Fee Hybrid** model to incentivize core node operation while ensuring network sustainability and neutrality.
-
-## The Challenge
-
-Core nodes are essential infrastructure that:
-- Route proofs between organizations and customers
-- Maintain subscriptions and pending proof queues
-- Provide high availability (24/7 operation)
-- Cannot identify users (privacy by design)
-
-Without incentives, operators have costs but no direct benefit, leading to free-rider problems.
-
-## Consortium + Fee Hybrid Model
-
-### Structure
-
-```
-┌─────────────────────────────────────────────────────────┐
-│                   Tessera Foundation                     │
-│                   (Non-profit governance)                │
-└─────────────────────┬───────────────────────────────────┘
-                      │
-        ┌─────────────┼─────────────┐
-        │             │             │
-        ▼             ▼             ▼
-   ┌─────────┐   ┌─────────┐   ┌─────────┐
-   │ Bank A  │   │ Bank B  │   │ Bank C  │   Founding Consortium
-   │ Core    │   │ Core    │   │ Core    │   (run core nodes)
-   └─────────┘   └─────────┘   └─────────┘
-        │             │             │
-        └─────────────┼─────────────┘
-                      │
-                      ▼
-              ┌───────────────┐
-              │  Core Network │
-              │  (shared)     │
-              └───────┬───────┘
-                      │
-        ┌─────────────┼─────────────┐
-        │             │             │
-        ▼             ▼             ▼
-   ┌─────────┐   ┌─────────┐   ┌─────────┐
-   │ Org D   │   │ Org E   │   │ Org F   │   Non-consortium orgs
-   │ (pays)  │   │ (pays)  │   │ (pays)  │   (pay per-proof fees)
-   └─────────┘   └─────────┘   └─────────┘
-```
-
-### Participant Roles
-
-| Role | Contribution | Benefit |
-|------|-------------|---------|
-| **Founding Consortium** | Run 1+ core nodes | No per-proof fees, governance rights |
-| **Foundation** | Governance, fee collection | Funds additional infrastructure |
-| **Non-consortium Orgs** | Pay per-proof fees | Network access without node operation |
-| **Customers** | None (free) | Verified call protection |
-
-## Fee Structure
-
-### Per-Proof Pricing
-
-| Tier | Monthly Volume | Price per Proof |
-|------|----------------|-----------------|
-| Starter | 0 - 10,000 | £0.002 |
-| Growth | 10,001 - 100,000 | £0.001 |
-| Enterprise | 100,001 - 1,000,000 | £0.0005 |
-| Custom | 1,000,000+ | Negotiated |
-
-### Example Costs
-
-| Organization Type | Monthly Calls | Monthly Cost |
-|-------------------|---------------|--------------|
-| Small credit union | 5,000 | £10 |
-| Regional bank | 50,000 | £50 |
-| National bank | 500,000 | £250 |
-| Large enterprise | 2,000,000 | Negotiated |
-
-### What's Included
-
-- Proof broadcast to network
-- Cover traffic (3 decoys per proof)
-- 24-hour proof retention
-- Push notification delivery
-- Basic SLA (99.9% uptime)
-
-### Additional Services (Optional)
-
-| Service | Price |
-|---------|-------|
-| Extended retention (7 days) | +20% |
-| Priority routing | +50% |
-| Dedicated support | £500/month |
-| Custom SLA (99.99%) | Negotiated |
-
-## Founding Consortium
-
-### Requirements
-
-To join the founding consortium, organizations must:
-
-1. **Run Infrastructure**
-   - Minimum 2 core nodes (primary + failover)
-   - 99.9% uptime SLA
-   - Geographic distribution preferred
-
-2. **Commit Resources**
-   - Initial setup and ongoing operations
-   - Participate in governance (quarterly meetings)
-   - 2-year minimum commitment
-
-3. **Meet Eligibility**
-   - Regulated financial institution or equivalent
-   - No competitive conflict of interest
-   - Pass security audit
-
-### Benefits
-
-- **No per-proof fees** for own traffic
-- **Governance voting rights** (1 vote per member)
-- **Early adopter recognition**
-- **Input on roadmap priorities**
-- **Revenue share** from fee pool (optional)
-
-### Governance
-
-The consortium governs:
-- Fee structure changes
-- New consortium member admission
-- Technical standards and protocols
-- Foundation budget allocation
-- Network upgrade decisions
-
-Decisions require majority vote with quorum of 60%.
-
-## Foundation Role
-
-### Responsibilities
-
-1. **Fee Collection & Distribution**
-   - Collect fees from non-consortium orgs
-   - Distribute to node operators (if applicable)
-   - Fund additional infrastructure
-
-2. **Network Operations**
-   - Run additional core nodes as needed
-   - Monitor network health
-   - Coordinate incident response
-
-3. **Governance Administration**
-   - Facilitate consortium meetings
-   - Maintain membership records
-   - Publish transparency reports
-
-4. **Ecosystem Development**
-   - SDK maintenance
-   - Documentation
-   - Developer support
-
-### Funding Allocation
-
-| Category | Allocation |
-|----------|------------|
-| Infrastructure (additional nodes) | 40% |
-| Development & maintenance | 30% |
-| Operations & support | 20% |
-| Reserve fund | 10% |
-
-## Transition Path
-
-### Phase 1: Bootstrap (Months 1-6)
-
-- 3-5 founding consortium members
-- Foundation operates 2-3 additional nodes
-- Free tier for early adopters (first 1,000 proofs/month)
-- Focus on onboarding and stability
-
-### Phase 2: Growth (Months 7-18)
-
-- Expand consortium to 10+ members
-- Introduce fee structure
-- Geographic expansion (EU, US nodes)
-- Enterprise features
-
-### Phase 3: Maturity (Month 19+)
-
-- Self-sustaining fee revenue
-- Consortium governance fully operational
-- Consider additional incentive models
-- International expansion
-
-## Joining the Network
-
-### For Organizations (Non-Consortium)
-
-Non-consortium organizations run their own **org node** but connect to the consortium's core network. They don't need to run core nodes.
-
-```
-Small Org (e.g., credit union)
-         │
-         ▼
-    ┌─────────┐
-    │ Org Node │  ← They run this (with JWT auth for their customers)
-    └────┬────┘
-         │
-         ▼
-    Core Network   ← Consortium runs this (small org pays per-proof)
-```
-
-#### Setup Steps
-
-```bash
-# 1. Register with foundation
-curl -X POST https://foundation.tessera.network/orgs/register \
-  -d '{"name": "Acme Credit Union", "contact": "tech@acme-cu.com"}'
-
-# 2. Receive network API key for billing
-# 3. Configure and start org node
-export CALLDNS_JWT_SECRET="your-jwt-secret"
-export CALLDNS_NETWORK_API_KEY="key-from-foundation"
-
-tessera-node start --type org --id acme-creditunion \
-  --port 8100 --api-port 8101 \
-  --peer core-1@network.tessera.org:8100 \
-  --peer core-2@network.tessera.org:8100
-
-# 4. Billing starts on first proof broadcast
-```
-
-#### Customer Registration
-
-Customers register with the small org's org node (same as consortium orgs):
-
-```python
-# Customer's mobile app calls the org's API
-import httpx
-
-response = httpx.post(
-    "https://api.acme-creditunion.com:8101/customers/register",
-    headers={"Authorization": f"Bearer {jwt_token}"},
-    json={
-        "customer_id": "member-5678",
-        "commitment": "abc123...",
-        "device_id": "iphone-main"
-    }
-)
-```
-
-The org node stores commitments locally and handles all customer interactions.
-
-#### What's Billed
-
-| Action | Cost |
-|--------|------|
-| Customer registration | Free |
-| Receiving proofs (customer → org) | Free |
-| Broadcasting proofs (org → customer) | Per-proof fee |
-| Cover traffic (decoys) | Included in per-proof fee |
-
-Small orgs only pay when they broadcast proofs to customers (e.g., when the bank calls the customer).
-
-### For Consortium Membership
-
-1. **Expression of Interest**
-   - Contact foundation@tessera.network
-   - Provide organization details
-
-2. **Technical Assessment**
-   - Infrastructure review
-   - Security audit
-   - Capacity planning
-
-3. **Legal Agreement**
-   - Consortium membership agreement
-   - SLA commitments
-   - Governance participation
-
-4. **Onboarding**
-   - Node setup support
-   - Integration testing
-   - Go-live coordination
-
-## Comparison with Alternatives
-
-| Model | Pros | Cons |
-|-------|------|------|
-| **Consortium + Fee (chosen)** | Balanced, sustainable, neutral | Requires founding members |
-| Pure fee-based | Simple economics | Central operator, trust issues |
-| Pure consortium | No fees for members | Limited to consortium |
-| Token/staking | Cryptoeconomic incentives | Regulatory complexity |
-| Public good | No fees | Funding uncertainty |
-
-## FAQ
-
-### Why not make it completely free?
-
-Infrastructure costs are real. Without sustainable funding:
-- Node operators have no incentive
-- Quality degrades over time
-- Network becomes unreliable
-
-The fee structure is designed to be minimal while ensuring sustainability.
-
-### Why consortium instead of single operator?
-
-- **Neutrality**: No single party controls the network
-- **Trust**: Distributed operation reduces single point of failure
-- **Governance**: Stakeholders have voice in decisions
-
-### Can small organizations afford it?
-
-Yes. At £0.002/proof:
-- 1,000 calls/month = £2
-- 5,000 calls/month = £10
-
-This is negligible compared to fraud losses prevented.
-
-### What prevents consortium from raising fees?
-
-- **Governance**: Fee changes require majority vote
-- **Competition**: Members can fork if fees unreasonable
-- **Transparency**: All financials published quarterly
-
-### How do customers benefit?
-
-Customers pay nothing. They benefit from:
-- Verified call protection
-- Reduced fraud risk
-- Better service (faster authentication)
-
-Organizations pay because they benefit from:
-- Reduced fraud losses
-- Regulatory compliance
-- Customer trust
-
-## Contact
-
-- **Consortium inquiries**: consortium@tessera.network
-- **Organization signup**: onboarding@tessera.network
-- **Technical support**: support@tessera.network
-- **Foundation**: foundation@tessera.network
+# Network Economics
+
+The Tessera relay overlay has **no central operator**. This page sketches the
+incentive structure that makes a peer-to-peer relay viable, what we measure /
+have decided in the code, and what is left to design.
+
+## Why this matters
+
+Metadata-private routing has real costs:
+- **CPU / I/O.** Each relay stores TTL'd encrypted proofs, indexes them by
+  bucket, matches subscriptions, gossips to peers, and emits calibrated DP
+  cover traffic.
+- **Bandwidth.** Cover traffic is the dominant cost in steady state; the
+  expected per-round overhead is ≈ B·μ dummy proofs where μ = (1/ε)·ln(1/(2δ)).
+  At B=64, ε=1, δ=1e-6 this is ≈ 840 dummy proofs per 30 s round per relay.
+- **Disk.** A single SQLite file holds proofs for their TTL (1 h default) plus
+  subscriptions and pending queues. Modest at small scale.
+
+So someone has to run the relays. The design space is who, and why.
+
+## Who runs relays
+
+Tessera makes the relay overlay symmetric — anyone can run one. The
+realistic deployment modes (none mutually exclusive):
+
+| Mode | Relay operator | Why they bear the cost |
+|---|---|---|
+| **Self-hosted** | The sender or recipient organisation | Direct control; no third-party dependency; the cost is just operating one more service. |
+| **Federated (NGO / consortium)** | Privacy-focused NGOs, universities, foundations | Mission alignment; the cost is amortised across a community. |
+| **Paid relay providers** | Commercial operators | Recipients pay for SLA-backed, geo-distributed relays. The market resembles email / push-notification relays today. |
+| **Embedded in user devices** | End-user device acting as its own relay | For small groups / personal use; the device only sees its own buckets. |
+
+A user is free to subscribe to one or many relays simultaneously (different
+relays for different contacts, for redundancy, or for jurisdictional
+diversity).
+
+## What discourages free-riding
+
+- Per-relay bookkeeping is local (subscriptions, proofs, peers) — a relay
+  cannot extract identity information from the traffic it carries, so it
+  cannot monetise the metadata it has access to.
+- Refusing to gossip a proof is detectable by the recipient (it simply does
+  not arrive); a recipient subscribed to more than one relay routes around
+  unresponsive ones.
+- Cover-traffic generation is decentralised; a relay that under-contributes
+  noise degrades only its own bucket's privacy locally (until cover from other
+  relays / participants compensates). A robust **distributed noise generation
+  protocol that tolerates a malicious minority** is open future work (called
+  out in the paper).
+
+## What discourages bad behaviour
+
+- **No central authority to bribe.** The recipient's authentication check
+  rests on the per-contact `shared_seed`, not on anything the network knows.
+- **Dropped or delayed proofs are visible.** Recipients can detect persistent
+  failure-to-deliver from a particular relay and switch.
+- **Forgery is impossible.** A relay cannot synthesise a valid Schnorr proof
+  for a contact it doesn't have the secret for (Theorem 1 in
+  [`../../tessera-paper-msg/formal/security_proofs.md`](../../tessera-paper-msg/formal/security_proofs.md));
+  the relay's role is transport, not minting.
+
+## Reputation and discovery
+
+The current code uses configured peer lists and pairwise peer connections
+(`tessera/network/ws_server.py::WSPeerTransport`). A reputation overlay
+(uptime, gossip-correctness, freshness of state) is a natural addition; the
+`tessera/network/dht.py` Kademlia scaffold is the obvious substrate for
+discovery once it's wired into the production overlay. Both are deferred to
+future work.
+
+## Measured costs (single node, dev laptop)
+
+From paper §Evaluation:
+
+| Op | Throughput | p99 latency |
+|---|---|---|
+| Subscribe | ~326 ops/s | ~90 ms |
+| Route (~75 subs/bucket) | ~440 ops/s | ~128 ms |
+| ZK proof verify (the receiver hot path) | ~77 ops/s | not yet optimised |
+
+The optimised storage layer (one persistent connection, `synchronous=NORMAL`,
+in-memory subscription + bloom caches) is what makes a relay's per-op cost
+small enough that the bandwidth cost of DP cover traffic dominates.
+
+## What we have **not** built
+
+- A real reputation system.
+- An incentive token / payment layer.
+- A discovery DHT that lives.
+- A distributed noise-generation protocol robust to a malicious minority.
+
+These are all reasonable future-work directions; the protocol is designed so
+they can be added without changing the core authentication and privacy
+guarantees.
+
+## Related
+
+- [`decentralized-architecture.md`](decentralized-architecture.md) — relay topology, gossip, churn behaviour.
+- [`privacy-model.md`](privacy-model.md) — DP cover-traffic bandwidth cost.
+- Paper §Limitations — distributed noise generation as open work.

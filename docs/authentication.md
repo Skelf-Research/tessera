@@ -1,308 +1,122 @@
-# Tessera Authentication Model
+# Sender Authentication
 
-Tessera uses a split authentication model that preserves privacy while enabling secure operations.
+How a sender proves identity to a recipient with no central authority and no
+cross-recipient linkability. The formal proofs live in
+[`../../tessera-paper-msg/formal/security_proofs.md`](../../tessera-paper-msg/formal/security_proofs.md);
+this doc is the engineer-facing summary of the flow and where each piece lives
+in the code.
 
-## Design Principles
+## What we want
 
-1. **Core nodes are public** - No authentication for proof routing (privacy)
-2. **Org nodes require auth** - Bank-issued JWT tokens for customer registration
-3. **Rate limiting** - IP-based throttling prevents abuse without tracking identity
+| Property | Meaning |
+|---|---|
+| Authentication | The recipient is convinced the delivery came from this specific contact. |
+| Witness privacy | The recipient learns nothing about the sender's secret key beyond its existence. |
+| Cross-recipient unlinkability | Two recipients cannot tell that a sender's two deliveries came from the same sender. |
+| Replay resistance | A captured proof cannot be re-presented as a new delivery. |
+| No central registry | No party other than the two endpoints learns about the binding. |
 
-## Authentication by Node Type
+## Primitives
 
-| Node Type | Authentication | Rate Limiting |
-|-----------|----------------|---------------|
-| **Core Node** | None (public) | IP-based (60 req/min) |
-| **Org Node** | JWT token | Optional |
+**Schnorr / Fiat–Shamir identity proof** (`tessera/crypto/crypto_utils.py::ZKProver`,
+`ZKVerifier`). Group SECP256k1, generator `G`, order `q`, hash `H` (SHA-256).
+Sender key `(x, Y=xG)`.
 
-## Core Node Endpoints (Public)
+```
+Prove(x, Y, m):
+    r  ←$ Z_q
+    R  = rG
+    c  = H(R ‖ Y ‖ m) mod q
+    s  = (r + c·x) mod q
+    return π = (R, s)
 
-Core nodes don't require authentication to maintain customer anonymity:
-
-```bash
-# No auth header needed
-curl -X POST https://core.tessera.network/proofs/broadcast \
-  -H "Content-Type: application/json" \
-  -d '{"proof": {...}, "decoys": 3}'
-
-# Rate limited by IP
-curl https://core.tessera.network/proofs/{subscriber_id}
+Verify(Y, m, π):
+    c  = H(R ‖ Y ‖ m) mod q
+    accept iff  sG == R + cY
 ```
 
-### Rate Limiting
+Standard Schnorr signature on `(Y, m)`. Unforgeability reduces to discrete log
+in `G` (forking lemma); the proof is HVZK and, in the ROM under Fiat–Shamir,
+non-interactive zero-knowledge.
 
-- **60 requests per minute** per IP address
-- **10 burst** per second
-- Returns `429 Too Many Requests` with `Retry-After` header
+**Per-recipient key blinding** (`tessera/crypto/blinding.py`). The base proof
+reveals `Y`, so presenting the long-term `Y` would let a recipient link a
+sender's deliveries. Instead, for each delivery the sender presents a
+**blinded pseudonym**:
 
-```json
-{
-  "detail": "Rate limit exceeded"
-}
+```
+t   = H(shared_seed ‖ session_id) mod q
+Y'  = Y + t·G
+x'  = x + t  mod q
+π   = Prove(x', Y', m)
 ```
 
-Headers:
-```
-Retry-After: 45
-```
+The recipient (who holds the per-contact `shared_seed` from enrolment)
+recomputes `t` and checks `Y' = Y + t·G` to **authenticate** that the proof
+came from this contact. Anyone without the seed sees a uniform `Y'` per
+delivery → cross-recipient unlinkability.
 
-## Org Node Endpoints (JWT Required)
-
-Org nodes require JWT authentication for customer registration and verification:
-
-```bash
-# JWT token required
-curl -X POST https://bank-node.example.com/customers/register \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIs..." \
-  -d '{
-    "customer_id": "CUST-12345",
-    "commitment": "a1b2c3...",
-    "device_id": "iphone-main"
-  }'
-```
-
-### JWT Token Structure
-
-```json
-{
-  "sub": "customer_id",
-  "iss": "bank-identity-service",
-  "aud": "tessera-org-node",
-  "exp": 1700000000,
-  "iat": 1699996400,
-  "scope": ["register", "verify"]
-}
-```
-
-### Token Issuance
-
-Banks issue JWT tokens through their existing identity systems:
-
-1. **Mobile App Login** → Bank's OAuth/OIDC service
-2. **Token Exchange** → Bank issues Tessera-scoped JWT
-3. **SDK Usage** → Token passed to `orgAuthToken` config
-
-Example integration with bank's OAuth:
+## Flow
 
 ```python
-# Bank's backend service
-@app.post("/tessera/token")
-async def issue_tessera_token(user_id: str):
-    # Verify user is authenticated
-    user = await get_authenticated_user()
+from tessera.crypto.crypto_utils import CryptoUtils
+from tessera.crypto.blinding import BlindedSender, BlindedVerifier
 
-    # Issue Tessera-scoped token
-    token = jwt.encode({
-        "sub": user.customer_id,
-        "iss": "natwest-identity",
-        "aud": "tessera-org-node",
-        "exp": datetime.utcnow() + timedelta(hours=1),
-        "scope": ["register", "verify"]
-    }, JWT_SECRET, algorithm="HS256")
+# Sender setup (long-term)
+x, Y, _ = CryptoUtils.generate_keypair()
+sender  = BlindedSender(x, Y)
 
-    return {"token": token}
-```
+# Enrolment record stored at the recipient (per-contact)
+record = {"contact_pubkey": Y, "shared_seed": b"recipient-bound-seed"}
 
-## SDK Configuration
+# Per delivery
+proof = sender.prove(record["shared_seed"], session_id="m-001",
+                     metadata={"channel": "message"})
 
-### No API Key for Core Nodes
-
-SDKs connect to core nodes without authentication:
-
-```typescript
-// Web SDK
-const client = TesseraClient.initialize({
-  coreNodeUrl: 'https://core.tessera.network',
-  // No auth needed for core node
-});
-
-// Broadcast proof (public endpoint)
-await client.prepareVerifiedCall({
-  destinationId: 'natwest-uk',
-  phoneNumber: '+44 800 123 4567'
-});
-```
-
-### JWT for Org Node Registration
-
-```typescript
-const client = TesseraClient.initialize({
-  coreNodeUrl: 'https://core.tessera.network',
-  orgNodeUrl: 'https://org.natwest.com:8101',
-  orgAuthToken: 'eyJhbGciOiJIUzI1NiIs...' // From bank's auth
-});
-
-// Register commitment (requires JWT)
-await client.registerCommitment(
-  'CUST-12345',
-  'commitment-hex',
-  'device-id'
-);
-```
-
-### Android Example
-
-```kotlin
-val config = TesseraConfig(
-    coreNodeUrl = "https://core.tessera.network",
-    orgNodeUrl = "https://org.natwest.com:8101",
-    orgAuthToken = bankAuthService.getTesseraToken()
+# Recipient authentication
+verifier = BlindedVerifier()
+assert verifier.authenticate(
+    proof,
+    contact_public_key=record["contact_pubkey"],
+    shared_seed=record["shared_seed"],
+    session_id="m-001",
 )
-
-val client = TesseraClient.initialize(context, config)
 ```
 
-### iOS Example
+`BlindedVerifier.authenticate` enforces *both* checks:
+1. `ZKVerifier.verify_proof(π)` — Schnorr soundness.
+2. `proof['public_key'] == Y + t·G` (constant-time via `hmac.compare_digest`)
+   — the pseudonym matches the expected contact for this session.
 
-```swift
-let config = TesseraConfig(
-    coreNodeUrl: "https://core.tessera.network",
-    orgNodeUrl: "https://org.natwest.com:8101",
-    orgAuthToken: bankAuthService.getTesseraToken()
-)
+## Why both checks matter
 
-TesseraClient.shared.initialize(config: config)
-```
+A valid Schnorr proof on its own only attests "*some* party knows the secret
+behind the key in this proof". The per-recipient pseudonym check binds the
+proof to the *expected* contact. A different sender producing a perfectly
+valid Schnorr proof under a different `Y'` will fail check 2.
 
-## Node Configuration
+## Threat-model summary
 
-### Core Node (Public)
+| Adversary | Defence |
+|---|---|
+| Malicious sender (impersonation) | Theorem 1 (unforgeability ⇐ DLog). |
+| Honest-but-curious recipient (link this sender's deliveries) | Per-recipient blinding — `Y'` is uniform across deliveries to that recipient as `session_id` varies. |
+| Colluding recipients (link across recipients) | Distinct `shared_seed`s → distinct `Y'` distributions; without a seed, `Y'` is uniform. |
+| Global passive network observer | `(ε,δ)`-DP cover traffic — see [`privacy-model.md`](privacy-model.md). |
+| Replay | Per-delivery commitment + receiver dedup — see [`commitment-registration.md`](commitment-registration.md). |
 
-```bash
-# Start with rate limiting (default: 60 req/min)
-tessera-node start \
-  --type core \
-  --id core-1 \
-  --port 8100 \
-  --api-port 8101 \
-  --rate-limit 60
-```
+## Tests and benchmarks
 
-### Org Node (JWT Required)
+- Unit tests: `tests/test_crypto.py`, `tests/test_blinding.py` (7 tests covering
+  cross-recipient unlinkability, wrong-seed rejection, session mismatch,
+  tampered-proof rejection).
+- Quantitative FAR/FRR over forge / tamper / swap-key trials:
+  `scripts/bench_security.py` (currently 0/0).
+- Latency / sizes: `scripts/bench_crypto.py` (ZK gen ~0.85 ms, verify ~13 ms,
+  proof ~216 B; see paper §Eval).
 
-```bash
-# Start with JWT validation
-tessera-node start \
-  --type org \
-  --id natwest-uk \
-  --port 8100 \
-  --api-port 8101 \
-  --jwt-secret "your-secret-key" \
-  --peer core-1@core.tessera.network:8100
-```
+## Related
 
-For production, use environment variables:
-
-```bash
-export CALLDNS_JWT_SECRET="your-production-secret"
-tessera-node start --type org --id natwest-uk --port 8100 --api-port 8101
-```
-
-### CLI Reference
-
-| Argument | Description | Default |
-|----------|-------------|---------|
-| `--type` | Node type: `core`, `org`, or `customer` | Required |
-| `--id` | Node identifier | Required |
-| `--port` | P2P network port | 8100 |
-| `--api-port` | HTTP API port | None |
-| `--jwt-secret` | JWT secret for org node auth | None |
-| `--rate-limit` | Requests per minute | 60 |
-| `--peer` | Initial peer (format: `id@host:port`) | None |
-| `--data-dir` | Data directory | `./tessera_data/<id>` |
-
-## Security Considerations
-
-### Core Nodes
-
-- **No identity tracking** - Can't correlate requests to users
-- **Rate limiting only** - Prevents DoS without auth
-- **IP-based** - May affect users behind NAT
-
-### Org Nodes
-
-- **Bank controls tokens** - Revoke on account closure
-- **Short expiry** - 1 hour recommended
-- **Scope limiting** - Only grant necessary permissions
-
-### Token Security
-
-- Store tokens securely (Keychain/Keystore)
-- Rotate regularly
-- Don't log tokens
-- Use HTTPS only
-
-## Development Mode
-
-For local development, org nodes can run without JWT:
-
-```bash
-# Dev mode - no auth required
-tessera-node start --type org --id test-bank --port 8100 --api-port 8101
-# Warning: Commitment storage configured without JWT secret
-```
-
-**Never run production without JWT validation.**
-
-## Error Responses
-
-### 401 Unauthorized
-
-Missing or invalid token:
-
-```json
-{
-  "detail": "Authorization required"
-}
-```
-
-```json
-{
-  "detail": "Invalid or expired token"
-}
-```
-
-### 429 Too Many Requests
-
-Rate limit exceeded:
-
-```json
-{
-  "detail": "Rate limit exceeded"
-}
-```
-
-### 503 Service Unavailable
-
-Endpoint not available on this node type:
-
-```json
-{
-  "detail": "Contact center endpoints only available on org nodes"
-}
-```
-
-## Best Practices
-
-### For Banks
-
-1. **Integrate with existing auth** - Use your OAuth/OIDC system
-2. **Short-lived tokens** - 1 hour expiry
-3. **Rotate secrets** - Change JWT signing key periodically
-4. **Audit logs** - Log all registration requests
-5. **Revocation** - Have process for token invalidation
-
-### For SDK Developers
-
-1. **Don't hardcode tokens** - Fetch from auth service
-2. **Handle 401** - Refresh token and retry
-3. **Handle 429** - Respect Retry-After header
-4. **Secure storage** - Use platform secure storage
-
-### For Network Operators
-
-1. **Monitor rate limits** - Adjust based on traffic
-2. **IP allowlists** - For known good actors
-3. **DDoS protection** - Use CDN/WAF for public endpoints
-4. **JWT key management** - HSM for production
+- [`commitment-registration.md`](commitment-registration.md) — per-delivery commitment + replay defence.
+- [`mutual-authentication.md`](mutual-authentication.md) — running Tessera bidirectionally for mutual auth.
+- [`privacy-model.md`](privacy-model.md) — the network-level (ε,δ)-DP guarantee.

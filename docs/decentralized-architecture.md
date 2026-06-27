@@ -1,553 +1,132 @@
-# Tessera Decentralized Architecture
+# Decentralized Architecture
 
-## Overview
+Tessera's relay overlay is a peer-to-peer network with **no central authority**.
+This page describes the topology, the routing primitives, the gossip mechanism,
+and the measured behaviour under churn.
 
-Tessera uses a decentralized network architecture that provides **privacy by design** - no single node can determine who is calling whom. This document explains how the system achieves both privacy and scalability.
+## Roles
 
-## Privacy Guarantees
+| Role | Implementation | What it does |
+|---|---|---|
+| Sender | `tessera.sdk.sender.Sender` | Produces blinded proofs, submits to any reachable relay. |
+| Recipient (subscriber) | `tessera.network.decentralized.Subscription` registered against a relay | Subscribes to its bucket; matches incoming proofs by bloom filter; fetches matched proofs. |
+| Relay node | `tessera.network.async_node.AsyncDecentralizedNode` served by `tessera.network.ws_server` | Stores proofs (TTL'd), indexes subscriptions by bucket, routes matched proofs to subscribers, gossips to peers. |
 
-### Core Claim
+Any participant can run a relay. Relays know each other through pairwise
+peer connections (`WSPeerTransport`).
 
-> **Tessera cannot identify the specific recipient of a call.** Organizations broadcast proofs with cover traffic to multiple buckets, and customers subscribe to buckets containing their commitment. No node in the network can correlate callers to callees.
+## Routing primitives (canonical, shared)
 
-### How It Works
-
-```
-┌─────────────────────────────────────────────────────────────────────┐
-│                    PROOF BROADCAST FLOW                             │
-└─────────────────────────────────────────────────────────────────────┘
-
-Organization calls Customer
-         │
-         ▼
-┌─────────────────┐
-│  Generate Proof │
-│  Bucket: 42     │
-└─────────────────┘
-         │
-         ▼
-┌─────────────────┐
-│ Add Cover       │  Generate decoy proofs for buckets 17, 63, 8
-│ Traffic         │
-└─────────────────┘
-         │
-         ▼
-┌─────────────────┐
-│ Broadcast ALL   │  Core nodes receive 4 proofs
-│ to Network      │  Cannot tell which is real
-└─────────────────┘
-         │
-         ▼
-    Core Nodes
-    ┌─────┬─────┬─────┬─────┐
-    │ B42 │ B17 │ B63 │ B8  │  Route to bucket subscribers
-    └──┬──┴──┬──┴──┬──┴──┬──┘
-       │     │     │     │
-       ▼     ▼     ▼     ▼
-    Subs   Subs   Subs   Subs   Each bucket has ~1000 subscribers
-       │
-       ▼
-   Customer matches bloom filter → Decrypts → Verified call!
-```
-
-### What Each Party Knows
-
-| Party | Knows | Does NOT Know |
-|-------|-------|---------------|
-| **Organization** | Customer's commitment, bucket | Other subscribers in bucket |
-| **Core Node** | Proof went to bucket 42 (and decoys to 17, 63, 8) | Which bucket has real proof, which subscriber matched |
-| **Customer** | Proof matched their commitment | Other proofs in their bucket |
-| **Network Observer** | Traffic patterns | Any relationships (all encrypted + cover traffic) |
-
----
-
-## Traffic Reduction Layers
-
-Customer devices receive only a tiny fraction of global traffic through layered filtering:
-
-```
-Global Traffic (100%)
-         │
-         ▼
-┌─────────────────────┐
-│ Layer 1: Bucket     │  64 buckets → 1.5% of traffic
-└─────────────────────┘
-         │
-         ▼
-┌─────────────────────┐
-│ Layer 2: Org Hints  │  3 linked orgs → 0.0045%
-└─────────────────────┘
-         │
-         ▼
-┌─────────────────────┐
-│ Layer 3: Time       │  Last 10 min → 0.00075%
-└─────────────────────┘
-         │
-         ▼
-┌─────────────────────┐
-│ Layer 4: Bloom      │  1% false positive → 0.0000075%
-└─────────────────────┘
-         │
-         ▼
-┌─────────────────────┐
-│ Layer 5: Pull Model │  Fetch only when notified
-└─────────────────────┘
-         │
-         ▼
-    ~1-2 proofs to verify locally
-```
-
-### Scalability Numbers
-
-| Global Scale | Proofs/Hour | Per Customer (Pull Model) |
-|--------------|-------------|---------------------------|
-| 10,000 calls/hour | 10,000 | 1-2 when notified |
-| 100,000 calls/hour | 100,000 | 1-2 when notified |
-| 1,000,000 calls/hour | 1,000,000 | 1-2 when notified |
-
----
-
-## Node Types
-
-### Core Nodes
-
-Run by Tessera or network operators. High-availability nodes that:
-- Route proofs between network participants
-- Manage customer subscriptions
-- Store pending proofs for pull model
-- Gossip proofs to peer core nodes
-- **Cannot identify customers** (only see buckets)
+All sender/recipient agreement runs through three functions in
+`tessera/network/decentralized.py` — **these are the single source of truth**
+for bucket and fingerprint derivation:
 
 ```python
-from tessera.network.decentralized import DecentralizedNode, NodeType
-
-core = DecentralizedNode(
-    node_id="core1.tessera.network",
-    node_type=NodeType.CORE
-)
+compute_bucket(commit)        # → int in [0, 64)
+compute_fingerprint(commit,t) # → 8 bytes, floored to a global 10s grid
+make_routing_fields(commit)   # → {bucket, bloom_fingerprint, timestamp}
 ```
 
-**Core nodes do NOT have:**
-- Customer registration storage
-- Contact center verification endpoints
-- Proof lookup by commitment
-
-### Organization Nodes
-
-Run by banks, healthcare providers, etc. These nodes:
-- Generate and broadcast proofs (bank → customer)
-- Receive and verify proofs (customer → bank)
-- Add cover traffic (decoy proofs)
-- Connect to multiple core nodes
-- **Store customer commitments** for contact center verification
-
-```python
-from tessera.network.decentralized import DecentralizedNode, NodeType, PrivacyPreservingBroadcaster
-
-org_node = DecentralizedNode(
-    node_id="org_barclays",
-    node_type=NodeType.ORGANIZATION
-)
-
-broadcaster = PrivacyPreservingBroadcaster(org_node, num_decoys=3)
-```
-
-**Org nodes have additional capabilities:**
-- Customer registration (`POST /customers/register`)
-- Contact center verification (`POST /verify/incoming-caller`)
-- Proof lookup by commitment (`GET /proofs/lookup`)
-
-### Customer Nodes
-
-Lightweight clients for mobile/desktop apps:
-- Subscribe to buckets matching their commitment
-- Provide bloom filter for fine-grained filtering
-- Pull proofs when notified (bank → customer)
-- **Generate and broadcast proofs** (customer → bank)
-- Verify proofs locally
-
-```python
-from tessera.network.decentralized import CustomerNodeClient
-
-client = CustomerNodeClient(
-    commitment=my_commitment,
-    linked_orgs=["org_barclays", "org_nhs"]
-)
-
-# Get subscription data to send to core node
-subscription = client.get_subscription_data()
-```
-
-**For outbound verified calls (customer → bank):**
-```kotlin
-// Android SDK
-VerifiedCallButton(
-    phoneNumber = "+44 800 123 4567",
-    destinationId = "natwest-uk",
-    destinationName = "NatWest"
-)
-```
-
----
-
-## Bidirectional Verification
-
-Tessera supports verification in both directions:
-
-### Bank → Customer (Inbound Verification)
-
-Protects customers from vishing/impersonation:
-
-```
-Bank Org Node → Core Network → Customer Device
-     │              │              │
-     │ Generate     │ Route by     │ Decrypt &
-     │ + Broadcast  │ Bucket       │ Verify
-```
-
-### Customer → Bank (Outbound Verification)
-
-Streamlines contact center authentication:
-
-```
-Customer Device → Core Network → Bank Org Node
-     │                │              │
-     │ Generate       │ Route to     │ Contact Center
-     │ + Broadcast    │ Org          │ Verifies
-     │                               │
-     └───────── Phone Call ──────────┘
-```
-
-### API Separation by Node Type
-
-| Endpoint | Core Node | Org Node |
-|----------|-----------|----------|
-| `/subscriptions` | ✅ | ✅ |
-| `/proofs/broadcast` | ✅ | ✅ |
-| `/customers/register` | ❌ | ✅ |
-| `/verify/incoming-caller` | ❌ | ✅ |
-| `/proofs/lookup` | ❌ | ✅ |
-
-This separation ensures:
-- Core nodes cannot identify customers
-- Only org nodes can verify callers
-- Privacy is maintained architecturally
-
----
-
-## Subscription Model
-
-### Customer Subscription
-
-```python
-subscription = {
-    "bucket": 42,                    # Coarse routing (1 of 64)
-    "bloom_filter": "base64...",     # Fine filtering (1% FP rate)
-    "org_hints": ["org_barclays"],   # Only these orgs (optional)
-    "since_timestamp": 1699900000    # Only recent proofs
-}
-```
-
-### Privacy Analysis
-
-| Field | Privacy Implication |
-|-------|---------------------|
-| `bucket` | Core node knows customer is in 1 of 64 groups (~1.5% of users) |
-| `bloom_filter` | Cannot reverse to commitment (false positives provide cover) |
-| `org_hints` | Core node knows customer's service providers (acceptable trade-off) |
-| `since_timestamp` | Core node knows customer is active |
-
----
-
-## Cover Traffic
-
-Organizations add decoy proofs to prevent traffic analysis:
-
-```python
-broadcaster = PrivacyPreservingBroadcaster(org_node, num_decoys=3)
-
-# Real proof goes to bucket 42
-# Decoys go to random buckets (e.g., 17, 63, 8)
-result = broadcaster.broadcast_with_cover(proof)
-
-# result:
-# {
-#     "real_bucket": 42,
-#     "decoy_buckets": [17, 63, 8],
-#     "total_broadcasts": 4,
-#     "privacy_ratio": 0.75  # 75% are decoys
-# }
-```
-
-### Privacy Levels
-
-| Decoys | Guess Probability | Bandwidth Cost |
-|--------|-------------------|----------------|
-| 1 | 50% | 2x |
-| 3 | 25% | 4x |
-| 7 | 12.5% | 8x |
-| 15 | 6.25% | 16x |
-
-Recommended: **3 decoys** (25% guess probability, 4x bandwidth)
-
----
-
-## Pull Model
-
-For mobile efficiency, customers use a pull model:
-
-### Flow
-
-```
-1. Org broadcasts proof to network
-2. Core node matches to subscriber's bucket + bloom filter
-3. Core node queues proof for subscriber
-4. Core node sends push notification: "You have a verified call"
-5. Customer app wakes, pulls pending proofs
-6. Customer verifies locally
-```
-
-### Implementation
-
-```python
-# Core node side
-pending = core_node.get_pending_proofs(subscriber_id)
-
-# Customer side
-proofs = client.pull_proofs(core_node_url)
-for proof in proofs:
-    if client.verify_proof_locally(proof):
-        # Decrypt and verify signature
-        show_verification_ui(proof)
-```
-
-### Benefits
-
-- **Zero idle traffic**: Customer only connects when needed
-- **Battery efficient**: No persistent WebSocket
-- **Works offline**: Proofs queued until customer pulls
-
----
-
-## Network Topology
-
-### Core Network
-
-```
-┌─────────┐     ┌─────────┐     ┌─────────┐
-│ Core 1  │◄───►│ Core 2  │◄───►│ Core 3  │
-└────┬────┘     └────┬────┘     └────┬────┘
-     │               │               │
-     └───────────────┼───────────────┘
-                     │
-              Fully connected mesh
-              (all cores see all proofs)
-```
-
-### Organization Connection
-
-```
-Organization Node
-      │
-      ├──► Core 1
-      ├──► Core 2
-      └──► Core 3
-
-(Connect to multiple cores for reliability)
-```
-
-### Customer Connection
-
-```
-Customer Node
-      │
-      └──► Core 1 (primary)
-           Core 2 (fallback)
-
-(Minimal connections, pull model)
-```
-
----
-
-## Commitment Exchange
-
-The organization still needs the customer's commitment to encrypt proofs. This happens **out-of-band**:
-
-### Option 1: Via Bank App
-
-```
-1. Customer opens bank app
-2. App generates commitment
-3. App sends commitment to bank's backend
-4. Bank stores commitment locally
-
-Privacy: Bank knows commitment, network doesn't know mapping
-```
-
-### Option 2: QR Code
-
-```
-1. Customer generates commitment + QR code
-2. Customer shows QR to bank (in branch or via app)
-3. Bank scans and stores
-
-Privacy: Same as above
-```
-
-### Option 3: Derived Commitment (Advanced)
-
-```python
-# Both parties derive from shared secret
-commitment = derive_commitment(
-    shared_secret,      # Established during onboarding
-    timestamp,          # Current hour
-    sequence_number     # Call count
-)
-
-# Commitment rotates, preventing long-term correlation
-```
-
----
-
-## Security Considerations
-
-### Threat Model
-
-| Threat | Mitigation |
-|--------|------------|
-| Core node logs all traffic | Cover traffic + bloom filters prevent correlation |
-| Network observer monitors traffic | All proofs encrypted, decoys indistinguishable |
-| Bucket intersection attack | Large buckets (1000+ users), org hints are optional |
-| Long-term statistical analysis | Commitment rotation (advanced), cover traffic ratio |
-
-### What We DON'T Protect Against
-
-- Customer voluntarily revealing their commitment
-- Organization revealing their customer list
-- Compromise of customer's device
-
-### Honest Privacy Claim
-
-> Tessera provides **practical privacy** through layered defenses: bucket anonymity sets, bloom filter ambiguity, cover traffic, and pull-based retrieval. A motivated adversary with access to core node logs could narrow possibilities but cannot definitively identify specific caller-callee relationships without additional information.
-
----
-
-## Deployment
-
-### Running a Core Node
+A proof's `bucket` is what the relays route on. The
+`bloom_fingerprint` is what subscribers match on. Producers (senders) and
+consumers (recipients) **must** derive both via the canonical functions or
+they will silently miss each other (the routing bug that caused the project's
+14-test regression in early development).
+
+## Storage
+
+`tessera/network/async_storage.py` uses **one long-lived aiosqlite connection
+serialised by an asyncio lock** with `PRAGMA synchronous=NORMAL` (so commits
+do *not* fsync per write — the fix that took subscribe throughput from ~70 to
+~326 ops/s; see paper §Evaluation). Schema:
+
+- `proofs(proof_id, bucket, bloom_fingerprint, proof_data, …, expires_at)` —
+  TTL'd proof storage; indexed by bucket+timestamp and by expires_at.
+- `subscriptions(subscriber_id, bucket, bloom_filter, org_hints, time_window, …)`
+  — recipient registrations.
+- `pending_proofs(subscriber_id, proof_id, queued_at)` — per-subscriber queues
+  pre-fetch.
+- `peers`, `stats`, `config`.
+
+In addition, the node holds two in-memory caches: `subscription_cache` (so the
+hot path does not hit storage per candidate) and `_bloom_cache` (parsed
+`BloomFilter` objects so each match doesn't rebuild the 1024-bit filter).
+
+## Gossip transport
+
+`tessera/network/ws_server.py::WSPeerTransport` is the cross-node link:
+
+- Each relay holds a (peer_id → uri) map.
+- `node.set_send_handler(transport.send)` wires the node's
+  `_gossip_to_peers` into the transport.
+- `send(peer, proof)` opens a lazy persistent WebSocket to the peer, forwards
+  `{"type":"proof", "proof":…, "from_peer": <me>}`, drains the `routed` ack,
+  and reuses the connection on the next send. Dropped connections reconnect
+  on next send.
+- The receiving relay's `route_proof` excludes the `from_peer` when
+  re-gossiping (and the protocol-level proof dedup terminates any
+  remaining loops).
+
+## Topology
+
+| Topology | Use | Failure behaviour |
+|---|---|---|
+| **Mesh** (default) | Production / robust delivery | 100 % delivery up to 50 % nodes offline in our experiments — one hop to any live node. |
+| **Ring** | Experiments / minimal overhead | Segments once ≥2 nodes are offline (50–60 % delivery at 25–50 % offline). |
+
+Quantified by **E5** (`scripts/analysis/churn_sim.py`) and Figure E5 in the
+paper. Implication: production deployments should default to mesh or
+similarly-connected peering, or replicate subscriptions across more than one
+relay.
+
+## Local cluster (development / experiments)
+
+`tessera/deploy/cluster.py::LocalCluster` brings up N peered in-process nodes
+with one command:
 
 ```bash
-# Install dependencies
-pip install tessera
-
-# Start core node (public, with rate limiting)
-tessera-node start \
-  --type core \
-  --id core-1 \
-  --port 8100 \
-  --api-port 8101 \
-  --rate-limit 60
+poetry run python -m tessera.deploy.cluster --nodes 5 --topology mesh
 ```
 
-### Running an Org Node
-
-```bash
-# Org nodes require JWT authentication for customer registration
-export CALLDNS_JWT_SECRET="your-secret-key"
-tessera-node start \
-  --type org \
-  --id mybank-uk \
-  --port 8100 \
-  --api-port 8101 \
-  --peer core-1@localhost:8100
-```
-
-See [Authentication Documentation](authentication.md) for JWT and rate limiting configuration.
-
-### Organization Integration
+Programmatically:
 
 ```python
-from tessera.network.decentralized import (
-    DecentralizedNode,
-    NodeType,
-    PrivacyPreservingBroadcaster
-)
-from tessera.sdk import Caller
-
-# Setup
-org_node = DecentralizedNode("org_barclays", NodeType.ORGANIZATION)
-broadcaster = PrivacyPreservingBroadcaster(org_node, num_decoys=3)
-caller = Caller()
-
-# Make verified call
-def make_call(customer_commitment: bytes, metadata: dict):
-    # Generate proof
-    proof = caller.generate_call_proof(metadata=metadata)
-
-    # Encrypt for customer
-    encrypted = caller.encrypt_proof_for_callee(
-        proof, customer_commitment, metadata
-    )
-
-    # Add bucket info
-    encrypted["bucket"] = compute_bucket(customer_commitment)
-    encrypted["org_hint"] = "org_barclays"
-    encrypted["timestamp"] = int(time.time())
-
-    # Broadcast with cover traffic
-    broadcaster.broadcast_with_cover(encrypted)
+from tessera.deploy.cluster import LocalCluster
+cluster = LocalCluster(n=5, topology="mesh")
+await cluster.start()
+print(cluster.uris())          # {"node-0": "ws://127.0.0.1:..", …}
+await cluster.stop_node("node-2")   # simulate churn
+await cluster.start_node("node-2")  # bring it back
+await cluster.stop()
 ```
 
-### Customer App Integration
+This is the harness used by `tests/test_cluster.py` and the E5 experiment.
 
-```python
-from tessera.network.decentralized import CustomerNodeClient
-from tessera.sdk import Verifier
+## WS wire protocol (one node)
 
-# Setup
-client = CustomerNodeClient(
-    commitment=my_commitment,
-    linked_orgs=["org_barclays", "org_nhs"]
-)
-verifier = Verifier()
+JSON request → JSON response over a WebSocket:
 
-# Register subscription with core node
-subscription = client.get_subscription_data()
-requests.post(f"{CORE_URL}/subscribe", json={
-    "subscriber_id": my_device_id,
-    "subscription": subscription
-})
+| Request | Response |
+|---|---|
+| `{"type":"subscribe","subscriber_id":…,"subscription":{…}}` | `{"type":"subscribed","subscriber_id":…}` |
+| `{"type":"proof","proof":{…},"from_peer":…?}` | `{"type":"routed","notified": <int>}` |
+| `{"type":"fetch","subscriber_id":…}` | `{"type":"proofs","proofs":[…]}` |
+| `{"type":"stats"}` | `{"type":"stats","stats":{…}}` |
+| `{"type":"ping"}` | `{"type":"pong","timestamp":…}` |
 
-# When push notification received, pull proofs
-proofs = requests.get(f"{CORE_URL}/proofs/{my_device_id}").json()
+Full Python-side API in [`api.md`](api.md).
 
-# Filter and verify locally
-for proof in client.filter_proofs(proofs):
-    if verifier.verify_encrypted_call_proof(proof):
-        show_verification_banner(proof)
-```
+## What's **not** here
 
----
+- A real DHT-based peer-discovery protocol: a Kademlia scaffold exists in
+  `tessera/network/dht.py` but the production overlay uses configured peer
+  lists. Wiring DHT discovery into the live overlay is future work.
+- Distributed DP-noise generation across relays without a coordinator —
+  open design space called out in the paper.
 
-## Comparison: Centralized vs Decentralized
+## Related
 
-| Aspect | Centralized | Decentralized |
-|--------|-------------|---------------|
-| **Privacy** | Service can see relationships | No node sees relationships |
-| **Trust** | Trust the service operator | Trust no single party |
-| **Scalability** | Vertical (bigger servers) | Horizontal (more nodes) |
-| **Complexity** | Simpler | More complex |
-| **Latency** | Lower | Slightly higher (gossip) |
-
----
-
-## Future Enhancements
-
-1. **Commitment rotation**: Automatic rotation per time period
-2. **Mixnet routing**: Onion routing for even stronger privacy
-3. **Customer-run relays**: Customers contribute bandwidth
-4. **Zero-knowledge proofs of bucket membership**: Prove you're in a bucket without revealing which
-
----
-
-*Tessera Decentralized - Privacy by architecture, not policy*
+- [`commitment-registration.md`](commitment-registration.md) — what relays route on.
+- [`network-economics.md`](network-economics.md) — incentive model for running a relay.
+- [`api.md`](api.md) — the Python and WS APIs.
+- Paper §Evaluation: E4 (throughput) and E5 (churn) numbers.

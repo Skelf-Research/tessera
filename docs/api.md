@@ -1,441 +1,139 @@
 # API Reference
 
-## Core Modules
+This is the engineering reference for Tessera's Python API and the
+WebSocket wire protocol exposed by `tessera.network.ws_server`. For the
+end-to-end protocol see [`architecture.md`](architecture.md); for the
+underlying primitives see [`authentication.md`](authentication.md).
 
-### tessera.sdk
-Client SDK for integrating Tessera into applications.
+---
 
-#### Caller
+## Python API
+
+### `tessera.crypto.crypto_utils`
+
+| Symbol | Purpose |
+|---|---|
+| `CryptoUtils.generate_keypair() → (int, bytes, SigningKey)` | SECP256k1 keypair. Returns `(x, Y, sk)` — long-term secret as int, public key as 64-byte raw point, ecdsa SigningKey object. |
+| `CryptoUtils.hash_data(*args) → bytes` | SHA-256 over a sequence of strings / bytes / ints. |
+| `ZKProver().generate_proof(x: int, Y: bytes, metadata: dict) → dict` | Produces `{"R": bytes, "s": int, "public_key": bytes, "metadata": dict}` (Schnorr / Fiat–Shamir over SECP256k1). |
+| `ZKVerifier().verify_proof(proof: dict) → bool` | Returns True iff the Schnorr equation holds. |
+| `SecureEncryption.encrypt(plaintext, key, additional_data=b"") → dict` | AES-256-GCM AEAD; returns `{"nonce", "ciphertext", "additional_data"}`. |
+| `SecureEncryption.decrypt(encrypted_data: dict, key) → bytes` | Authenticated decryption (raises `EncryptionError` on tag failure). |
+
+### `tessera.crypto.blinding` — per-recipient pseudonyms
+
+| Symbol | Purpose |
+|---|---|
+| `derive_blinding(shared_seed: bytes, session_id: str) → int` | `t = H(seed ‖ session_id) mod q`. |
+| `blind_public_key(Y: bytes, t: int) → bytes` | `Y' = Y + t·G`, 64-byte raw point. |
+| `blind_private_key(x: int, t: int) → int` | `(x + t) mod q`. |
+| `BlindedSender(x, Y).prove(seed, session_id, metadata) → dict` | One-call helper producing the blinded proof. |
+| `BlindedVerifier().authenticate(proof, contact_public_key, shared_seed, session_id) → bool` | Verifies the Schnorr proof *and* checks the pseudonym matches the expected contact. Constant-time comparison. |
+
+### `tessera.sdk.traffic_manager`
+
+| Symbol | Purpose |
+|---|---|
+| `TrafficManager(padding_size=1024, cover_traffic_ratio=0.3)` | Legacy padding + proportional cover (kept for backward-compat; *not* metadata-private). |
+| `DPCoverTraffic(epsilon=1.0, delta=1e-6, sensitivity=1, num_buckets=64, rng=None)` | Load-independent (ε,δ)-DP cover-traffic policy. Methods: `dummy_count_for_bucket()`, `dummy_counts(num_buckets)`, `expected_overhead_per_round()`, `published_counts(real_by_bucket)`. |
+
+### `tessera.sdk.commitment_manager`
+
+Manages the per-delivery commitment lifecycle
+(`commit = H(Y' ‖ ephemeral ‖ session_id)`) — TTL'd records, fingerprint
+generation for routing, matching against incoming proofs. See
+[`commitment-registration.md`](commitment-registration.md).
+
+### `tessera.network.decentralized` — canonical routing functions
+
+**These are the single source of truth for routing-field derivation. Use them
+on both the producer and consumer side or proofs will silently miss.**
+
+| Symbol | Purpose |
+|---|---|
+| `compute_bucket(commitment, num_buckets=64) → int` | `int(SHA256(commitment)[:2]) mod num_buckets`. |
+| `compute_fingerprint(commitment, timestamp) → bytes` | `SHA256(commitment ‖ window_start)[:8]` where `window_start = ⌊timestamp / 10⌋·10`. |
+| `make_routing_fields(commitment, timestamp=None) → dict` | The producer's helper: returns `{bucket, bloom_fingerprint (b64), timestamp}`. |
+| `class Subscription(commitment, linked_orgs=None)` | Builds the subscription a recipient registers with a relay (bucket, bloom filter, org hints, time window). `.to_dict()` for transport. |
+| `class BloomFilter(size=1024, hash_count=3)` | Used by `Subscription` to make the per-call match efficient. |
+
+### `tessera.network.async_node`
+
+| Symbol | Purpose |
+|---|---|
+| `class AsyncDecentralizedNode(node_id, node_type, data_dir=None)` | The relay implementation. `await initialize()`, `await register_subscription(sid, sub_dict)`, `await route_proof(proof, from_peer=None)`, `await get_pending_proofs(sid)`, `await get_stats()`, `await shutdown()`. Holds in-memory `subscription_cache` and `_bloom_cache` for hot-path performance. |
+
+### `tessera.network.ws_server`
+
+| Symbol | Purpose |
+|---|---|
+| `class NodeWebSocketServer(node)` | Wraps an `AsyncDecentralizedNode` and exposes the WS wire protocol below. |
+| `class WSPeerTransport(my_node_id)` | Cross-node gossip transport (peer_id → uri map, persistent connections, automatic reconnect). Wire with `node.set_send_handler(transport.send)`. |
+| `serve(host, port, node_id, node_type, data_dir=None)` | Coroutine that starts the WS server. Also available as `python -m tessera.network.ws_server`. |
+
+### `tessera.deploy.cluster`
+
 ```python
-class Caller:
-    def __init__(self)
-    def generate_call_proof(self, metadata=None) -> dict
-    def get_public_key(self) -> bytes
-    def encrypt_proof_for_callee(self, proof: dict, reception_commitment: bytes, metadata=None) -> dict
-    def prepare_proof_for_transmission(self, encrypted_proof: dict) -> dict
-    def schedule_batch_transmission(self, proofs: list) -> list
+from tessera.deploy.cluster import LocalCluster
+
+cluster = LocalCluster(n=5, topology="mesh")    # or "ring"
+await cluster.start()
+print(cluster.uris())            # {"node-0": "ws://...", ...}
+await cluster.stop_node("node-2")
+await cluster.start_node("node-2")
+await cluster.stop()
 ```
 
-#### Verifier
-```python
-class Verifier:
-    def __init__(self)
-    def verify_call_proof(self, proof) -> bool
-    def generate_reception_commitment(self, session_id: str) -> bytes
-    def verify_encrypted_call_proof(self, encrypted_proof_data: dict) -> bool
-    def process_batched_proofs(self, encrypted_proofs: list) -> list
-```
+CLI: `poetry run python -m tessera.deploy.cluster --nodes 5 --topology mesh`.
 
-#### IdentityManager
-```python
-class IdentityManager:
-    def __init__(self)
-    def get_private_key(self) -> int
-    def get_public_key(self) -> bytes
-    def set_identity(self, private_key, public_key)
-```
+### `tessera.keystore`
 
-#### CommitmentManager
-```python
-class CommitmentManager:
-    def __init__(self)
-    def generate_reception_commitment(self, callee_public_key: bytes, session_id: str) -> bytes
-    def derive_routing_key(self, commitment: bytes, ephemeral_hint: bytes) -> bytes
-    def get_commitment_info(self, commitment: bytes) -> Optional[Dict]
-    def generate_bloom_fingerprint(self, commitment: bytes, timestamp: int) -> bytes
-    def has_commitment_matching_fingerprint(self, fingerprint: bytes) -> bool
-    def cleanup_expired_commitments(self, expiration_time: int = 3600)
-```
+PBKDF2-encrypted keystore (100 k iters), key rotation, file or encrypted
+backends. Use the `EncryptedKeyStore` in any non-dev deployment.
 
-#### TrafficManager
-```python
-class TrafficManager:
-    def __init__(self, padding_size: int = 1024, cover_traffic_ratio: float = 0.3)
-    def pad_proof(self, encrypted_proof: Dict[str, Any]) -> Dict[str, Any]
-    def generate_cover_traffic(self, count: int = 1) -> List[Dict[str, Any]]
-    def mix_traffic(self, real_proofs: List[Dict[str, Any]]) -> List[Dict[str, Any]]
-    def should_transmit(self) -> bool
-    def schedule_transmission(self, proofs: List[Dict[str, Any]]) -> List[Dict[str, Any]]
-    def get_transmission_stats(self) -> Dict[str, Any]
-```
+---
 
-#### OutboundCaller (Customer → Bank)
-```python
-class OutboundCaller:
-    def __init__(self, core_node_url: str, device_registration: Optional[DeviceRegistration] = None)
-    async def prepare_verified_call(self, destination_id: str, destination_commitment: bytes, metadata: Optional[Dict] = None) -> OutboundCallProof
-    async def broadcast_and_call(self, proof: OutboundCallProof, phone_number: str) -> Dict[str, Any]
-    async def quick_verified_call(self, destination_id: str, destination_commitment: bytes, phone_number: str, metadata: Optional[Dict] = None) -> Dict[str, Any]
-```
+## WebSocket wire protocol
 
-#### ContactCenterVerifier (Bank-side verification)
-```python
-class ContactCenterVerifier:
-    def __init__(self, org_node_url: str)
-    async def verify_incoming_caller(self, caller_commitment: str, caller_id: Optional[str] = None, timeout: int = 30) -> Dict[str, Any]
-    async def lookup_customer_commitment(self, customer_id: str) -> Optional[str]
-```
+Each message is one JSON object; responses are one JSON object per request.
 
-### tessera.crypto
-Cryptographic implementations for zero-knowledge proofs.
+| Request | Response |
+|---|---|
+| `{"type":"subscribe","subscriber_id":str,"subscription":<Subscription.to_dict()>}` | `{"type":"subscribed","subscriber_id":str}` |
+| `{"type":"proof","proof":{...bucket, bloom_fingerprint, timestamp, ciphertext, nonce, org_hint?},"from_peer":?str}` | `{"type":"routed","notified":int}` |
+| `{"type":"fetch","subscriber_id":str}` | `{"type":"proofs","proofs":[{...},...]}` |
+| `{"type":"stats"}` | `{"type":"stats","stats":{...}}` |
+| `{"type":"ping"}` | `{"type":"pong","timestamp":int}` |
 
-#### ZKProver
-```python
-class ZKProver:
-    def __init__(self)
-    def generate_proof(self, private_key_int, public_key_bytes, metadata=None) -> dict
-```
+Errors come back as `{"type":"error","message":str}`.
 
-#### ZKVerifier
-```python
-class ZKVerifier:
-    def __init__(self)
-    def verify_proof(self, proof) -> bool
-```
+A reference Python client lives in `scripts/bench_throughput.py`. The
+benchmark driver opens persistent connections (`websockets.connect` reused
+across many requests) — opening one connection per op is the **wrong** way to
+drive Tessera at load (caps you at ~30–70 ops/s).
 
-#### CryptoUtils
-```python
-class CryptoUtils:
-    @staticmethod
-    def generate_keypair()
-    @staticmethod
-    def hash_data(*args)
-```
+---
 
-### tessera.privacy
-Privacy-preserving features for Tessera.
+## Tests as executable spec
 
-#### PrivacyPreserver
-```python
-class PrivacyPreserver:
-    @staticmethod
-    def anonymize_metadata(metadata)
-    @staticmethod
-    def generate_session_id()
-    @staticmethod
-    def obfuscate_timestamp(timestamp)
-```
+The most current contract for the API is the test suite:
 
-### tessera.network
-Network functionality for Tessera.
+| File | What it pins |
+|---|---|
+| `tests/test_crypto.py` | ZK soundness across forge/tamper/swap-key. |
+| `tests/test_blinding.py` | Per-recipient pseudonyms; cross-recipient unlinkability. |
+| `tests/test_traffic.py` | `DPCoverTraffic` parameters, non-negativity, expected overhead, load-independence. |
+| `tests/test_network_integration.py` | Subscribe / route / fetch on the in-process node. |
+| `tests/test_ws_server.py` | The WS wire protocol round-trip. |
+| `tests/test_multinode.py` | Two-node gossip end-to-end. |
+| `tests/test_cluster.py` | 3-node mesh + churn resilience. |
 
-#### EnhancedBroadcast
-```python
-class EnhancedBroadcast:
-    def __init__(self)
-    def broadcast_proof(self, encrypted_proof: Dict[str, Any], routing_hint: str = "default")
-    def get_relevant_proofs(self, verifier_fingerprints: List[bytes], routing_hint: str = "default") -> List[Dict]
-    def clear_expired_messages(self, expiration_time: int = 300)
-```
-
-#### BloomFilter
-```python
-class BloomFilter:
-    def __init__(self, size: int = 10000, hash_count: int = 3)
-    def add(self, item: bytes)
-    def check(self, item: bytes) -> bool
-```
-
-## CLI Commands
-
-### Main Commands
 ```bash
-tessera <command> [args...]
+poetry run pytest tests/ -q     # expect: 151 passed
 ```
 
-#### verify
-Verify an incoming call
-```bash
-tessera verify
-```
+## Related
 
-#### register
-Register your identity
-```bash
-tessera register
-```
-
-#### call
-Make a verified call
-```bash
-tessera call <phone_number>
-```
-
-#### identity
-Manage your identity
-```bash
-tessera identity show
-tessera identity export
-tessera identity import <file>
-```
-
-#### contacts
-Manage contacts
-```bash
-tessera contacts list
-tessera contacts add <name> <commitment>
-tessera contacts remove <name>
-```
-
-## Web Service API
-
-### Authentication
-
-Tessera uses a split authentication model:
-
-| Node Type | Authentication | Rate Limiting |
-|-----------|----------------|---------------|
-| **Core Node** | None (public) | IP-based (60 req/min) |
-| **Org Node** | JWT token | Optional |
-
-**Core node endpoints** are public to maintain customer anonymity. They are protected by IP-based rate limiting.
-
-**Org node endpoints** require JWT authentication via the `Authorization: Bearer <token>` header. Banks issue these tokens through their existing identity systems.
-
-See [Authentication Documentation](authentication.md) for details.
-
-### Core Node Endpoints
-
-#### GET /health
-Health check endpoint (rate limited)
-```bash
-curl http://localhost:8101/health
-```
-Response:
-```json
-{
-  "status": "healthy",
-  "service": "Tessera"
-}
-```
-
-#### POST /proofs/broadcast
-Broadcast a proof to the network
-```bash
-curl -X POST http://localhost:8101/proofs/broadcast \
-  -H "Content-Type: application/json" \
-  -d '{"proof": {...}, "metadata": {...}}'
-```
-
-#### POST /proofs/verify
-Verify a proof
-```bash
-curl -X POST http://localhost:8101/proofs/verify \
-  -H "Content-Type: application/json" \
-  -d '{"proof": {...}}'
-```
-
-#### POST /commitments/register
-Register a commitment
-```bash
-curl -X POST http://localhost:8101/commitments/register \
-  -H "Content-Type: application/json" \
-  -d '{"commitment": "...", "metadata": {...}}'
-```
-
-#### GET /commitments/lookup/<commitment_id>
-Lookup a commitment
-```bash
-curl http://localhost:8101/commitments/lookup/<commitment_id>
-```
-
-### Org Node API (Contact Center Endpoints)
-
-These endpoints are only available on organization nodes with commitment storage configured.
-
-**All org node endpoints require JWT authentication.**
-
-#### POST /customers/register
-Register a customer's commitment
-```bash
-curl -X POST http://org-node:8101/customers/register \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIs..." \
-  -d '{
-    "customer_id": "CUST-12345",
-    "commitment": "a1b2c3...",
-    "device_id": "iphone-main",
-    "metadata": {"registered_via": "mobile_app"}
-  }'
-```
-Response:
-```json
-{
-  "status": "registered",
-  "customer_id": "CUST-12345",
-  "commitment": "a1b2c3...",
-  "device_id": "iphone-main",
-  "registered_at": 1700000000,
-  "total_devices": 2
-}
-```
-
-#### GET /customers/{customer_id}/commitments
-Get all commitments for a customer
-```bash
-curl http://org-node:8101/customers/CUST-12345/commitments \
-  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIs..."
-```
-Response:
-```json
-{
-  "customer_id": "CUST-12345",
-  "commitments": ["a1b2c3...", "d4e5f6..."],
-  "devices": [
-    {
-      "commitment": "a1b2c3...",
-      "device_id": "iphone-main",
-      "registered_at": 1700000000
-    }
-  ]
-}
-```
-
-#### POST /customers/{customer_id}/broadcast
-Broadcast a proof to all devices of a customer
-```bash
-curl -X POST http://org-node:8101/customers/CUST-12345/broadcast \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIs..." \
-  -d '{"proof": {...}, "decoys": 3}'
-```
-
-#### GET /proofs/lookup
-Look up proofs by commitment (for contact center verification)
-```bash
-curl "http://org-node:8101/proofs/lookup?commitment=a1b2c3&since=1700000000" \
-  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIs..."
-```
-Response:
-```json
-{
-  "commitment": "a1b2c3...",
-  "proofs": [
-    {
-      "timestamp": 1700000100,
-      "metadata": {"direction": "outbound"}
-    }
-  ],
-  "count": 1
-}
-```
-
-#### POST /verify/incoming-caller
-Verify an incoming caller by customer ID
-```bash
-curl -X POST http://org-node:8101/verify/incoming-caller \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIs..." \
-  -d '{"customer_id": "CUST-12345"}'
-```
-Response (verified):
-```json
-{
-  "verified": true,
-  "customer_id": "CUST-12345",
-  "proofs": [
-    {
-      "commitment": "a1b2c3...",
-      "device_id": "iphone-main",
-      "timestamp": 1700000100
-    }
-  ],
-  "confidence": "high"
-}
-```
-Response (not verified):
-```json
-{
-  "verified": false,
-  "customer_id": "CUST-12345",
-  "reason": "no_recent_proof",
-  "registered_devices": 2
-}
-```
-
-## Configuration
-
-### Environment Variables
-```bash
-# Network settings
-CALLDNS_NETWORK_HOST=localhost
-CALLDNS_NETWORK_PORT=8000
-
-# Privacy settings
-CALLDNS_PADDING_SIZE=1024
-CALLDNS_COVER_TRAFFIC_RATIO=0.3
-
-# Security settings
-CALLDNS_KEY_STORAGE_PATH=~/.tessera/keys
-```
-
-### Configuration File
-Create `~/.tessera/config.json`:
-```json
-{
-  "network": {
-    "host": "localhost",
-    "port": 8000
-  },
-  "privacy": {
-    "padding_size": 1024,
-    "cover_traffic_ratio": 0.3
-  },
-  "security": {
-    "key_storage_path": "~/.tessera/keys"
-  }
-}
-```
-
-## Error Handling
-
-### Common Exceptions
-
-#### InvalidProofError
-Raised when a proof fails verification
-```python
-try:
-    verifier.verify_call_proof(invalid_proof)
-except InvalidProofError as e:
-    print(f"Proof verification failed: {e}")
-```
-
-#### NetworkError
-Raised when network operations fail
-```python
-try:
-    broadcast.broadcast_proof(proof)
-except NetworkError as e:
-    print(f"Network error: {e}")
-```
-
-#### PrivacyError
-Raised when privacy features encounter issues
-```python
-try:
-    privacy_preserver.anonymize_metadata(sensitive_data)
-except PrivacyError as e:
-    print(f"Privacy error: {e}")
-```
-
-## Performance Considerations
-
-### Proof Generation
-- **Time**: ~1-2ms
-- **CPU**: Minimal
-- **Memory**: ~1KB
-
-### Proof Verification
-- **Time**: ~2-3ms
-- **CPU**: Minimal
-- **Memory**: ~1KB
-
-### Network Operations
-- **Bandwidth**: ~100 bytes per proof
-- **Latency**: Real-time (sub-second)
-- **Scalability**: Thousands of concurrent operations
-
-### Privacy Features Overhead
-- **Traffic Padding**: 30% bandwidth increase
-- **Cover Traffic**: 43% bandwidth increase
-- **Timing Obfuscation**: Max 30-second delay
+- [`architecture.md`](architecture.md) — module-by-module tour.
+- [`quickstart.md`](quickstart.md) — copy-paste examples.
+- [`decentralized-architecture.md`](decentralized-architecture.md) — relay overlay design.

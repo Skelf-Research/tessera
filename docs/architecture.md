@@ -1,245 +1,90 @@
-# Tessera Architecture
+# Architecture
 
-## Overview
-This document outlines the architecture for Tessera, a zero-knowledge caller verification system that works above existing VoIP/communication layers to verify callers while maintaining privacy.
+Tessera is a one-to-one delivery protocol that gives sender authentication and
+metadata privacy in the same primitive. This document is the engineer's tour of
+how the parts fit together. The canonical spec lives in
+[`../../tessera-paper-msg/spec/protocol_spec.md`](../../tessera-paper-msg/spec/protocol_spec.md).
 
-## System Components
-
-### 1. Core Architecture
-
-Tessera supports **bidirectional verification**:
-
-**Bank → Customer (Inbound)**
-```mermaid
-graph TD
-    A[Bank Org Node] -->|1. Generate Proof| B(Core Network)
-    B -->|2. Route by Bucket| C[Customer Device]
-    C -->|3. Verify & Decrypt| D{Verified Call}
-```
-
-**Customer → Bank (Outbound)**
-```mermaid
-graph TD
-    A[Customer Device] -->|1. Generate Proof| B(Core Network)
-    B -->|2. Route to Org| C[Bank Org Node]
-    C -->|3. Contact Center Verifies| D{Verified Caller}
-    A -->|4. Place Call| E[Phone/PSTN]
-```
-
-### 2. Key Components
-
-#### 2.1 Device SDK
-- **caller.py**: Handles ZK proof generation on caller device
-- **verifier.py**: Handles proof verification on callee device
-- **identity_manager.py**: Manages cryptographic identities locally
-
-#### 2.2 Zero-Knowledge Module
-- **zk_prover.py**: Implements fast ZK proof generation
-- **zk_verifier.py**: Implements efficient proof verification
-- **crypto_utils.py**: Cryptographic primitives and utilities
-
-#### 2.3 Network Layer
-- **broadcast.py**: Handles proof broadcasting mechanism
-- **registry.py**: Manages caller-callee registry (privacy-preserving)
-- **network_protocol.py**: Defines communication protocols
-
-#### 2.4 Privacy Layer
-- **privacy_preserver.py**: Ensures caller/callee anonymity
-- **anonymous_registry.py**: Privacy-preserving registration
-- **obfuscator.py**: Additional privacy measures
-
-## Detailed Design
-
-### 3. Zero-Knowledge Implementation
-
-We'll use a Schnorr-based signature scheme for fast ZK proofs:
-
-1. **Key Generation**:
-   - Each caller generates a private key `x` and public key `Y = g^x`
-   - Keys are stored only on the device
-
-2. **Proof Generation** (Caller side):
-   ```
-   # For each call:
-   1. Generate random nonce: r ← Z_q
-   2. Compute commitment: R = g^r
-   3. Compute challenge: c = H(R || Y || metadata)
-   4. Compute response: s = r + c*x mod q
-   5. Proof π = (R, s)
-   ```
-
-3. **Verification** (Callee side):
-   ```
-   1. Receive proof π = (R, s)
-   2. Compute challenge: c = H(R || Y || metadata)
-   3. Verify: R = g^s * Y^(-c)
-   ```
-
-### 4. Privacy Implementation
-
-To ensure Tessera cannot identify originator or receiver:
-
-1. **No Centralized Identity Mapping**:
-   - Caller identities are self-sovereign
-   - No central registry of who-is-who
-
-2. **Ephemeral Keys**:
-   - Use temporary session keys for each call
-   - Rotate keys periodically
-
-3. **Metadata Minimization**:
-   - Only include necessary data in proofs
-   - Strip identifying information
-
-4. **Broadcast Mechanism**:
-   - Proofs are broadcast anonymously
-   - Callees filter for relevant proofs
-
-### 5. Fast ZK Algorithm Selection
-
-For optimal performance, we'll implement:
-
-1. **Schnorr Signatures**:
-   - Fast verification: ~1-2ms
-   - Small proof size: ~64 bytes
-   - Well-established security
-
-2. **Curve Selection**:
-   - Use Curve25519 for ECDLP security
-   - Optimized implementations available
-
-3. **Batch Verification**:
-   - Allow verification of multiple proofs simultaneously
-   - Further performance improvements
-
-## Implementation Plan
-
-### 6. Python Package Structure
+## The 30-second picture
 
 ```
-tessera/
-├── __init__.py
-├── sdk/
-│   ├── __init__.py
-│   ├── caller.py
-│   ├── verifier.py
-│   └── identity_manager.py
-├── crypto/
-│   ├── __init__.py
-│   ├── zk_prover.py
-│   ├── zk_verifier.py
-│   └── crypto_utils.py
-├── network/
-│   ├── __init__.py
-│   ├── broadcast.py
-│   ├── registry.py
-│   └── protocol.py
-├── privacy/
-│   ├── __init__.py
-│   ├── privacy_preserver.py
-│   └── anonymous_registry.py
-├── tests/
-│   ├── __init__.py
-│   ├── test_zk.py
-│   ├── test_privacy.py
-│   └── test_network.py
-└── examples/
-    ├── __init__.py
-    ├── basic_call.py
-    └── verification_demo.py
+sender              network (relays)            recipient
+ │                       │                          │
+ │ blind:   Y'=Y+tG      │                          │
+ │ prove:   π=(R,s)      │                          │
+ │ commit:  H(Y'||…)     │                          │
+ │ encrypt: AES-GCM      │                          │
+ ├──────── bucket ───────► relays gossip ───────────►│
+ │                       │ DP cover traffic added   │ match (bucket+bloom)
+ │                       │                          │ decrypt → verify π
+ │                       │                          │ authenticate Y' via seed
 ```
 
-### 7. Core Implementation Details
+Three actors: **senders** (anyone who delivers), **recipients** (anyone who
+receives, holding a per-contact `shared_seed`), and **relay nodes** (peer-to-peer,
+no central authority). One-time pairwise enrolment is the same out-of-band step
+Signal-style messengers already perform.
 
-#### 7.1 Caller SDK (sdk/caller.py)
-```python
-class Caller:
-    def __init__(self):
-        self.identity_manager = IdentityManager()
-        self.zk_prover = ZKProver()
-    
-    def generate_call_proof(self, metadata=None):
-        """Generate ZK proof for outgoing call"""
-        return self.zk_prover.generate_proof(
-            self.identity_manager.get_private_key(),
-            metadata
-        )
-    
-    def broadcast_proof(self, proof):
-        """Broadcast proof via network layer"""
-        # Implementation in network.broadcast
-        pass
-```
+## Layers (Python package `tessera/`)
 
-#### 7.2 Verifier SDK (sdk/verifier.py)
-```python
-class Verifier:
-    def __init__(self):
-        self.zk_verifier = ZKVerifier()
-    
-    def verify_call_proof(self, proof, caller_public_key):
-        """Verify incoming call proof"""
-        return self.zk_verifier.verify_proof(
-            proof, 
-            caller_public_key
-        )
-```
+| Layer | Path | What it does |
+|---|---|---|
+| Crypto | `tessera/crypto/` | `ZKProver`/`ZKVerifier` (Schnorr Fiat–Shamir), `SecureEncryption` (AES-256-GCM AEAD), `blinding.py` (`BlindedSender`/`BlindedVerifier` — per-recipient pseudonyms). |
+| SDK | `tessera/sdk/` | High-level `Sender`, `Verifier`, `commitment_manager` (`H(Y'‖ephemeral‖session_id)`), `traffic_manager` (incl. `DPCoverTraffic` mechanism). |
+| Network | `tessera/network/` | `async_node.py` (in-memory subscription + parsed-bloom caches over `async_storage.py`'s single persistent SQLite connection), `ws_server.py` (WebSocket transport + `WSPeerTransport` gossip), `decentralized.py` (canonical routing functions: `compute_bucket`, `compute_fingerprint`, `make_routing_fields`), `dht.py` (Kademlia-style). |
+| Deploy | `tessera/deploy/` | `LocalCluster` — N peered in-process nodes, mesh or ring, supports runtime `stop_node` / `start_node` for churn experiments. |
+| Keystore | `tessera/keystore/` | PBKDF2-encrypted keystore (100 k iters), key rotation. |
+| Service | `tessera/service/` | Flask REST + WS service (dev-grade). |
 
-#### 7.3 ZK Prover (crypto/zk_prover.py)
-```python
-class ZKProver:
-    def generate_proof(self, private_key, metadata=None):
-        """Fast Schnorr-based ZK proof generation"""
-        # Implementation details
-        pass
-```
+## End-to-end delivery (six steps)
 
-#### 7.4 Privacy Preserver (privacy/privacy_preserver.py)
-```python
-class PrivacyPreserver:
-    @staticmethod
-    def anonymize_metadata(metadata):
-        """Remove identifying information from metadata"""
-        # Implementation details
-        pass
-    
-    @staticmethod
-    def generate_ephemeral_keys():
-        """Generate temporary session keys"""
-        # Implementation details
-        pass
-```
+1. **Enrol** (one-time, pairwise, out-of-band) — recipient stores sender's
+   public key `Y` and a fresh `shared_seed`.
+2. **Blind** — for each delivery, sender derives
+   `t = H(seed ‖ session_id) mod q`, `Y' = Y + t·G`, `x' = x + t`.
+3. **Commit** — sender registers `commit = H(Y' ‖ ephemeral ‖ session_id)` to
+   the network.
+4. **Encrypt** — sender encrypts `π = (R, s)` under a routing key derived from
+   `commit`, and addresses it to `bucket = H(commit) mod 64`.
+5. **Route** — relays gossip the encrypted proof, adding calibrated DP cover
+   traffic per [`privacy-model.md`](privacy-model.md).
+6. **Verify** — recipient matches by bloom fingerprint, decrypts, verifies `π`,
+   and authenticates `Y' = Y + t·G` against `(Y, shared_seed, session_id)`.
 
-## Security Considerations
+## Key properties (and where each comes from)
 
-### 8. Privacy Guarantees
-1. **Caller Anonymity**: Tessera cannot identify who is calling
-2. **Receiver Privacy**: Tessera cannot identify who is being called
-3. **Call Linkability**: Prevent linking multiple calls from same caller
-4. **Metadata Protection**: Minimize information leakage
+| Property | Mechanism | Where |
+|---|---|---|
+| Sender authentication | Schnorr Fiat–Shamir proof of `x` | `crypto/crypto_utils.py` |
+| Cross-recipient unlinkability | Per-recipient blinded pseudonym `Y'` | `crypto/blinding.py` |
+| Replay resistance | Per-delivery commitment + receiver dedup | `sdk/commitment_manager.py` + `network/async_storage.py` |
+| Network metadata privacy | (ε,δ)-DP cover traffic, load-independent | `sdk/traffic_manager.py::DPCoverTraffic` |
+| Soundness over tamper / forge / swap-key | Schnorr binds (R, s, Y, m); FAR/FRR = 0 in tests | `tests/test_crypto.py`, `bench_security.py` |
 
-### 9. Cryptographic Security
-1. **Forward Secrecy**: Ephemeral keys protect past communications
-2. **Resistance to Quantum Attacks**: Consider post-quantum options
-3. **Side-Channel Resistance**: Protect against timing attacks
+## Why a persistent DB connection + caches
 
-## Performance Optimization
+The naive design (one SQLite connection per op + per-candidate `get_subscription`
++ bloom-rebuild per candidate) was storage-bound at ~70 ops/s. The current code
+holds **one long-lived `aiosqlite` connection serialised by a lock** (so
+`synchronous=NORMAL` actually applies), keeps subscriptions and parsed
+`BloomFilter` objects in memory, and lifts routing from O(occupancy) DB reads to
+O(matches) in-memory checks + one queued INSERT per match. Result: subscribe
+~326 ops/s, route ~440 ops/s. See `network/async_storage.py`,
+`network/async_node.py`, and paper §Evaluation.
 
-### 10. Fast ZK Algorithms
-1. **Pre-computation**: Calculate common values ahead of time
-2. **Batching**: Process multiple proofs together when possible
-3. **Hardware Acceleration**: Use specialized libraries (e.g., libsecp256k1)
+## What's not in scope here
 
-### 11. Network Optimization
-1. **Efficient Broadcasting**: Use multicast/UDP for proof distribution
-2. **Compression**: Minimize proof size
-3. **Caching**: Cache recent verification results
+- **Telephony binding** (PSTN / SIP / out-of-band call channel) — not in the
+  current code; the messaging-pivot paper treats telephony as a possible
+  application only.
+- **Distributed DP-noise generation without a coordinator** — design space
+  noted as future work in the paper.
+- **Phase 3 (Tessera-Agent)** — delegation tokens, scope-bound blinding, and
+  revocation will land after Paper A is submitted.
 
-## Next Steps
+## Where to read next
 
-1. Implement core cryptographic primitives
-2. Build ZK prover/verifier modules
-3. Develop privacy protection mechanisms
-4. Create network broadcast system
-5. Build device SDK interfaces
-6. Comprehensive testing and security audit
+- [`authentication.md`](authentication.md) — the proof-and-blinding mechanics in detail.
+- [`privacy-model.md`](privacy-model.md) — the DP guarantee and threat model.
+- [`decentralized-architecture.md`](decentralized-architecture.md) — the relay overlay.
+- [`api.md`](api.md) — the Python SDK and the WS wire protocol.

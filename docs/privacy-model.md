@@ -1,281 +1,119 @@
-# Tessera Privacy Model
+# Privacy Model
 
-This document describes the privacy guarantees provided by Tessera's decentralized architecture, focusing on the "last mile privacy" that protects customers even from the organizations they interact with.
+Tessera composes three independent privacy mechanisms. The formal guarantees
+live in the paper (`../../tessera-paper-msg/spec/metadata_privacy.md`,
+`formal/security_proofs.md`); this page is the engineer-facing summary.
 
-## Core Principle: Separation of Knowledge
+## Adversaries we defend against
 
-Tessera is designed so that **no single party has complete knowledge** of a call verification:
+| Adversary | What they see | Defence |
+|---|---|---|
+| The recipient | The proof, `Y'`, the metadata | **Per-recipient blinded pseudonym** — recipient learns nothing about the sender beyond what enrolment already revealed. |
+| Colluding recipients of the same sender | Each their own `Y'` | **Distinct shared seeds** → unrelated `Y'` distributions; without the seed, `Y'` is uniform. No cross-recipient linkage. |
+| Global passive network observer | Per-bucket message counts per round | **(ε,δ)-DP cover traffic** — load-independent shifted-Laplace noise. |
+| A coalition of compromised relays | Same as above (counts only) | Same: the DP bound holds against any party that only sees counts. |
+| Replay attacker | A captured `(commit, π)` | **Per-delivery commitment freshness + receiver dedup**. |
 
-| Party | Knows | Does NOT Know |
-|-------|-------|---------------|
-| **Organization (Bank)** | Customer's commitment, proof content | If/when proof was received, customer's core node |
-| **Core Nodes** | Bucket, bloom filter, routing | Customer identity, org identity, proof content |
-| **Customer** | Everything about their own proofs | Other customers' activity |
+Out of scope: a compromised endpoint (we assume the secret key is intact on
+the sender's device and the recipient runs the verifier honestly).
 
-## Architecture for Privacy
+## Mechanism 1 — sender authentication without witness leak
 
-### Connection Pattern
+Schnorr / Fiat–Shamir in the ROM gives perfect honest-verifier zero-knowledge
+on the witness `x` (Theorem 2 in
+[`../../tessera-paper-msg/formal/security_proofs.md`](../../tessera-paper-msg/formal/security_proofs.md)).
+The proof `π = (R, s)` reveals nothing about `x` beyond the truth of
+"`∃ x: Y = xG`", and `Y` itself is the per-recipient blinded pseudonym `Y'`,
+not the long-term key.
+
+## Mechanism 2 — per-recipient pseudonyms (cross-recipient unlinkability)
+
+For each delivery the sender uses
 
 ```
-┌─────────────┐                              ┌─────────────┐
-│    Bank     │                              │  Customer   │
-│  Org Node   │                              │   Mobile    │
-└──────┬──────┘                              └──────┬──────┘
-       │                                            │
-       │  One-time registration                     │  Ongoing subscription
-       │  (HTTPS to bank's API)                     │  (WebSocket to ANY core)
-       │                                            │
-       ▼                                            ▼
-┌─────────────┐                              ┌─────────────┐
-│  Bank's     │                              │    Core     │
-│  API Port   │                              │    Nodes    │
-└─────────────┘                              └─────────────┘
-       │                                            ▲
-       │                                            │
-       │         Broadcast to network               │
-       └────────────────────────────────────────────┘
-                  (No direct connection)
+t  = H(shared_seed ‖ session_id) mod q
+Y' = Y + t·G
 ```
 
-**Critical design choice**: Customers connect to **core nodes**, not to their bank's node, for proof delivery. This ensures:
+and proves knowledge of `x' = x + t`. The recipient holding `shared_seed`
+recomputes `t` and accepts. **A party without `shared_seed` sees a uniform
+`Y'` per delivery** — so two different recipients of the same sender cannot
+correlate their `Y'`s, and a third-party observer cannot link any of them.
+See [`authentication.md`](authentication.md) for the API and
+`tests/test_blinding.py` for the cross-recipient-unlinkability test.
 
-1. Bank cannot observe customer's connection patterns
-2. Bank cannot confirm proof delivery
-3. Bank cannot track when customer is "online"
+## Mechanism 3 — (ε,δ)-DP cover traffic on per-bucket counts
 
-### Why Not Direct Bank-to-Customer?
+The protocol routes encrypted, fixed-size proofs into `B = 64` buckets; an
+adversary observing the network sees, per bucket per 30 s round, only the
+**count** `C_b = R_b + D_b` (real plus dummy).
 
-If customers connected directly to their bank's node for proofs:
+The original design generated dummies *proportional* to real load, which made
+`C_b` a deterministic function of `R_b` — zero metadata privacy.
+`tessera/sdk/traffic_manager.py::DPCoverTraffic` instead draws dummies
+**independently of the real load**:
 
-❌ Bank sees when customer connects
-❌ Bank can correlate connection times with calls
-❌ Bank can confirm proof delivery
-❌ Bank has full surveillance capability
-
-With core node routing:
-
-✅ Bank broadcasts blindly - no feedback
-✅ Core nodes route by bucket - no identity
-✅ Customer receives privately - unobservable
-✅ No party has complete picture
-
-## Privacy Guarantees
-
-### For Customers
-
-**What's protected:**
-- Which organizations you're registered with (core nodes don't know)
-- When you receive proofs (banks don't know)
-- Your connection patterns (neither party knows)
-- Proof contents (only you can decrypt)
-
-**Practical meaning:**
-- Your bank cannot build a profile of when you check calls
-- A compromised core node cannot identify you
-- No central log of caller-callee relationships exists
-
-### For Organizations
-
-**What's protected:**
-- Customer lists (core nodes don't know who's registered)
-- Call patterns to specific customers (routing is by bucket)
-- Business relationships (hidden in bucket anonymity sets)
-
-**Practical meaning:**
-- Competitors cannot analyze your call patterns
-- Regulators see compliance without customer lists
-- Data breaches don't expose customer relationships
-
-### Against Adversaries
-
-**Compromised core node:**
-- Sees: bucket numbers, bloom filters, encrypted proofs
-- Cannot: identify customers, decrypt proofs, link to orgs
-
-**Compromised org node:**
-- Sees: their own customer commitments
-- Cannot: confirm delivery, track customer activity
-
-**Colluding core + org:**
-- Even together they cannot confirm specific deliveries
-- Bucket anonymity (1.5% of users) provides cover
-- Decoy traffic adds noise
-
-**Network observer:**
-- Sees: encrypted WebSocket traffic
-- Cannot: distinguish real proofs from decoys
-- Cover traffic ratio: 3 decoys per real proof
-
-## Technical Mechanisms
-
-### 1. Bucket-Based Routing
-
-Commitments are hashed into 64 buckets:
-```python
-bucket = int.from_bytes(commitment[:2], 'big') % 64
+```
+D_b = max(0, round(μ + L)),    L ~ Laplace(0, 1/ε)
+μ  ≥ (1/ε) · ln(1/(2δ))
 ```
 
-- Each bucket contains ~1.5% of all users
-- Proofs are routed to buckets, not individuals
-- Provides k-anonymity within bucket
+The shifted-Laplace mechanism makes `C_b` `(ε,δ)`-differentially private with
+respect to a single delivery event (sensitivity 1). The truncation at 0 is the
+source of `δ` and is bounded by the chosen `μ`. Expected bandwidth cost ≈ `B·μ`
+dummies per round, independent of real load.
 
-### 2. Bloom Filter Matching
+**Empirically validated** by E3 (`scripts/analysis/linkability_sim.py`):
+under a worst-case knows-all-other-inputs adversary, no-cover and proportional
+cover both give linking AUC = 1.0; DP cover bounds AUC toward 0.5 as `ε → 0`
+and stays under the `ε`-DP ceiling `1 − e^(−ε)/2` at every operating point.
 
-Within a bucket, bloom filters provide probabilistic matching:
-```python
-bloom = BloomFilter(commitment, size=1024, hashes=3)
-```
+## Spatial anonymity at the bucket layer
 
-- False positive rate ~1%
-- Customer receives ~1-2 proofs per real call
-- Cannot reverse bloom filter to commitment
+Each commitment maps to one of 64 buckets; a proof is indistinguishable among
+the commitments sharing its bucket. With ≥10 k active commitments per window
+every bucket holds ≥126 members. At low deployment scale (≲1 k commitments)
+86 % of buckets fall below `k=20` — a known limitation; the design space for an
+adaptive bucket count is noted in the paper.
 
-### 3. End-to-End Encryption
+## Replay resistance
 
-Proofs are encrypted for the recipient's commitment:
-```python
-ciphertext = encrypt(proof_data, derive_key(commitment))
-```
+`commit = H(Y' ‖ ephemeral_key ‖ session_id)` is fresh per delivery (the
+ephemeral and session_id are freshly sampled). The receiver-side dedup in
+`AsyncNodeStorage` rejects re-presented proofs; outside the matchable time
+window the freshness check rejects regardless. See
+[`commitment-registration.md`](commitment-registration.md) and Theorem 3 in the
+paper.
 
-- Only commitment holder can decrypt
-- Core nodes route encrypted blobs
-- Bank cannot read after broadcast
+## What the recipient *does* learn (the intended disclosure)
 
-### 4. Cover Traffic
+- That this delivery came from the contact whose `(Y, shared_seed)` record it
+  holds.
+- Anything in the delivery metadata (the recipient can read the message;
+  Tessera doesn't replace content encryption).
+- The arrival time at the recipient (intended; the recipient's own clock).
 
-Organizations broadcast decoy proofs:
-```python
-real_proof → bucket 42
-decoy_1    → bucket 17  (random)
-decoy_2    → bucket 55  (random)
-decoy_3    → bucket 8   (random)
-```
+It does **not** learn the sender's long-term `Y`, the sender's interactions
+with any other recipient, or the sender's deliveries that didn't reach it.
 
-- 3 decoys per real proof (configurable)
-- Indistinguishable from real proofs
-- Prevents traffic analysis
+## What the network learns
 
-### 5. Pull Model
+Nothing actionable beyond (ε,δ)-DP-noised per-bucket counts: encrypted proofs
+are padded to a constant size and shuffled within the 30 s round. Routing
+keys are not visible without the per-call commitment; the only observable is
+the bucket count.
 
-Customers poll for proofs rather than receiving push:
-```python
-proofs = await fetch_pending_proofs(subscriber_id)
-```
+## Comparative leakage
 
-- Customer controls when to check
-- No "online" indicator to network
-- Proofs queued until fetched
+See E7 / `scripts/analysis/leakage_compare.py` and Table 2 in the paper:
+signed-messaging baselines leak 12 unintended cells (the central server sees
+the graph); metadata-private messaging hides the graph but has 3
+authentication gaps (the recipient cannot identify the sender at all);
+Tessera has 0 leaks and 0 gaps.
 
-## Threat Model
+## Related
 
-### What Tessera Protects Against
-
-✅ **Mass surveillance** - No central database of calls
-✅ **Bank overreach** - Cannot track customer behavior
-✅ **Data breaches** - Commitments don't reveal phone numbers
-✅ **Traffic analysis** - Cover traffic obscures patterns
-✅ **Correlation attacks** - Bucket anonymity sets
-✅ **Insider threats** - Separation of knowledge
-
-### What Tessera Does NOT Protect Against
-
-❌ **Targeted attacks on specific customer** - If adversary knows commitment, they can watch that bucket
-❌ **Long-term statistical analysis** - Patterns may emerge over months
-❌ **Endpoint compromise** - If phone is hacked, proofs are exposed
-❌ **Org-side logging** - Bank knows they called you (outside Tessera)
-
-### Mitigations for Known Limitations
-
-**Targeted attacks:**
-- Commitments are salted, not guessable from phone number
-- Customer can rotate commitment periodically
-
-**Statistical analysis:**
-- Increase decoy ratio for high-security users
-- Rotate buckets periodically (re-register with new salt)
-
-**Endpoint security:**
-- Proofs have TTL, auto-expire
-- Secure enclave storage on mobile (platform-dependent)
-
-## Comparison to Alternatives
-
-### vs. Centralized Verification Service
-
-| Aspect | Centralized | Tessera |
-|--------|-------------|---------|
-| Single point of failure | Yes | No |
-| Operator sees all calls | Yes | No |
-| Data breach impact | Catastrophic | Limited |
-| Regulatory target | Yes | Distributed |
-
-### vs. Direct Bank-to-Customer
-
-| Aspect | Direct | Tessera |
-|--------|--------|---------|
-| Bank tracks customer | Yes | No |
-| Delivery confirmation | Yes | No |
-| Connection surveillance | Possible | Not possible |
-| Requires bank online | Yes | No (async) |
-
-### vs. Blockchain-Based
-
-| Aspect | Blockchain | Tessera |
-|--------|------------|---------|
-| Public ledger | Yes | No |
-| Permanent record | Yes | TTL expiry |
-| Scalability | Limited | High |
-| Privacy | Pseudonymous | Unlinkable |
-
-## Regulatory Compliance
-
-Tessera's privacy model supports compliance with:
-
-**GDPR (EU):**
-- Privacy by design (Article 25)
-- Data minimization
-- No processing beyond verification
-
-**CCPA (California):**
-- No sale of personal information
-- Right to deletion (TTL expiry)
-
-**FCA Consumer Duty (UK):**
-- Protects customers from harm
-- Doesn't create new surveillance risks
-
-**HIPAA (US Healthcare):**
-- No central PHI repository
-- Cannot reconstruct patient-provider relationships
-
-## Implementation Checklist
-
-For organizations deploying Tessera:
-
-- [ ] Run org node with `--api-port` for registration only
-- [ ] Do NOT expose org node for proof delivery
-- [ ] Use core network for all proof routing
-- [ ] Enable decoy traffic (default: 3 per proof)
-- [ ] Set appropriate proof TTL (default: 1 hour)
-- [ ] Document privacy model for customers
-- [ ] Regular security audits of node configuration
-
-For customers:
-
-- [ ] Generate commitment with random salt
-- [ ] Connect to core nodes, not bank nodes
-- [ ] Use pull model (fetch when needed)
-- [ ] Rotate commitment periodically for high security
-- [ ] Verify app connects to legitimate core nodes
-
-## Summary
-
-Tessera provides **last-mile privacy** through architectural separation:
-
-1. **Banks broadcast but cannot observe** - no delivery confirmation
-2. **Core nodes route but cannot identify** - only see buckets
-3. **Customers receive but are unlinkable** - encrypted, anonymous
-
-This ensures that even in adversarial conditions - compromised nodes, colluding parties, network surveillance - no single entity can fully deanonymize a customer or confirm specific call verifications.
-
-The privacy is **structural**, not policy-based. It's not that we promise not to log - it's that the system is designed so logging wouldn't help.
+- [`authentication.md`](authentication.md) — the per-recipient pseudonym mechanism.
+- [`commitment-registration.md`](commitment-registration.md) — replay defence.
+- [`../../tessera-paper-msg/spec/metadata_privacy.md`](../../tessera-paper-msg/spec/metadata_privacy.md)
+  — full DP proof.

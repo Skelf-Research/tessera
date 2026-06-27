@@ -1,366 +1,94 @@
 # Commitment Registration
 
-This document explains how customers register their commitments with organizations in Tessera, enabling verified call delivery.
+The per-delivery **commitment** binds a proof to one specific delivery, drives
+the routing fingerprint, and is the lever for replay defence. This page
+explains what a commitment is, how it is registered, and how the receiver uses
+it.
 
-## Overview
+## What a commitment is
 
-In Tessera, a **commitment** is a cryptographic hash derived from the customer's phone number (plus salt). Organizations need to know customer commitments to broadcast proofs to them. There are two approaches:
-
-1. **Out-of-band registration** - Commitment shared through existing channels
-2. **Direct registration** - Commitment registered directly to org's node API
-
-## Out-of-Band Registration
-
-The simplest and most privacy-preserving approach. The commitment exchange happens through the organization's existing customer relationship.
-
-### Flow
+For each delivery the sender computes
 
 ```
-┌─────────────┐                     ┌─────────────┐
-│   Customer  │                     │     Org     │
-│   (Mobile)  │                     │   (Bank)    │
-└──────┬──────┘                     └──────┬──────┘
-       │                                   │
-       │  1. Generate commitment           │
-       │  tessera proof commitment         │
-       │  +1234567890                       │
-       │                                   │
-       │  2. Share via banking app         │
-       │  ─────────────────────────────►   │
-       │  "Register for verified calls"    │
-       │                                   │
-       │                                   │  3. Store in CRM
-       │                                   │  customer_id → commitment
-       │                                   │
-       │  4. Subscribe to network          │
-       │  tessera node start ...           │
-       │                                   │
-       │                                   │  5. Broadcast proof
-       │  ◄─────────────────────────────   │  to commitment
-       │  6. Receive proof                 │
-       │                                   │
+commit = H(Y' ‖ ephemeral_key ‖ session_id)
 ```
 
-### Example
+where `Y'` is the per-recipient blinded pseudonym
+(see [`authentication.md`](authentication.md)), `ephemeral_key` is a fresh
+random scalar, and `session_id` identifies the delivery. The commitment is
+**fresh per delivery** (fresh `ephemeral_key` + `session_id` → unique with
+overwhelming probability) and **bound to the pseudonym** (changing `Y'` after
+the fact breaks the commitment).
 
-**Customer side:**
+## Routing fields derived from the commitment
 
-```bash
-# Generate commitment
-$ tessera proof commitment +1234567890
-Input: +1234567890
-Salt: a1b2c3d4e5f6...
-Commitment: 7f8e9d0c1b2a3f4e5d6c7b8a9f0e1d2c3b4a5f6e7d8c9b0a1f2e3d4c5b6a7f8e
-Bucket: 42
+Both sides agree on the routing by deriving these from `commit` via the
+**canonical functions** in `tessera/network/decentralized.py`
+(`compute_bucket`, `compute_fingerprint`, `make_routing_fields`):
 
-# Subscribe to network
-$ tessera-node start --type customer --id my-device --port 8102 \
-    --peer core-1@seed.tessera.network:8100
-```
+| Field | Definition | Used by |
+|---|---|---|
+| `bucket` | `int(SHA256(commit)[:2]) mod 64` | relay routing |
+| `bloom_fingerprint` | `SHA256(commit ‖ window_start)[:8]`, where `window_start = ⌊timestamp / 10⌋·10` | recipient matching |
+| `timestamp` | wall-clock seconds at send time | freshness check |
 
-**Customer shares commitment** via:
-- Banking app settings ("Enable verified calls")
-- Customer portal
-- Phone call to support
-- QR code scan
+Producers (the sender) and consumers (the subscribing recipient) **must** use
+the same canonical functions — the routing field mismatch that caused the
+14-test regression early in the project was exactly the failure of this
+invariant. `make_routing_fields(commitment)` is the producer helper.
 
-**Organization side:**
+## Subscription side
 
-```python
-# Bank's backend stores the commitment
-customer_commitments = {
-    "cust-12345": {
-        "commitment": "7f8e9d0c1b2a...",
-        "phone": "+1234567890",
-        "registered_at": "2024-01-15"
-    }
-}
+A recipient builds a `Subscription` (`tessera/network/decentralized.py`) that
+combines the commitment's `bucket`, a per-subscription `BloomFilter`
+(1024 bits, 3 hashes) populated with `compute_fingerprint(commit, t)` for each
+10-second window in the last `time_window` seconds (default 600), and the
+recipient's listed `linked_orgs`. The subscription is registered with one or
+more relays (e.g. via the WS `subscribe` message); the relay indexes it under
+its `bucket`.
 
-# When making a call, broadcast proof
-proof = generate_proof_for_commitment(commitment)
-broadcast_to_network(proof)
-```
+When a proof arrives in that bucket, `AsyncDecentralizedNode._matches_subscription_data`
+checks (a) the delivery is within the time window, (b) the org-hint matches
+(if any), and (c) the proof's `bloom_fingerprint` is in the cached parsed
+filter.
 
-### Advantages
+## Replay defence
 
-- **Privacy-preserving**: Tessera network never sees customer-org relationship
-- **Simple**: Uses existing customer channels
-- **Flexible**: Works with any org's existing systems
+Replay reduces to two requirements, both met:
 
-### Disadvantages
+1. **Commitment freshness.** Fresh `ephemeral_key` and `session_id` per
+   delivery make `commit` unique with overwhelming probability. A replayed
+   `π` carries an already-consumed `commit`.
+2. **Receiver-side dedup.** `AsyncNodeStorage` keeps a TTL'd record of every
+   `proof_id` it has stored; `route_proof` rejects already-seen proofs in
+   constant time. Outside the time window the recipient's freshness check
+   rejects regardless.
 
-- Requires integration with org's customer portal/app
-- Manual step for customer
+Formally: see Theorem 3 in
+[`../../tessera-paper-msg/formal/security_proofs.md`](../../tessera-paper-msg/formal/security_proofs.md).
 
----
-
-## Direct Registration
-
-Customer registers commitment directly with the org's node via HTTP API. The org must run at least one node with `--api-port`.
-
-### Flow
+## Lifecycle
 
 ```
-┌─────────────┐                     ┌─────────────┐
-│   Customer  │                     │  Org Node   │
-│   (Mobile)  │                     │  (--api-port)│
-└──────┬──────┘                     └──────┬──────┘
-       │                                   │
-       │  1. Generate commitment           │
-       │                                   │
-       │  2. POST /customers/register      │
-       │  ─────────────────────────────►   │
-       │  {customer_id, commitment}        │
-       │                                   │
-       │  ◄─────────────────────────────   │
-       │  {status: "registered"}           │
-       │                                   │
-       │  3. Subscribe to network          │
-       │  (with matching bucket/bloom)     │
-       │                                   │
-       │                                   │  4. POST /customers/{id}/broadcast
-       │  ◄─────────────────────────────   │
-       │  5. Receive proof                 │
-       │                                   │
+sender                                  relay(s)                     recipient
+  │ commit = H(Y'||eph||sid)              │                              │
+  │ make_routing_fields(commit) →         │                              │
+  │   {bucket, bloom_fingerprint, ts}     │                              │
+  │ encrypted π carries those             │                              │
+  ├──── proof ──────────────────────────► │                              │
+  │                                       │  store (TTL); index bucket   │
+  │                                       │  gossip to peers             │
+  │                                       │  match subscribers in bucket │
+  │                                       │ ──────── matched proof ──────► fetch
+  │                                       │                              │ decrypt π
+  │                                       │                              │ verify Schnorr
+  │                                       │                              │ BlindedVerifier check
 ```
 
-### API Endpoints
+`commit` is therefore both the routing key and the freshness anchor.
 
-**Register commitment:**
+## Related
 
-```bash
-POST /customers/register
-{
-  "customer_id": "cust-12345",
-  "commitment": "7f8e9d0c1b2a3f4e5d6c7b8a9f0e1d2c3b4a5f6e7d8c9b0a1f2e3d4c5b6a7f8e",
-  "device_id": "iphone-abc123",
-  "metadata": {
-    "phone": "+1234567890",
-    "name": "John Doe"
-  }
-}
-
-Response:
-{
-  "status": "registered",
-  "customer_id": "cust-12345",
-  "commitment": "7f8e9d0c...",
-  "device_id": "iphone-abc123",
-  "total_devices": 1
-}
-```
-
-**Get customer commitments:**
-
-```bash
-GET /customers/cust-12345/commitments
-
-Response:
-{
-  "customer_id": "cust-12345",
-  "commitments": ["7f8e9d0c..."],
-  "devices": [
-    {
-      "commitment": "7f8e9d0c...",
-      "device_id": "iphone-abc123",
-      "registered_at": 1705334400
-    }
-  ]
-}
-```
-
-**Broadcast to customer:**
-
-```bash
-POST /customers/cust-12345/broadcast
-{
-  "proof": {
-    "bucket": 42,
-    "bloom_fingerprint": "base64...",
-    "ciphertext": "base64...",
-    "nonce": "base64...",
-    "timestamp": 1705334500,
-    "org_hint": "acme-bank"
-  }
-}
-
-Response:
-{
-  "status": "broadcast",
-  "customer_id": "cust-12345",
-  "devices": 1,
-  "results": [
-    {
-      "device_id": "iphone-abc123",
-      "commitment": "7f8e9d0c1b2a...",
-      "notified": 1,
-      "push": {"websocket": 1, "mqtt": true}
-    }
-  ]
-}
-```
-
-**Remove commitment:**
-
-```bash
-DELETE /customers/cust-12345/commitments/7f8e9d0c...
-
-Response:
-{
-  "status": "removed",
-  "customer_id": "cust-12345",
-  "commitment": "7f8e9d0c..."
-}
-```
-
-### Example
-
-**Start org node with API:**
-
-```bash
-export CALLDNS_JWT_SECRET="your-secret-key"
-tessera-node start --type org --id acme-bank --port 8100 \
-    --api-port 8101 \
-    --peer core-1@seed.tessera.network:8100
-```
-
-**Customer registers (from mobile app):**
-
-```python
-import httpx
-
-# Generate commitment locally
-commitment = generate_commitment("+1234567890", salt)
-
-# Register with org (JWT required)
-response = httpx.post(
-    "https://api.acme-bank.com:8101/customers/register",
-    headers={"Authorization": f"Bearer {jwt_token}"},
-    json={
-        "customer_id": "cust-12345",
-        "commitment": commitment.hex(),
-        "device_id": get_device_id()
-    }
-)
-
-# Subscribe to network
-# (handled by mobile SDK)
-```
-
-**Org broadcasts proof:**
-
-```python
-# When agent calls customer
-response = httpx.post(
-    "http://localhost:8101/customers/cust-12345/broadcast",
-    headers={"Authorization": f"Bearer {jwt_token}"},
-    json={
-        "proof": generate_proof(commitment)
-    }
-)
-```
-
-### Advantages
-
-- **Automated**: No manual customer steps after initial setup
-- **Multi-device**: Easy to register multiple devices
-- **Real-time**: Immediate registration
-
-### Disadvantages
-
-- Org node stores customer-commitment mapping
-- Requires org to run node with API port exposed
-
----
-
-## Multi-Device Support
-
-Both approaches support customers with multiple devices:
-
-```bash
-# Register phone
-POST /customers/register
-{"customer_id": "cust-12345", "commitment": "abc...", "device_id": "phone"}
-
-# Register tablet
-POST /customers/register
-{"customer_id": "cust-12345", "commitment": "def...", "device_id": "tablet"}
-
-# Broadcast reaches both devices
-POST /customers/cust-12345/broadcast
-```
-
-Each device generates its own commitment (different salt), but they're all linked to the same customer ID.
-
----
-
-## Security Considerations
-
-### Commitment Generation
-
-- Always use a random salt (minimum 16 bytes)
-- Store salt securely on device
-- Never transmit phone number directly
-
-```python
-import hashlib
-import secrets
-
-salt = secrets.token_bytes(16)
-commitment = hashlib.sha256(phone.encode() + salt).digest()
-```
-
-### Registration Security
-
-For direct registration:
-- Use HTTPS for API calls
-- Authenticate customer (OAuth, JWT, etc.)
-- Rate limit registration endpoints
-- Validate customer_id against org's customer database
-
-### Privacy
-
-- Commitments are one-way hashes - cannot reverse to phone number
-- Org cannot see which other orgs a customer is registered with
-- Network cannot see org-customer relationships (only bucket routing)
-
----
-
-## Choosing an Approach
-
-| Factor | Out-of-Band | Direct Registration |
-|--------|-------------|---------------------|
-| Privacy | Higher | Lower (org stores mapping) |
-| Automation | Lower | Higher |
-| Integration effort | Higher | Lower |
-| Customer friction | Higher | Lower |
-| Multi-device | Manual | Automatic |
-
-**Recommendation:**
-
-- **Banks/Financial services**: Out-of-band (regulatory preference for existing channels)
-- **Healthcare**: Out-of-band (HIPAA considerations)
-- **Telcos/Tech companies**: Direct registration (better UX)
-- **Hybrid**: Offer both options to customers
-
----
-
-## Mobile SDK Integration
-
-The mobile SDKs handle most of this automatically:
-
-```swift
-// iOS example
-let tessera = Tessera(orgNode: "https://api.acme-bank.com:8000")
-
-// Generates commitment and registers
-tessera.register(phone: "+1234567890", customerId: "cust-12345")
-
-// Subscribes to network automatically
-tessera.startListening { proof in
-    // Handle incoming verified call
-    showVerificationBadge(proof)
-}
-```
-
-See the [SDK documentation](../sdks/) for platform-specific details.
+- [`authentication.md`](authentication.md) — Schnorr proof + per-recipient pseudonym.
+- [`decentralized-architecture.md`](decentralized-architecture.md) — relay bucketing and gossip.
+- Canonical functions: `tessera/network/decentralized.py::{compute_bucket, compute_fingerprint, make_routing_fields}`.

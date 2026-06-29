@@ -56,8 +56,8 @@ services:
     container_name: tessera-api
     entrypoint: ["python", "-m", "tessera.service.api"]
     environment:
-      - CALLDNS_HOST=0.0.0.0
-      - CALLDNS_PORT=8000
+      - TESSERA_HOST=0.0.0.0
+      - TESSERA_PORT=8000
     ports:
       - "8000:8000"
     volumes:

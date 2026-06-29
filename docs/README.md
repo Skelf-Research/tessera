@@ -38,8 +38,6 @@ the implementation.
 
 ## Research artifacts
 
-Live in the sibling repo [`tessera-paper-msg`](../../tessera-paper-msg):
-- `main.tex` — Paper A draft for PoPETs 2027.2.
-- `spec/protocol_spec.md`, `spec/metadata_privacy.md` — authoritative protocol + DP guarantee.
-- `formal/security_proofs.md`, `formal/tessera.pv` — game-based proofs + ProVerif model.
-- `results/`, `ARTIFACT.md` — reproducible experiments E1–E7.
+Formal foundations, security proofs, and experiment harness summaries live in
+[`research.md`](../research.md). The experiment harnesses themselves are in
+[`scripts/`](../scripts/) and emit results to [`results/`](../results/).

@@ -13,5 +13,5 @@ __all__ = [
     "FileKeyStore",
     "EncryptedKeyStore",
     "KeyDerivation",
-    "KeyBackup"
+    "KeyBackup",
 ]

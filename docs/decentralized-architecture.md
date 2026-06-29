@@ -85,7 +85,7 @@ relay.
 with one command:
 
 ```bash
-poetry run python -m tessera.deploy.cluster --nodes 5 --topology mesh
+uv run python -m tessera.deploy.cluster --nodes 5 --topology mesh
 ```
 
 Programmatically:
@@ -120,7 +120,7 @@ Full Python-side API in [`api.md`](api.md).
 
 - A real DHT-based peer-discovery protocol: a Kademlia scaffold exists in
   `tessera/network/dht.py` but the production overlay uses configured peer
-  lists. Wiring DHT discovery into the live overlay is future work.
+  lists. Wiring DHT discovery into the live overlay is an open research direction.
 - Distributed DP-noise generation across relays without a coordinator —
   open design space called out in the paper.
 
@@ -129,4 +129,4 @@ Full Python-side API in [`api.md`](api.md).
 - [`commitment-registration.md`](commitment-registration.md) — what relays route on.
 - [`network-economics.md`](network-economics.md) — incentive model for running a relay.
 - [`api.md`](api.md) — the Python and WS APIs.
-- Paper §Evaluation: E4 (throughput) and E5 (churn) numbers.
+- [`../research.md`](../research.md): E4 (throughput) and E5 (churn) numbers.

@@ -1,7 +1,7 @@
 """
 WebSocket transport server for a Tessera decentralized node.
 
-Exposes an :class:`AsyncDecentralizedNode` over a real network socket so callers,
+Exposes an :class:`AsyncDecentralizedNode` over a real network socket so clients,
 organizations, and customer devices can subscribe, broadcast proofs, and fetch
 matched proofs across process / host boundaries. This is the transport that turns
 the in-process node into a deployable network node (Workstream D).
@@ -49,7 +49,9 @@ class NodeWebSocketServer:
 
         if mtype == "proof":
             # from_peer lets route_proof exclude the sender when gossiping, avoiding loops.
-            notified = await self.node.route_proof(data["proof"], from_peer=data.get("from_peer"))
+            notified = await self.node.route_proof(
+                data["proof"], from_peer=data.get("from_peer")
+            )
             return {"type": "routed", "notified": notified}
 
         if mtype == "fetch":
@@ -91,8 +93,8 @@ class WSPeerTransport:
 
     def __init__(self, my_node_id: str):
         self.my_node_id = my_node_id
-        self.peers: dict = {}            # peer_id -> ws uri
-        self._conns: dict = {}           # peer_id -> websocket connection
+        self.peers: dict = {}  # peer_id -> ws uri
+        self._conns: dict = {}  # peer_id -> websocket connection
         self._locks = defaultdict(asyncio.Lock)
 
     def add_peer(self, peer_id: str, uri: str):
@@ -112,8 +114,11 @@ class WSPeerTransport:
             return
         try:
             ws = await self._connection(peer_id)
-            await ws.send(json.dumps({"type": "proof", "proof": proof,
-                                      "from_peer": self.my_node_id}))
+            await ws.send(
+                json.dumps(
+                    {"type": "proof", "proof": proof, "from_peer": self.my_node_id}
+                )
+            )
             await ws.recv()  # drain the {"type":"routed"} ack to keep the socket clean
         except Exception:
             # Drop the (possibly dead) connection; next send reconnects.
@@ -128,11 +133,14 @@ class WSPeerTransport:
         self._conns.clear()
 
 
-async def serve(host: str, port: int, node_id: str, node_type: NodeType,
-                data_dir: str = None) -> None:
+async def serve(
+    host: str, port: int, node_id: str, node_type: NodeType, data_dir: str = None
+) -> None:
     import websockets
 
-    node = AsyncDecentralizedNode(node_id=node_id, node_type=node_type, data_dir=data_dir)
+    node = AsyncDecentralizedNode(
+        node_id=node_id, node_type=node_type, data_dir=data_dir
+    )
     await node.initialize()
     server_obj = NodeWebSocketServer(node)
 
@@ -154,8 +162,15 @@ def main():
     args = ap.parse_args()
 
     try:
-        asyncio.run(serve(args.host, args.port, args.node_id,
-                          NodeType(args.node_type), args.data_dir))
+        asyncio.run(
+            serve(
+                args.host,
+                args.port,
+                args.node_id,
+                NodeType(args.node_type),
+                args.data_dir,
+            )
+        )
     except KeyboardInterrupt:
         print("\nshutting down")
 

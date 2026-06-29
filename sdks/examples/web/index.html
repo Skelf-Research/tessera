@@ -365,7 +365,7 @@ function CallInterface({ callContext }) {
     <script>
         // Demo application logic
         let selectedCallType = null;
-        let callDNSWidget = null;
+        let tesseraWidget = null;
 
         // Initialize Tessera (demo mode - no real API key)
         try {
@@ -402,7 +402,7 @@ function CallInterface({ callContext }) {
             try {
                 // Create widget with current config
                 const config = getWidgetConfig();
-                callDNSWidget = new TesseraWidget(widgetContainer, config);
+                tesseraWidget = new TesseraWidget(widgetContainer, config);
 
                 // Simulate verification
                 const result = await simulateVerification({
@@ -411,7 +411,7 @@ function CallInterface({ callContext }) {
                     sessionId: generateSessionId()
                 });
 
-                await callDNSWidget.show(result.callContext);
+                await tesseraWidget.show(result.callContext);
                 updateStats();
 
             } catch (error) {

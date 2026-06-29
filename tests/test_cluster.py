@@ -25,15 +25,28 @@ async def cluster():
 
 async def _subscribe(uri, sub_id, commitment):
     async with websockets.connect(uri) as ws:
-        await ws.send(json.dumps({"type": "subscribe", "subscriber_id": sub_id,
-                                  "subscription": Subscription(commitment, ["org"]).to_dict()}))
+        await ws.send(
+            json.dumps(
+                {
+                    "type": "subscribe",
+                    "subscriber_id": sub_id,
+                    "subscription": Subscription(commitment, ["org"]).to_dict(),
+                }
+            )
+        )
         await ws.recv()
 
 
 async def _route(uri, commitment):
     async with websockets.connect(uri) as ws:
-        await ws.send(json.dumps({"type": "proof",
-                                  "proof": {**make_routing_fields(commitment), "org_hint": "org"}}))
+        await ws.send(
+            json.dumps(
+                {
+                    "type": "proof",
+                    "proof": {**make_routing_fields(commitment), "org_hint": "org"},
+                }
+            )
+        )
         return json.loads(await ws.recv())
 
 

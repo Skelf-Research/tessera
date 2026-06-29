@@ -11,7 +11,6 @@ import time
 from typing import Dict, List, Optional, Tuple
 from dataclasses import dataclass, field
 
-
 # DHT parameters
 K = 20  # Bucket size (replication factor)
 ALPHA = 3  # Parallel lookups
@@ -21,6 +20,7 @@ ID_BITS = 160  # Node ID size in bits
 @dataclass
 class DHTNode:
     """A node in the DHT network."""
+
     node_id: bytes
     host: str
     port: int
@@ -37,8 +37,7 @@ class DHTNode:
     def distance(self, other_id: bytes) -> int:
         """XOR distance to another node ID."""
         return int.from_bytes(
-            bytes(a ^ b for a, b in zip(self.node_id, other_id)),
-            'big'
+            bytes(a ^ b for a, b in zip(self.node_id, other_id)), "big"
         )
 
     def to_dict(self) -> dict:
@@ -47,17 +46,17 @@ class DHTNode:
             "host": self.host,
             "port": self.port,
             "node_type": self.node_type,
-            "last_seen": self.last_seen
+            "last_seen": self.last_seen,
         }
 
     @classmethod
-    def from_dict(cls, data: dict) -> 'DHTNode':
+    def from_dict(cls, data: dict) -> "DHTNode":
         return cls(
             node_id=bytes.fromhex(data["node_id"]),
             host=data["host"],
             port=data["port"],
             node_type=data.get("node_type", "core"),
-            last_seen=data.get("last_seen", 0)
+            last_seen=data.get("last_seen", 0),
         )
 
 
@@ -117,8 +116,7 @@ class RoutingTable:
     def _bucket_index(self, node_id: bytes) -> int:
         """Get bucket index for a node ID based on XOR distance."""
         distance = int.from_bytes(
-            bytes(a ^ b for a, b in zip(self.local_id, node_id)),
-            'big'
+            bytes(a ^ b for a, b in zip(self.local_id, node_id)), "big"
         )
         if distance == 0:
             return 0
@@ -161,7 +159,7 @@ class RoutingTable:
         return {
             "total_nodes": total_nodes,
             "non_empty_buckets": non_empty_buckets,
-            "total_buckets": len(self.buckets)
+            "total_buckets": len(self.buckets),
         }
 
 
@@ -176,13 +174,7 @@ class KademliaDHT:
     - Periodic refresh
     """
 
-    def __init__(
-        self,
-        node_id: str,
-        host: str,
-        port: int,
-        node_type: str = "core"
-    ):
+    def __init__(self, node_id: str, host: str, port: int, node_type: str = "core"):
         # Generate 160-bit node ID from string ID
         self.node_id = hashlib.sha1(node_id.encode()).digest()
         self.host = host
@@ -214,12 +206,7 @@ class KademliaDHT:
         else:
             nid = hashlib.sha1(f"{host}:{port}".encode()).digest()
 
-        node = DHTNode(
-            node_id=nid,
-            host=host,
-            port=port,
-            node_type="core"
-        )
+        node = DHTNode(node_id=nid, host=host, port=port, node_type="core")
         self.bootstrap_nodes.append(node)
 
     async def start(self):
@@ -283,11 +270,11 @@ class KademliaDHT:
         """Generate a random ID that would fall in the given bucket."""
         # XOR with our ID to get target distance
         distance = random.getrandbits(bucket_index + 1)
-        distance |= (1 << bucket_index)  # Ensure it's in the right bucket
+        distance |= 1 << bucket_index  # Ensure it's in the right bucket
 
-        local_int = int.from_bytes(self.node_id, 'big')
+        local_int = int.from_bytes(self.node_id, "big")
         target_int = local_int ^ distance
-        return target_int.to_bytes(20, 'big')
+        return target_int.to_bytes(20, "big")
 
     async def find_node(self, target_id: bytes) -> List[DHTNode]:
         """
@@ -353,7 +340,7 @@ class KademliaDHT:
             start = time.time()
             result = await asyncio.wait_for(
                 self._find_node_callback(node.host, node.port, target_id.hex()),
-                timeout=5.0
+                timeout=5.0,
             )
             node.rtt_ms = (time.time() - start) * 1000
             node.last_seen = time.time()
@@ -371,7 +358,7 @@ class KademliaDHT:
             host=host,
             port=port,
             node_type=node_type,
-            last_seen=time.time()
+            last_seen=time.time(),
         )
         self.routing_table.add_node(node)
 
@@ -401,7 +388,7 @@ class KademliaDHT:
             "host": self.host,
             "port": self.port,
             "bootstrap_nodes": len(self.bootstrap_nodes),
-            **rt_stats
+            **rt_stats,
         }
 
 
@@ -410,7 +397,7 @@ def create_dht(
     host: str,
     port: int,
     node_type: str = "core",
-    bootstrap_nodes: List[Tuple[str, int]] = None
+    bootstrap_nodes: List[Tuple[str, int]] = None,
 ) -> KademliaDHT:
     """Create and configure a DHT instance."""
     dht = KademliaDHT(node_id, host, port, node_type)

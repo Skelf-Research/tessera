@@ -38,10 +38,9 @@ class NodeStorage:
     @contextmanager
     def _get_connection(self):
         """Get thread-local database connection."""
-        if not hasattr(self._local, 'connection'):
+        if not hasattr(self._local, "connection"):
             self._local.connection = sqlite3.connect(
-                self.db_path,
-                check_same_thread=False
+                self.db_path, check_same_thread=False
             )
             self._local.connection.row_factory = sqlite3.Row
 
@@ -157,8 +156,9 @@ class NodeStorage:
     # Proof Storage
     # ─────────────────────────────────────────────────────────────
 
-    def store_proof(self, proof_id: str, proof: dict, from_peer: str = None,
-                   ttl: int = 3600) -> bool:
+    def store_proof(
+        self, proof_id: str, proof: dict, from_peer: str = None, ttl: int = 3600
+    ) -> bool:
         """
         Store a proof in the database.
 
@@ -178,22 +178,25 @@ class NodeStorage:
             expires_at = current_time + ttl
 
             try:
-                cursor.execute("""
+                cursor.execute(
+                    """
                     INSERT INTO proofs
                     (proof_id, bucket, bloom_fingerprint, proof_data, org_hint,
                      timestamp, received_at, from_peer, expires_at)
                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-                """, (
-                    proof_id,
-                    proof.get("bucket"),
-                    proof.get("bloom_fingerprint", ""),
-                    json.dumps(proof),
-                    proof.get("org_hint"),
-                    proof.get("timestamp", current_time),
-                    current_time,
-                    from_peer,
-                    expires_at
-                ))
+                """,
+                    (
+                        proof_id,
+                        proof.get("bucket"),
+                        proof.get("bloom_fingerprint", ""),
+                        json.dumps(proof),
+                        proof.get("org_hint"),
+                        proof.get("timestamp", current_time),
+                        current_time,
+                        from_peer,
+                        expires_at,
+                    ),
+                )
                 conn.commit()
                 return True
             except sqlite3.IntegrityError:
@@ -205,8 +208,7 @@ class NodeStorage:
         with self._get_connection() as conn:
             cursor = conn.cursor()
             cursor.execute(
-                "SELECT proof_data FROM proofs WHERE proof_id = ?",
-                (proof_id,)
+                "SELECT proof_data FROM proofs WHERE proof_id = ?", (proof_id,)
             )
             row = cursor.fetchone()
             if row:
@@ -217,21 +219,21 @@ class NodeStorage:
         """Check if proof already exists (for dedup)."""
         with self._get_connection() as conn:
             cursor = conn.cursor()
-            cursor.execute(
-                "SELECT 1 FROM proofs WHERE proof_id = ?",
-                (proof_id,)
-            )
+            cursor.execute("SELECT 1 FROM proofs WHERE proof_id = ?", (proof_id,))
             return cursor.fetchone() is not None
 
     def get_proofs_by_bucket(self, bucket: int, since_timestamp: int = 0) -> List[dict]:
         """Get all proofs in a bucket since timestamp."""
         with self._get_connection() as conn:
             cursor = conn.cursor()
-            cursor.execute("""
+            cursor.execute(
+                """
                 SELECT proof_data FROM proofs
                 WHERE bucket = ? AND timestamp >= ?
                 ORDER BY timestamp DESC
-            """, (bucket, since_timestamp))
+            """,
+                (bucket, since_timestamp),
+            )
 
             return [json.loads(row["proof_data"]) for row in cursor.fetchall()]
 
@@ -242,18 +244,18 @@ class NodeStorage:
             current_time = int(time.time())
 
             # First delete pending references
-            cursor.execute("""
+            cursor.execute(
+                """
                 DELETE FROM pending_proofs
                 WHERE proof_id IN (
                     SELECT proof_id FROM proofs WHERE expires_at < ?
                 )
-            """, (current_time,))
+            """,
+                (current_time,),
+            )
 
             # Then delete proofs
-            cursor.execute(
-                "DELETE FROM proofs WHERE expires_at < ?",
-                (current_time,)
-            )
+            cursor.execute("DELETE FROM proofs WHERE expires_at < ?", (current_time,))
             deleted = cursor.rowcount
             conn.commit()
             return deleted
@@ -281,25 +283,29 @@ class NodeStorage:
             bloom_filter = subscription.get("bloom_filter", b"")
             if isinstance(bloom_filter, str):
                 import base64
+
                 bloom_filter = base64.b64decode(bloom_filter)
 
-            cursor.execute("""
+            cursor.execute(
+                """
                 INSERT OR REPLACE INTO subscriptions
                 (subscriber_id, bucket, bloom_filter, org_hints, time_window,
                  created_at, last_seen)
                 VALUES (?, ?, ?, ?, ?,
                         COALESCE((SELECT created_at FROM subscriptions WHERE subscriber_id = ?), ?),
                         ?)
-            """, (
-                subscriber_id,
-                subscription.get("bucket"),
-                bloom_filter,
-                org_hints,
-                subscription.get("time_window", 600),
-                subscriber_id,
-                current_time,
-                current_time
-            ))
+            """,
+                (
+                    subscriber_id,
+                    subscription.get("bucket"),
+                    bloom_filter,
+                    org_hints,
+                    subscription.get("time_window", 600),
+                    subscriber_id,
+                    current_time,
+                    current_time,
+                ),
+            )
             conn.commit()
 
     def get_subscription(self, subscriber_id: str) -> Optional[dict]:
@@ -307,12 +313,12 @@ class NodeStorage:
         with self._get_connection() as conn:
             cursor = conn.cursor()
             cursor.execute(
-                "SELECT * FROM subscriptions WHERE subscriber_id = ?",
-                (subscriber_id,)
+                "SELECT * FROM subscriptions WHERE subscriber_id = ?", (subscriber_id,)
             )
             row = cursor.fetchone()
             if row:
                 import base64
+
                 return {
                     "subscriber_id": row["subscriber_id"],
                     "bucket": row["bucket"],
@@ -320,7 +326,7 @@ class NodeStorage:
                     "org_hints": json.loads(row["org_hints"]),
                     "time_window": row["time_window"],
                     "created_at": row["created_at"],
-                    "last_seen": row["last_seen"]
+                    "last_seen": row["last_seen"],
                 }
             return None
 
@@ -329,8 +335,7 @@ class NodeStorage:
         with self._get_connection() as conn:
             cursor = conn.cursor()
             cursor.execute(
-                "SELECT subscriber_id FROM subscriptions WHERE bucket = ?",
-                (bucket,)
+                "SELECT subscriber_id FROM subscriptions WHERE bucket = ?", (bucket,)
             )
             return [row["subscriber_id"] for row in cursor.fetchall()]
 
@@ -341,14 +346,12 @@ class NodeStorage:
 
             # Delete pending proofs first
             cursor.execute(
-                "DELETE FROM pending_proofs WHERE subscriber_id = ?",
-                (subscriber_id,)
+                "DELETE FROM pending_proofs WHERE subscriber_id = ?", (subscriber_id,)
             )
 
             # Delete subscription
             cursor.execute(
-                "DELETE FROM subscriptions WHERE subscriber_id = ?",
-                (subscriber_id,)
+                "DELETE FROM subscriptions WHERE subscriber_id = ?", (subscriber_id,)
             )
             deleted = cursor.rowcount > 0
             conn.commit()
@@ -360,7 +363,7 @@ class NodeStorage:
             cursor = conn.cursor()
             cursor.execute(
                 "UPDATE subscriptions SET last_seen = ? WHERE subscriber_id = ?",
-                (int(time.time()), subscriber_id)
+                (int(time.time()), subscriber_id),
             )
             conn.commit()
 
@@ -371,17 +374,20 @@ class NodeStorage:
             cursor.execute("SELECT * FROM subscriptions")
 
             import base64
+
             subscriptions = []
             for row in cursor.fetchall():
-                subscriptions.append({
-                    "subscriber_id": row["subscriber_id"],
-                    "bucket": row["bucket"],
-                    "bloom_filter": base64.b64encode(row["bloom_filter"]).decode(),
-                    "org_hints": json.loads(row["org_hints"]),
-                    "time_window": row["time_window"],
-                    "created_at": row["created_at"],
-                    "last_seen": row["last_seen"]
-                })
+                subscriptions.append(
+                    {
+                        "subscriber_id": row["subscriber_id"],
+                        "bucket": row["bucket"],
+                        "bloom_filter": base64.b64encode(row["bloom_filter"]).decode(),
+                        "org_hints": json.loads(row["org_hints"]),
+                        "time_window": row["time_window"],
+                        "created_at": row["created_at"],
+                        "last_seen": row["last_seen"],
+                    }
+                )
             return subscriptions
 
     # ─────────────────────────────────────────────────────────────
@@ -392,14 +398,18 @@ class NodeStorage:
         """Queue a proof for a subscriber to pull."""
         with self._get_connection() as conn:
             cursor = conn.cursor()
-            cursor.execute("""
+            cursor.execute(
+                """
                 INSERT INTO pending_proofs (subscriber_id, proof_id, queued_at)
                 VALUES (?, ?, ?)
-            """, (subscriber_id, proof_id, int(time.time())))
+            """,
+                (subscriber_id, proof_id, int(time.time())),
+            )
             conn.commit()
 
-    def get_pending_proofs(self, subscriber_id: str,
-                          delete_after: bool = True) -> List[dict]:
+    def get_pending_proofs(
+        self, subscriber_id: str, delete_after: bool = True
+    ) -> List[dict]:
         """
         Get pending proofs for a subscriber.
 
@@ -414,13 +424,16 @@ class NodeStorage:
             cursor = conn.cursor()
 
             # Get pending proof IDs
-            cursor.execute("""
+            cursor.execute(
+                """
                 SELECT pp.id, p.proof_data
                 FROM pending_proofs pp
                 JOIN proofs p ON pp.proof_id = p.proof_id
                 WHERE pp.subscriber_id = ?
                 ORDER BY pp.queued_at ASC
-            """, (subscriber_id,))
+            """,
+                (subscriber_id,),
+            )
 
             rows = cursor.fetchall()
             proofs = [json.loads(row["proof_data"]) for row in rows]
@@ -429,7 +442,7 @@ class NodeStorage:
                 pending_ids = [row["id"] for row in rows]
                 cursor.execute(
                     f"DELETE FROM pending_proofs WHERE id IN ({','.join('?' * len(pending_ids))})",
-                    pending_ids
+                    pending_ids,
                 )
                 conn.commit()
 
@@ -441,7 +454,7 @@ class NodeStorage:
             cursor = conn.cursor()
             cursor.execute(
                 "SELECT COUNT(*) FROM pending_proofs WHERE subscriber_id = ?",
-                (subscriber_id,)
+                (subscriber_id,),
             )
             return cursor.fetchone()[0]
 
@@ -455,24 +468,27 @@ class NodeStorage:
             cursor = conn.cursor()
             current_time = int(time.time())
 
-            cursor.execute("""
+            cursor.execute(
+                """
                 INSERT OR REPLACE INTO peers
                 (peer_id, node_type, address, port, connected_at, last_seen,
                  is_active, metadata)
                 VALUES (?, ?, ?, ?,
                         COALESCE((SELECT connected_at FROM peers WHERE peer_id = ?), ?),
                         ?, ?, ?)
-            """, (
-                peer_id,
-                peer_info.get("node_type", "unknown"),
-                peer_info.get("address", ""),
-                peer_info.get("port", 0),
-                peer_id,
-                current_time,
-                current_time,
-                1,
-                json.dumps(peer_info.get("metadata", {}))
-            ))
+            """,
+                (
+                    peer_id,
+                    peer_info.get("node_type", "unknown"),
+                    peer_info.get("address", ""),
+                    peer_info.get("port", 0),
+                    peer_id,
+                    current_time,
+                    current_time,
+                    1,
+                    json.dumps(peer_info.get("metadata", {})),
+                ),
+            )
             conn.commit()
 
     def get_peer(self, peer_id: str) -> Optional[dict]:
@@ -490,7 +506,7 @@ class NodeStorage:
                     "connected_at": row["connected_at"],
                     "last_seen": row["last_seen"],
                     "is_active": bool(row["is_active"]),
-                    "metadata": json.loads(row["metadata"])
+                    "metadata": json.loads(row["metadata"]),
                 }
             return None
 
@@ -502,16 +518,18 @@ class NodeStorage:
 
             peers = []
             for row in cursor.fetchall():
-                peers.append({
-                    "peer_id": row["peer_id"],
-                    "node_type": row["node_type"],
-                    "address": row["address"],
-                    "port": row["port"],
-                    "connected_at": row["connected_at"],
-                    "last_seen": row["last_seen"],
-                    "is_active": bool(row["is_active"]),
-                    "metadata": json.loads(row["metadata"])
-                })
+                peers.append(
+                    {
+                        "peer_id": row["peer_id"],
+                        "node_type": row["node_type"],
+                        "address": row["address"],
+                        "port": row["port"],
+                        "connected_at": row["connected_at"],
+                        "last_seen": row["last_seen"],
+                        "is_active": bool(row["is_active"]),
+                        "metadata": json.loads(row["metadata"]),
+                    }
+                )
             return peers
 
     def update_peer_last_seen(self, peer_id: str):
@@ -520,7 +538,7 @@ class NodeStorage:
             cursor = conn.cursor()
             cursor.execute(
                 "UPDATE peers SET last_seen = ? WHERE peer_id = ?",
-                (int(time.time()), peer_id)
+                (int(time.time()), peer_id),
             )
             conn.commit()
 
@@ -529,8 +547,7 @@ class NodeStorage:
         with self._get_connection() as conn:
             cursor = conn.cursor()
             cursor.execute(
-                "UPDATE peers SET is_active = 0 WHERE peer_id = ?",
-                (peer_id,)
+                "UPDATE peers SET is_active = 0 WHERE peer_id = ?", (peer_id,)
             )
             conn.commit()
 
@@ -551,13 +568,16 @@ class NodeStorage:
             cursor = conn.cursor()
             current_time = int(time.time())
 
-            cursor.execute("""
+            cursor.execute(
+                """
                 INSERT INTO stats (stat_key, stat_value, updated_at)
                 VALUES (?, ?, ?)
                 ON CONFLICT(stat_key) DO UPDATE SET
                     stat_value = stat_value + ?,
                     updated_at = ?
-            """, (stat_key, amount, current_time, amount, current_time))
+            """,
+                (stat_key, amount, current_time, amount, current_time),
+            )
             conn.commit()
 
     def get_stat(self, stat_key: str) -> int:
@@ -565,8 +585,7 @@ class NodeStorage:
         with self._get_connection() as conn:
             cursor = conn.cursor()
             cursor.execute(
-                "SELECT stat_value FROM stats WHERE stat_key = ?",
-                (stat_key,)
+                "SELECT stat_value FROM stats WHERE stat_key = ?", (stat_key,)
             )
             row = cursor.fetchone()
             return row["stat_value"] if row else 0
@@ -588,7 +607,7 @@ class NodeStorage:
             cursor = conn.cursor()
             cursor.execute(
                 "INSERT OR REPLACE INTO config (key, value) VALUES (?, ?)",
-                (key, json.dumps(value))
+                (key, json.dumps(value)),
             )
             conn.commit()
 
@@ -641,6 +660,6 @@ class NodeStorage:
 
     def close(self):
         """Close database connections."""
-        if hasattr(self._local, 'connection'):
+        if hasattr(self._local, "connection"):
             self._local.connection.close()
-            delattr(self._local, 'connection')
+            delattr(self._local, "connection")

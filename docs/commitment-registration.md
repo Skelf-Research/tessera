@@ -64,8 +64,7 @@ Replay reduces to two requirements, both met:
    constant time. Outside the time window the recipient's freshness check
    rejects regardless.
 
-Formally: see Theorem 3 in
-[`../../tessera-paper-msg/formal/security_proofs.md`](../../tessera-paper-msg/formal/security_proofs.md).
+Formally: see Theorem 3 in [`../research.md`](../research.md).
 
 ## Lifecycle
 

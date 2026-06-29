@@ -1,10 +1,8 @@
-# Paper artefacts have moved
+# Research artifacts
 
-The Tessera research paper now lives in the sibling repo **`../tessera-paper-msg`**.
+The Tessera research content — formal foundations, security proofs, protocol
+specification, and experiment harness summaries — now lives in
+[`research.md`](../research.md) at the repo root.
 
-This `research/` directory is retained only for history. New paper work — LaTeX,
-figures, formal proofs, protocol spec, results — goes in `../tessera-paper-msg`.
-
-Code-side experiment harnesses (whose outputs feed the paper) live in `../tessera/scripts/`.
-
-See the plan: `~/.claude/plans/recursive-popping-pebble.md`.
+Code-side experiment harnesses (whose outputs feed the evaluation) live in
+[`scripts/`](../scripts/) and emit results to [`results/`](../results/).

@@ -1,22 +1,22 @@
 """
-Per-call key blinding for sender unlinkability (resolves finding F11).
+Per-delivery key blinding for sender unlinkability.
 
 The base ZK proof (crypto_utils.ZKProver) hides the sender's secret key x but transmits
-the public key Y in the clear, so a callee that decrypts the proof could link every call
-from the same sender by Y. This module makes the *statement* unlinkable too:
+the public key Y in the clear, so a recipient that decrypts the proof could link every
+delivery from the same sender by Y. This module makes the *statement* unlinkable too:
 
-For each call the sender presents a blinded pseudonym
+For each delivery the sender presents a blinded pseudonym
     Y' = Y + t*G,   t = H(shared_seed || session_id) mod q
-and proves knowledge of the blinded secret x' = x + t (which it can compute). The callee,
+and proves knowledge of the blinded secret x' = x + t (which it can compute). The recipient,
 holding the contact's registered key Y and the per-contact ``shared_seed`` established at
 enrolment, recomputes t and checks Y' == Y + t*G — authenticating the sender as "the entity
 I share this seed with" while:
 
-  * a third party / the network sees a fresh, uniform Y' per call (unlinkable);
-  * a *different* callee (with a different seed) cannot recompute Y' (no cross-callee linkage);
-  * no central registry maps sender <-> callee — the binding is pairwise and local.
+  * a third party / the network sees a fresh, uniform Y' per delivery (unlinkable);
+  * a *different* recipient (with a different seed) cannot recompute Y' (no cross-recipient linkage);
+  * no central registry maps sender <-> recipient — the binding is pairwise and local.
 
-See ../../tessera-paper-msg/formal/security_proofs.md (F11) and ../../tessera-paper-msg/spec/protocol_spec.md.
+See research.md for formal proofs and protocol specification details.
 """
 
 import hashlib
@@ -31,7 +31,7 @@ _G = SECP256k1.generator
 
 
 def derive_blinding(shared_seed: bytes, session_id: str) -> int:
-    """Per-call blinding scalar t = H(shared_seed || session_id) mod q."""
+    """Per-delivery blinding scalar t = H(shared_seed || session_id) mod q."""
     h = hashlib.sha256(shared_seed + session_id.encode("utf-8")).digest()
     return int.from_bytes(h, "big") % ORDER
 
@@ -43,12 +43,14 @@ def blind_private_key(x: int, t: int) -> int:
 
 def blind_public_key(public_key_bytes: bytes, t: int) -> bytes:
     """Y' = Y + t*G, returned in the same 64-byte raw encoding as Y."""
-    point = VerifyingKey.from_string(public_key_bytes, curve=SECP256k1).pubkey.point + (_G * t)
+    point = VerifyingKey.from_string(public_key_bytes, curve=SECP256k1).pubkey.point + (
+        _G * t
+    )
     return VerifyingKey.from_public_point(point, curve=SECP256k1).to_string()
 
 
 class BlindedSender:
-    """Sender side: produce a per-call proof under a fresh blinded pseudonym."""
+    """Sender side: produce a per-delivery proof under a fresh blinded pseudonym."""
 
     def __init__(self, private_key_int: int, public_key_bytes: bytes):
         self.x = private_key_int
@@ -56,7 +58,7 @@ class BlindedSender:
         self._prover = ZKProver()
 
     def prove(self, shared_seed: bytes, session_id: str, metadata: dict) -> dict:
-        """Return a ZK proof carrying the blinded pseudonym Y' for this call."""
+        """Return a ZK proof carrying the blinded pseudonym Y' for this delivery."""
         t = derive_blinding(shared_seed, session_id)
         blinded_pub = blind_public_key(self.Y, t)
         blinded_priv = blind_private_key(self.x, t)
@@ -64,13 +66,18 @@ class BlindedSender:
 
 
 class BlindedVerifier:
-    """Callee side: authenticate a blinded proof against a known contact (Y, shared_seed)."""
+    """Recipient side: authenticate a blinded proof against a known contact (Y, shared_seed)."""
 
     def __init__(self):
         self._verifier = ZKVerifier()
 
-    def authenticate(self, proof: dict, contact_public_key: bytes,
-                     shared_seed: bytes, session_id: str) -> bool:
+    def authenticate(
+        self,
+        proof: dict,
+        contact_public_key: bytes,
+        shared_seed: bytes,
+        session_id: str,
+    ) -> bool:
         """True iff the proof is valid AND its pseudonym matches the expected contact.
 
         Two independent checks must both pass:

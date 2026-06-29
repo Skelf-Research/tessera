@@ -53,7 +53,7 @@ After both authentications succeed, A and B have *mutually* authenticated.
 ## Properties
 
 - **Authentication, both directions.** Theorem 1 in
-  [`../../tessera-paper-msg/formal/security_proofs.md`](../../tessera-paper-msg/formal/security_proofs.md)
+  [`../research.md`](../research.md)
   applies independently to each direction.
 - **Cross-recipient unlinkability still holds.** A's third party C (with a
   different `seed_AC`) cannot link any of A's deliveries to B based on the

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-E7 — Comparative metadata-leakage analysis (messaging framing, Paper A).
+E7 — Comparative metadata-leakage analysis.
 
 Encodes, for each scheme and each observer, which pieces of sender<->recipient metadata are
 exposed, plus an explicit indicator of whether the system *authenticates* the sender at all.
@@ -28,75 +28,117 @@ import json
 from datetime import datetime, timezone
 from pathlib import Path
 
-PAPER = Path(__file__).resolve().parents[3] / "tessera-paper-msg"
-DEFAULT_RESULTS = PAPER / "results"
+RESULTS_DIR = Path(__file__).resolve().parents[2] / "results"
+DEFAULT_RESULTS = RESULTS_DIR
 
-ITEMS = ["sender_id", "recipient_id", "sender_recipient_link", "delivery_timing", "cross_recipient_link"]
+ITEMS = [
+    "sender_id",
+    "recipient_id",
+    "sender_recipient_link",
+    "delivery_timing",
+    "cross_recipient_link",
+]
 
 MATRIX = {
     "Signed messaging (Signal-style)": {
         "routing_platform": {  # central server / push platform routing every message
-            "sender_id": "leak", "recipient_id": "leak", "sender_recipient_link": "leak",
-            "delivery_timing": "leak", "cross_recipient_link": "leak",
+            "sender_id": "leak",
+            "recipient_id": "leak",
+            "sender_recipient_link": "leak",
+            "delivery_timing": "leak",
+            "cross_recipient_link": "leak",
             "_note": "Central server routes by sender/recipient identifiers; full graph visibility.",
         },
         "network": {  # TLS encrypts content; timing remains observable
-            "sender_id": "none", "recipient_id": "none", "sender_recipient_link": "none",
-            "delivery_timing": "leak", "cross_recipient_link": "none",
+            "sender_id": "none",
+            "recipient_id": "none",
+            "sender_recipient_link": "none",
+            "delivery_timing": "leak",
+            "cross_recipient_link": "none",
             "_note": "TLS encrypts content+identities on the wire; message timing observable.",
         },
         "recipient": {  # the recipient itself
-            "sender_id": "intended", "recipient_id": "n/a", "sender_recipient_link": "intended",
-            "delivery_timing": "intended", "cross_recipient_link": "leak",
+            "sender_id": "intended",
+            "recipient_id": "n/a",
+            "sender_recipient_link": "intended",
+            "delivery_timing": "intended",
+            "cross_recipient_link": "leak",
             "_note": "Long-term sender identity key links the sender's prior deliveries to me.",
         },
         "colluding_recipients": {  # multiple recipients compare notes
-            "sender_id": "leak", "recipient_id": "leak", "sender_recipient_link": "leak",
-            "delivery_timing": "leak", "cross_recipient_link": "leak",
+            "sender_id": "leak",
+            "recipient_id": "leak",
+            "sender_recipient_link": "leak",
+            "delivery_timing": "leak",
+            "cross_recipient_link": "leak",
             "_note": "Shared long-term identity key links the sender across all their recipients.",
         },
     },
     "Metadata-private messaging (Vuvuzela-style)": {
         "routing_platform": {  # mix servers + DP cover traffic
-            "sender_id": "none", "recipient_id": "none", "sender_recipient_link": "none",
-            "delivery_timing": "none", "cross_recipient_link": "none",
+            "sender_id": "none",
+            "recipient_id": "none",
+            "sender_recipient_link": "none",
+            "delivery_timing": "none",
+            "cross_recipient_link": "none",
             "_note": "Mix servers + (eps,delta)-DP cover traffic hide the graph by design.",
         },
         "network": {
-            "sender_id": "none", "recipient_id": "none", "sender_recipient_link": "none",
-            "delivery_timing": "none", "cross_recipient_link": "none",
+            "sender_id": "none",
+            "recipient_id": "none",
+            "sender_recipient_link": "none",
+            "delivery_timing": "none",
+            "cross_recipient_link": "none",
             "_note": "Encrypted, padded, shuffled traffic between mix servers.",
         },
         "recipient": {
-            "sender_id": "missing", "recipient_id": "n/a", "sender_recipient_link": "missing",
-            "delivery_timing": "intended", "cross_recipient_link": "missing",
+            "sender_id": "missing",
+            "recipient_id": "n/a",
+            "sender_recipient_link": "missing",
+            "delivery_timing": "intended",
+            "cross_recipient_link": "missing",
             "_note": "No sender authentication: recipient cannot tell which contact sent the message.",
         },
         "colluding_recipients": {
-            "sender_id": "none", "recipient_id": "none", "sender_recipient_link": "none",
-            "delivery_timing": "none", "cross_recipient_link": "none",
+            "sender_id": "none",
+            "recipient_id": "none",
+            "sender_recipient_link": "none",
+            "delivery_timing": "none",
+            "cross_recipient_link": "none",
             "_note": "Cover traffic + per-mailbox PIR hides links between recipients.",
         },
     },
     "Tessera": {
         "routing_platform": {  # there is none: pairwise local enrolment, peered relays
-            "sender_id": "n/a", "recipient_id": "n/a", "sender_recipient_link": "n/a",
-            "delivery_timing": "n/a", "cross_recipient_link": "n/a",
+            "sender_id": "n/a",
+            "recipient_id": "n/a",
+            "sender_recipient_link": "n/a",
+            "delivery_timing": "n/a",
+            "cross_recipient_link": "n/a",
             "_note": "No central routing operator; bindings are pairwise/local; relays are peers.",
         },
         "network": {  # encrypted proofs + DP cover traffic in buckets
-            "sender_id": "none", "recipient_id": "none", "sender_recipient_link": "none",
-            "delivery_timing": "none", "cross_recipient_link": "none",
+            "sender_id": "none",
+            "recipient_id": "none",
+            "sender_recipient_link": "none",
+            "delivery_timing": "none",
+            "cross_recipient_link": "none",
             "_note": "Encrypted proofs; (eps,delta)-DP bucket counts; blinded pseudonyms.",
         },
         "recipient": {
-            "sender_id": "intended", "recipient_id": "n/a", "sender_recipient_link": "intended",
-            "delivery_timing": "intended", "cross_recipient_link": "intended",
+            "sender_id": "intended",
+            "recipient_id": "n/a",
+            "sender_recipient_link": "intended",
+            "delivery_timing": "intended",
+            "cross_recipient_link": "intended",
             "_note": "Recipient authenticates its own contact (the point); nothing more.",
         },
         "colluding_recipients": {
-            "sender_id": "none", "recipient_id": "none", "sender_recipient_link": "none",
-            "delivery_timing": "none", "cross_recipient_link": "none",
+            "sender_id": "none",
+            "recipient_id": "none",
+            "sender_recipient_link": "none",
+            "delivery_timing": "none",
+            "cross_recipient_link": "none",
             "_note": "Per-recipient blinded pseudonym Y' -> no cross-recipient linkage.",
         },
     },
@@ -171,7 +213,9 @@ def print_report():
     print(f"{'scheme':<46}{'unintended leaks':>18}{'auth gaps':>11}")
     for scheme in MATRIX:
         print(f"  {scheme:<44}{leaks[scheme]:>18}{gaps[scheme]:>11}")
-    print("\n(lower leaks = more private; auth gaps = recipient cannot authenticate sender)")
+    print(
+        "\n(lower leaks = more private; auth gaps = recipient cannot authenticate sender)"
+    )
 
 
 def main():

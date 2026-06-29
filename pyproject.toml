@@ -1,55 +1,60 @@
-[tool.poetry]
+[project]
 name = "tessera"
-version = "0.1.0"
-description = "Authenticated, metadata-private one-to-one delivery: Schnorr zero-knowledge identity proofs with per-recipient key blinding, encrypted bucketed broadcast, and differentially-private cover traffic."
-authors = ["Dipankar Sarkar <me@dipankar.name>"]
+version = "0.2.0"
+description = "Open-source privacy protocol for authenticated, metadata-private messaging: Schnorr zero-knowledge proofs with per-recipient key blinding, encrypted bucketed broadcast, and differentially-private cover traffic."
+authors = [{ name = "Dipankar Sarkar", email = "me@dipankar.name" }]
 license = "MIT"
 readme = "README.md"
-homepage = "https://github.com/dipankar/tessera"
-repository = "https://github.com/dipankar/tessera"
-documentation = "https://github.com/dipankar/tessera"
+homepage = "https://github.com/Skelf-Research/tessera"
+repository = "https://github.com/Skelf-Research/tessera"
+documentation = "https://github.com/Skelf-Research/tessera#documentation"
 keywords = ["zero-knowledge", "privacy", "metadata-private", "authentication", "messaging", "differential-privacy"]
 classifiers = [
-    "Development Status :: 3 - Alpha",
+    "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.8",
-    "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Topic :: Security :: Cryptography",
-    "Topic :: Communications"
+    "Topic :: Communications",
+]
+requires-python = ">=3.10"
+dependencies = [
+    "cryptography>=3.4.8",
+    "ecdsa>=0.19.1",
+    "flask>=2.0.0",
+    "fastapi>=0.104.0",
+    "uvicorn[standard]>=0.24.0",
+    "aiosqlite>=0.19.0",
+    "pydantic>=2.5.0",
+    "websockets>=12.0",
+    "pyjwt>=2.8.0",
 ]
 
-[tool.poetry.dependencies]
-python = "^3.8"
-cryptography = "^3.4.8"
-ecdsa = "^0.19.1"
-flask = "^2.0.0"
-fastapi = "^0.104.0"
-uvicorn = {extras = ["standard"], version = "^0.24.0"}
-aiosqlite = "^0.19.0"
-pydantic = "^2.5.0"
-websockets = "^12.0"
-aiomqtt = {version = "^2.0.0", optional = true}
-pyjwt = ">=2.8.0"
+[project.optional-dependencies]
+mqtt = ["aiomqtt>=2.0.0"]
 
-[tool.poetry.extras]
-mqtt = ["aiomqtt"]
+[dependency-groups]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-asyncio>=0.21.0",
+    "black>=22.0.0",
+    "flake8>=4.0.0",
+    "httpx>=0.25.0",
+]
 
-[tool.poetry.group.dev.dependencies]
-pytest = "^7.0.0"
-pytest-asyncio = "^0.21.0"
-black = "^22.0.0"
-flake8 = "^4.0.0"
-httpx = "^0.25.0"
-
-[tool.poetry.scripts]
+[project.scripts]
 tessera = "tessera.cli.main:main"
 
 [build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["tessera"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "strict"

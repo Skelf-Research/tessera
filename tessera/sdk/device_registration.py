@@ -73,9 +73,9 @@ class DeviceRegistration:
         return {
             "device_id": self.device_id,
             "device_name": self.device_name,
-            "commitment": base64.b64encode(self.commitment).decode('utf-8'),
-            "public_key": base64.b64encode(public_key).decode('utf-8'),
-            "registered_at": int(time.time())
+            "commitment": base64.b64encode(self.commitment).decode("utf-8"),
+            "public_key": base64.b64encode(public_key).decode("utf-8"),
+            "registered_at": int(time.time()),
         }
 
     def generate_linking_token(self, organization_id: str) -> str:
@@ -97,11 +97,11 @@ class DeviceRegistration:
         # Create linking data
         linking_data = {
             "device_id": self.device_id,
-            "commitment": base64.b64encode(self.commitment).decode('utf-8'),
+            "commitment": base64.b64encode(self.commitment).decode("utf-8"),
             "organization_id": organization_id,
             "created_at": int(time.time()),
             "expires_at": int(time.time()) + 3600,  # 1 hour validity
-            "nonce": secrets.token_hex(16)
+            "nonce": secrets.token_hex(16),
         }
 
         # Sign the linking data
@@ -113,14 +113,18 @@ class DeviceRegistration:
         linking_data["signature"] = signature
 
         # Encode as token
-        token = base64.urlsafe_b64encode(
-            json.dumps(linking_data).encode()
-        ).decode('utf-8')
+        token = base64.urlsafe_b64encode(json.dumps(linking_data).encode()).decode(
+            "utf-8"
+        )
 
         return token
 
-    def link_organization(self, organization_id: str, organization_name: str,
-                         permissions: List[str] = None) -> Dict:
+    def link_organization(
+        self,
+        organization_id: str,
+        organization_name: str,
+        permissions: List[str] = None,
+    ) -> Dict:
         """
         Record a link to an organization locally.
 
@@ -140,7 +144,7 @@ class DeviceRegistration:
             "organization_name": organization_name,
             "linked_at": int(time.time()),
             "permissions": permissions,
-            "active": True
+            "active": True,
         }
 
         self.linked_organizations[organization_id] = link_record
@@ -221,13 +225,19 @@ class DeviceRegistration:
         return {
             "device_id": self.device_id,
             "device_name": self.device_name,
-            "commitment": base64.b64encode(self.commitment).decode('utf-8') if self.commitment else None,
-            "public_key": base64.b64encode(self.identity_manager.get_public_key()).decode('utf-8'),
-            "linked_organizations": self.linked_organizations
+            "commitment": (
+                base64.b64encode(self.commitment).decode("utf-8")
+                if self.commitment
+                else None
+            ),
+            "public_key": base64.b64encode(
+                self.identity_manager.get_public_key()
+            ).decode("utf-8"),
+            "linked_organizations": self.linked_organizations,
         }
 
     @classmethod
-    def from_dict(cls, data: Dict) -> 'DeviceRegistration':
+    def from_dict(cls, data: Dict) -> "DeviceRegistration":
         """
         Deserialize device registration from dictionary.
 
@@ -280,7 +290,7 @@ class CustomerRegistrationManager:
             "created_at": int(time.time()),
             "devices": {},
             "organization_links": {},
-            "metadata": metadata or {}
+            "metadata": metadata or {},
         }
 
         self.customers[customer_id] = customer_record
@@ -312,7 +322,7 @@ class CustomerRegistrationManager:
             "public_key": device_payload["public_key"],
             "registered_at": device_payload.get("registered_at", int(time.time())),
             "last_seen": int(time.time()),
-            "active": True
+            "active": True,
         }
 
         # Store in customer record
@@ -377,8 +387,9 @@ class CustomerRegistrationManager:
 
         return commitments
 
-    def link_organization(self, customer_id: str, organization_id: str,
-                         linking_token: str) -> Dict:
+    def link_organization(
+        self, customer_id: str, organization_id: str, linking_token: str
+    ) -> Dict:
         """
         Link a customer to an organization using a linking token.
 
@@ -396,7 +407,7 @@ class CustomerRegistrationManager:
         # Decode and validate token
         try:
             token_data = json.loads(
-                base64.urlsafe_b64decode(linking_token.encode()).decode('utf-8')
+                base64.urlsafe_b64decode(linking_token.encode()).decode("utf-8")
             )
         except Exception as e:
             return {"error": f"Invalid token: {e}"}
@@ -414,7 +425,7 @@ class CustomerRegistrationManager:
             "organization_id": organization_id,
             "linked_at": int(time.time()),
             "permissions": ["verify_calls", "get_commitments"],
-            "linked_device": token_data.get("device_id")
+            "linked_device": token_data.get("device_id"),
         }
 
         self.customers[customer_id]["organization_links"][organization_id] = link_record
@@ -441,8 +452,12 @@ class CustomerRegistrationManager:
 
         return False
 
-    def is_organization_authorized(self, customer_id: str, organization_id: str,
-                                   permission: str = "get_commitments") -> bool:
+    def is_organization_authorized(
+        self,
+        customer_id: str,
+        organization_id: str,
+        permission: str = "get_commitments",
+    ) -> bool:
         """
         Check if an organization is authorized to access customer data.
 
@@ -485,7 +500,9 @@ class CustomerRegistrationManager:
         customer_id = self.device_to_customer.get(device_id)
         if customer_id and customer_id in self.customers:
             if device_id in self.customers[customer_id]["devices"]:
-                self.customers[customer_id]["devices"][device_id]["last_seen"] = int(time.time())
+                self.customers[customer_id]["devices"][device_id]["last_seen"] = int(
+                    time.time()
+                )
 
     def get_customer(self, customer_id: str) -> Optional[Dict]:
         """

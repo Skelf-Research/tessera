@@ -26,7 +26,7 @@ class TLSNodeTransport:
         cert_file: Optional[str] = None,
         key_file: Optional[str] = None,
         ca_file: Optional[str] = None,
-        require_client_cert: bool = False
+        require_client_cert: bool = False,
     ):
         self.node = node
         self.host = host
@@ -63,7 +63,7 @@ class TLSNodeTransport:
 
         # Security settings
         ctx.minimum_version = ssl.TLSVersion.TLSv1_2
-        ctx.set_ciphers('ECDHE+AESGCM:ECDHE+CHACHA20:DHE+AESGCM:DHE+CHACHA20')
+        ctx.set_ciphers("ECDHE+AESGCM:ECDHE+CHACHA20:DHE+AESGCM:DHE+CHACHA20")
 
         return ctx
 
@@ -95,7 +95,7 @@ class TLSNodeTransport:
             ssl=ssl_context,
             ping_interval=30,
             ping_timeout=10,
-            max_size=10 * 1024 * 1024
+            max_size=10 * 1024 * 1024,
         )
         self._running = True
 
@@ -116,11 +116,7 @@ class TLSNodeTransport:
             await self.server.wait_closed()
 
     async def connect_to_peer(
-        self,
-        peer_id: str,
-        host: str,
-        port: int,
-        use_tls: bool = False
+        self, peer_id: str, host: str, port: int, use_tls: bool = False
     ) -> bool:
         """Connect to a peer node with optional TLS."""
         if peer_id in self.connections:
@@ -133,21 +129,22 @@ class TLSNodeTransport:
 
         try:
             ws = await websockets.connect(
-                uri,
-                ssl=ssl_context,
-                ping_interval=30,
-                ping_timeout=10
+                uri, ssl=ssl_context, ping_interval=30, ping_timeout=10
             )
 
             # Send handshake
-            await ws.send(json.dumps({
-                "type": "handshake",
-                "node_id": self.node.node_id,
-                "node_type": self.node.node_type.value,
-                "host": self.host,
-                "port": self.port,
-                "tls_enabled": use_tls
-            }))
+            await ws.send(
+                json.dumps(
+                    {
+                        "type": "handshake",
+                        "node_id": self.node.node_id,
+                        "node_type": self.node.node_type.value,
+                        "host": self.host,
+                        "port": self.port,
+                        "tls_enabled": use_tls,
+                    }
+                )
+            )
 
             response = await asyncio.wait_for(ws.recv(), timeout=5.0)
             data = json.loads(response)
@@ -158,15 +155,18 @@ class TLSNodeTransport:
                     "host": host,
                     "port": port,
                     "node_type": data.get("node_type", "unknown"),
-                    "tls_enabled": use_tls
+                    "tls_enabled": use_tls,
                 }
 
-                await self.node.connect_peer(peer_id, {
-                    "node_type": data.get("node_type"),
-                    "host": host,
-                    "port": port,
-                    "tls_enabled": use_tls
-                })
+                await self.node.connect_peer(
+                    peer_id,
+                    {
+                        "node_type": data.get("node_type"),
+                        "host": host,
+                        "port": port,
+                        "tls_enabled": use_tls,
+                    },
+                )
 
                 asyncio.create_task(self._receive_loop(peer_id, ws))
                 return True
@@ -185,22 +185,21 @@ class TLSNodeTransport:
 
         try:
             ws = self.connections[peer_id]
-            await ws.send(json.dumps({
-                "type": "proof",
-                "proof": proof
-            }))
+            await ws.send(json.dumps({"type": "proof", "proof": proof}))
         except Exception as e:
             print(f"  Failed to send to {peer_id}: {e}")
             await self._close_connection(peer_id)
 
-    async def _handle_connection(self, websocket: WebSocketServerProtocol, path: str = ""):
+    async def _handle_connection(
+        self, websocket: WebSocketServerProtocol, path: str = ""
+    ):
         """Handle incoming WebSocket connection."""
         peer_id = None
 
         # Get client certificate info if mTLS
         client_cert = None
-        if hasattr(websocket, 'transport'):
-            ssl_object = websocket.transport.get_extra_info('ssl_object')
+        if hasattr(websocket, "transport"):
+            ssl_object = websocket.transport.get_extra_info("ssl_object")
             if ssl_object:
                 client_cert = ssl_object.getpeercert()
 
@@ -212,11 +211,15 @@ class TLSNodeTransport:
                 peer_id = data.get("node_id")
 
                 if peer_id:
-                    await websocket.send(json.dumps({
-                        "type": "handshake_ack",
-                        "node_id": self.node.node_id,
-                        "node_type": self.node.node_type.value
-                    }))
+                    await websocket.send(
+                        json.dumps(
+                            {
+                                "type": "handshake_ack",
+                                "node_id": self.node.node_id,
+                                "node_type": self.node.node_type.value,
+                            }
+                        )
+                    )
 
                     self.connections[peer_id] = websocket
                     self.connection_info[peer_id] = {
@@ -224,14 +227,17 @@ class TLSNodeTransport:
                         "port": data.get("port", 0),
                         "node_type": data.get("node_type", "unknown"),
                         "tls_enabled": data.get("tls_enabled", False),
-                        "client_cert": client_cert
+                        "client_cert": client_cert,
                     }
 
-                    await self.node.connect_peer(peer_id, {
-                        "node_type": data.get("node_type"),
-                        "host": data.get("host"),
-                        "port": data.get("port")
-                    })
+                    await self.node.connect_peer(
+                        peer_id,
+                        {
+                            "node_type": data.get("node_type"),
+                            "host": data.get("host"),
+                            "port": data.get("port"),
+                        },
+                    )
 
                     print(f"  Peer connected: {peer_id} ({data.get('node_type')})")
                     await self._receive_loop(peer_id, websocket)
@@ -284,11 +290,15 @@ class TLSNodeTransport:
             subscriber_id = data.get("subscriber_id")
             if subscriber_id and peer_id in self.connections:
                 proofs = await self.node.get_pending_proofs(subscriber_id)
-                await self.connections[peer_id].send(json.dumps({
-                    "type": "proofs",
-                    "subscriber_id": subscriber_id,
-                    "proofs": proofs
-                }))
+                await self.connections[peer_id].send(
+                    json.dumps(
+                        {
+                            "type": "proofs",
+                            "subscriber_id": subscriber_id,
+                            "proofs": proofs,
+                        }
+                    )
+                )
 
     async def _handle_management_command(self, websocket, data: dict):
         """Handle management commands."""
@@ -296,22 +306,15 @@ class TLSNodeTransport:
 
         if msg_type == "status_request":
             stats = await self.node.get_stats()
-            await websocket.send(json.dumps({
-                "type": "status_response",
-                "stats": stats
-            }))
+            await websocket.send(
+                json.dumps({"type": "status_response", "stats": stats})
+            )
 
         elif msg_type == "peers_request":
             peers = []
             for peer_id, info in self.connection_info.items():
-                peers.append({
-                    "peer_id": peer_id,
-                    **info
-                })
-            await websocket.send(json.dumps({
-                "type": "peers_response",
-                "peers": peers
-            }))
+                peers.append({"peer_id": peer_id, **info})
+            await websocket.send(json.dumps({"type": "peers_response", "peers": peers}))
 
     async def _close_connection(self, peer_id: str):
         """Close connection to a peer."""
@@ -330,9 +333,7 @@ class TLSNodeTransport:
 
 
 def generate_self_signed_cert(
-    cert_path: str,
-    key_path: str,
-    common_name: str = "tessera-node"
+    cert_path: str, key_path: str, common_name: str = "tessera-node"
 ):
     """Generate a self-signed certificate for testing."""
     from cryptography import x509
@@ -348,10 +349,12 @@ def generate_self_signed_cert(
     )
 
     # Generate certificate
-    subject = issuer = x509.Name([
-        x509.NameAttribute(NameOID.COMMON_NAME, common_name),
-        x509.NameAttribute(NameOID.ORGANIZATION_NAME, "Tessera"),
-    ])
+    subject = issuer = x509.Name(
+        [
+            x509.NameAttribute(NameOID.COMMON_NAME, common_name),
+            x509.NameAttribute(NameOID.ORGANIZATION_NAME, "Tessera"),
+        ]
+    )
 
     cert = (
         x509.CertificateBuilder()
@@ -362,10 +365,12 @@ def generate_self_signed_cert(
         .not_valid_before(datetime.datetime.utcnow())
         .not_valid_after(datetime.datetime.utcnow() + datetime.timedelta(days=365))
         .add_extension(
-            x509.SubjectAlternativeName([
-                x509.DNSName("localhost"),
-                x509.DNSName(common_name),
-            ]),
+            x509.SubjectAlternativeName(
+                [
+                    x509.DNSName("localhost"),
+                    x509.DNSName(common_name),
+                ]
+            ),
             critical=False,
         )
         .sign(key, hashes.SHA256())
@@ -373,11 +378,13 @@ def generate_self_signed_cert(
 
     # Write key
     with open(key_path, "wb") as f:
-        f.write(key.private_bytes(
-            encoding=serialization.Encoding.PEM,
-            format=serialization.PrivateFormat.TraditionalOpenSSL,
-            encryption_algorithm=serialization.NoEncryption()
-        ))
+        f.write(
+            key.private_bytes(
+                encoding=serialization.Encoding.PEM,
+                format=serialization.PrivateFormat.TraditionalOpenSSL,
+                encryption_algorithm=serialization.NoEncryption(),
+            )
+        )
 
     # Write certificate
     with open(cert_path, "wb") as f:

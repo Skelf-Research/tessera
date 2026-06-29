@@ -45,8 +45,7 @@ diversity).
 - Cover-traffic generation is decentralised; a relay that under-contributes
   noise degrades only its own bucket's privacy locally (until cover from other
   relays / participants compensates). A robust **distributed noise generation
-  protocol that tolerates a malicious minority** is open future work (called
-  out in the paper).
+  protocol that tolerates a malicious minority** is an open research direction (see research.md).
 
 ## What discourages bad behaviour
 
@@ -56,7 +55,7 @@ diversity).
   failure-to-deliver from a particular relay and switch.
 - **Forgery is impossible.** A relay cannot synthesise a valid Schnorr proof
   for a contact it doesn't have the secret for (Theorem 1 in
-  [`../../tessera-paper-msg/formal/security_proofs.md`](../../tessera-paper-msg/formal/security_proofs.md));
+  [`../research.md`](../research.md));
   the relay's role is transport, not minting.
 
 ## Reputation and discovery
@@ -66,7 +65,7 @@ The current code uses configured peer lists and pairwise peer connections
 (uptime, gossip-correctness, freshness of state) is a natural addition; the
 `tessera/network/dht.py` Kademlia scaffold is the obvious substrate for
 discovery once it's wired into the production overlay. Both are deferred to
-future work.
+open research.
 
 ## Measured costs (single node, dev laptop)
 
@@ -89,7 +88,7 @@ small enough that the bandwidth cost of DP cover traffic dominates.
 - A discovery DHT that lives.
 - A distributed noise-generation protocol robust to a malicious minority.
 
-These are all reasonable future-work directions; the protocol is designed so
+These are all reasonable open research directions; the protocol is designed so
 they can be added without changing the core authentication and privacy
 guarantees.
 
@@ -97,4 +96,4 @@ guarantees.
 
 - [`decentralized-architecture.md`](decentralized-architecture.md) — relay topology, gossip, churn behaviour.
 - [`privacy-model.md`](privacy-model.md) — DP cover-traffic bandwidth cost.
-- Paper §Limitations — distributed noise generation as open work.
+- [`../research.md`](../research.md) — distributed noise generation as open work.

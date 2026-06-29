@@ -25,8 +25,13 @@ class KeyDerivation:
     """
 
     @staticmethod
-    def derive_key_hkdf(master_key: bytes, purpose: str, length: int = 32,
-                       salt: bytes = None, info: bytes = None) -> bytes:
+    def derive_key_hkdf(
+        master_key: bytes,
+        purpose: str,
+        length: int = 32,
+        salt: bytes = None,
+        info: bytes = None,
+    ) -> bytes:
         """
         Derive a key using HKDF (HMAC-based Key Derivation Function).
 
@@ -63,8 +68,9 @@ class KeyDerivation:
             raise EncryptionError(f"HKDF key derivation failed: {e}", "derivation")
 
     @staticmethod
-    def derive_key_pbkdf2(password: bytes, salt: bytes, iterations: int = 100000,
-                         length: int = 32) -> bytes:
+    def derive_key_pbkdf2(
+        password: bytes, salt: bytes, iterations: int = 100000, length: int = 32
+    ) -> bytes:
         """
         Derive a key using PBKDF2.
 
@@ -113,7 +119,7 @@ class KeyDerivation:
         if salt is None:
             salt = KeyDerivation.generate_salt()
 
-        password_bytes = password.encode('utf-8')
+        password_bytes = password.encode("utf-8")
         stretched_key = KeyDerivation.derive_key_pbkdf2(password_bytes, salt)
 
         return stretched_key, salt
@@ -139,8 +145,9 @@ class KeyBackup:
         self.backup_dir.mkdir(parents=True, exist_ok=True)
         os.chmod(self.backup_dir, 0o700)
 
-    def create_backup(self, key_manager, backup_password: str,
-                     identity_ids: List[str] = None) -> str:
+    def create_backup(
+        self, key_manager, backup_password: str, identity_ids: List[str] = None
+    ) -> str:
         """
         Create an encrypted backup of keys.
 
@@ -157,22 +164,22 @@ class KeyBackup:
         """
         try:
             # Determine which identities to backup
-            backup_type = 'full'
+            backup_type = "full"
             if identity_ids is None:
                 identities = key_manager.list_identities()
-                identity_ids = [identity['identity_id'] for identity in identities]
+                identity_ids = [identity["identity_id"] for identity in identities]
             else:
-                backup_type = 'partial'
+                backup_type = "partial"
 
             # Collect key data
             backup_data = {
-                'version': 1,
-                'created_at': int(time.time()),
-                'identities': {},
-                'metadata': {
-                    'total_keys': len(identity_ids),
-                    'backup_type': backup_type
-                }
+                "version": 1,
+                "created_at": int(time.time()),
+                "identities": {},
+                "metadata": {
+                    "total_keys": len(identity_ids),
+                    "backup_type": backup_type,
+                },
             }
 
             for identity_id in identity_ids:
@@ -181,31 +188,33 @@ class KeyBackup:
                     if keys:
                         # Get full key entry for metadata
                         key_entry = key_manager._load_key(identity_id)
-                        backup_data['identities'][identity_id] = {
-                            'private_key': keys[0].hex(),
-                            'public_key': keys[1].hex(),
-                            'metadata': key_entry.get('metadata', {}),
-                            'created_at': key_entry.get('created_at'),
-                            'algorithm': key_entry.get('algorithm')
+                        backup_data["identities"][identity_id] = {
+                            "private_key": keys[0].hex(),
+                            "public_key": keys[1].hex(),
+                            "metadata": key_entry.get("metadata", {}),
+                            "created_at": key_entry.get("created_at"),
+                            "algorithm": key_entry.get("algorithm"),
                         }
                 except Exception as e:
                     # Log the error but continue with other keys
                     print(f"Warning: Failed to backup identity {identity_id}: {e}")
 
             # Only create backup if we have identities to backup
-            if not backup_data['identities']:
+            if not backup_data["identities"]:
                 raise IdentityError("No valid identities found to backup", "backup")
 
             # Encrypt backup data
             backup_json = json.dumps(backup_data, indent=2)
-            encrypted_backup = self._encrypt_backup(backup_json.encode(), backup_password)
+            encrypted_backup = self._encrypt_backup(
+                backup_json.encode(), backup_password
+            )
 
             # Save to file with more precise timestamp
             timestamp = int(time.time() * 1000)  # Use milliseconds for uniqueness
             backup_filename = f"tessera_backup_{timestamp}.cbk"
             backup_path = self.backup_dir / backup_filename
 
-            with open(backup_path, 'wb') as f:
+            with open(backup_path, "wb") as f:
                 f.write(encrypted_backup)
 
             os.chmod(backup_path, 0o600)
@@ -214,8 +223,13 @@ class KeyBackup:
         except Exception as e:
             raise IdentityError(f"Failed to create backup: {e}", "backup")
 
-    def restore_backup(self, backup_path: str, backup_password: str,
-                      key_manager, overwrite: bool = False) -> List[str]:
+    def restore_backup(
+        self,
+        backup_path: str,
+        backup_password: str,
+        key_manager,
+        overwrite: bool = False,
+    ) -> List[str]:
         """
         Restore keys from encrypted backup.
 
@@ -233,41 +247,43 @@ class KeyBackup:
         """
         try:
             # Load and decrypt backup
-            with open(backup_path, 'rb') as f:
+            with open(backup_path, "rb") as f:
                 encrypted_data = f.read()
 
             backup_json = self._decrypt_backup(encrypted_data, backup_password)
             backup_data = json.loads(backup_json.decode())
 
             # Validate backup format
-            if backup_data.get('version') != 1:
+            if backup_data.get("version") != 1:
                 raise IdentityError("Unsupported backup version", "restore")
 
             restored_identities = []
 
-            for identity_id, key_data in backup_data['identities'].items():
+            for identity_id, key_data in backup_data["identities"].items():
                 try:
                     # Check if identity already exists
                     if key_manager.key_exists(identity_id) and not overwrite:
-                        print(f"Skipping existing identity {identity_id} (use overwrite=True to replace)")
+                        print(
+                            f"Skipping existing identity {identity_id} (use overwrite=True to replace)"
+                        )
                         continue
 
                     # Restore key data
-                    private_key = bytes.fromhex(key_data['private_key'])
-                    public_key = bytes.fromhex(key_data['public_key'])
+                    private_key = bytes.fromhex(key_data["private_key"])
+                    public_key = bytes.fromhex(key_data["public_key"])
 
                     # Create key entry
                     key_entry = {
-                        'private_key': private_key,
-                        'public_key': public_key,
-                        'created_at': key_data.get('created_at', int(time.time())),
-                        'key_type': 'identity',
-                        'algorithm': key_data.get('algorithm', 'ECDSA-SECP256k1'),
-                        'metadata': key_data.get('metadata', {}),
-                        'version': 1,
-                        'status': 'active',
-                        'restored_from_backup': True,
-                        'restore_time': int(time.time())
+                        "private_key": private_key,
+                        "public_key": public_key,
+                        "created_at": key_data.get("created_at", int(time.time())),
+                        "key_type": "identity",
+                        "algorithm": key_data.get("algorithm", "ECDSA-SECP256k1"),
+                        "metadata": key_data.get("metadata", {}),
+                        "version": 1,
+                        "status": "active",
+                        "restored_from_backup": True,
+                        "restore_time": int(time.time()),
                     }
 
                     # Store the key
@@ -295,16 +311,18 @@ class KeyBackup:
             backups = []
             for backup_file in self.backup_dir.glob("*.cbk"):
                 stat = backup_file.stat()
-                backups.append({
-                    'filename': backup_file.name,
-                    'path': str(backup_file),
-                    'size': stat.st_size,
-                    'created_at': int(stat.st_mtime),
-                    'age_days': (time.time() - stat.st_mtime) / (24 * 3600)
-                })
+                backups.append(
+                    {
+                        "filename": backup_file.name,
+                        "path": str(backup_file),
+                        "size": stat.st_size,
+                        "created_at": int(stat.st_mtime),
+                        "age_days": (time.time() - stat.st_mtime) / (24 * 3600),
+                    }
+                )
 
             # Sort by creation time (newest first)
-            backups.sort(key=lambda x: x['created_at'], reverse=True)
+            backups.sort(key=lambda x: x["created_at"], reverse=True)
             return backups
 
         except Exception as e:
@@ -326,7 +344,7 @@ class KeyBackup:
         """
         try:
             # Load and decrypt backup
-            with open(backup_path, 'rb') as f:
+            with open(backup_path, "rb") as f:
                 encrypted_data = f.read()
 
             backup_json = self._decrypt_backup(encrypted_data, backup_password)
@@ -334,21 +352,18 @@ class KeyBackup:
 
             # Extract information
             info = {
-                'valid': True,
-                'version': backup_data.get('version'),
-                'created_at': backup_data.get('created_at'),
-                'total_identities': len(backup_data.get('identities', {})),
-                'metadata': backup_data.get('metadata', {}),
-                'identities': list(backup_data.get('identities', {}).keys())
+                "valid": True,
+                "version": backup_data.get("version"),
+                "created_at": backup_data.get("created_at"),
+                "total_identities": len(backup_data.get("identities", {})),
+                "metadata": backup_data.get("metadata", {}),
+                "identities": list(backup_data.get("identities", {}).keys()),
             }
 
             return info
 
         except Exception as e:
-            return {
-                'valid': False,
-                'error': str(e)
-            }
+            return {"valid": False, "error": str(e)}
 
     def _encrypt_backup(self, data: bytes, password: str) -> bytes:
         """Encrypt backup data with password."""

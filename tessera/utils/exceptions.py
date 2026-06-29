@@ -10,7 +10,7 @@ class TesseraError(Exception):
     def __init__(self, message: str, error_code: str = None, details: dict = None):
         super().__init__(message)
         self.message = message
-        self.error_code = error_code or "CALLDNS_ERROR"
+        self.error_code = error_code or "TESSERA_ERROR"
         self.details = details or {}
 
     def to_dict(self):
@@ -18,7 +18,7 @@ class TesseraError(Exception):
         return {
             "error": self.error_code,
             "message": self.message,
-            "details": self.details
+            "details": self.details,
         }
 
 
@@ -26,10 +26,11 @@ class ValidationError(TesseraError):
     """Exception raised for input validation errors."""
 
     def __init__(self, message: str, field: str = None, value=None):
-        super().__init__(message, "VALIDATION_ERROR", {
-            "field": field,
-            "value": str(value) if value is not None else None
-        })
+        super().__init__(
+            message,
+            "VALIDATION_ERROR",
+            {"field": field, "value": str(value) if value is not None else None},
+        )
         self.field = field
         self.value = value
 
@@ -54,10 +55,9 @@ class NetworkError(TesseraError):
     """Exception raised for network operations."""
 
     def __init__(self, message: str, endpoint: str = None, status_code: int = None):
-        super().__init__(message, "NETWORK_ERROR", {
-            "endpoint": endpoint,
-            "status_code": status_code
-        })
+        super().__init__(
+            message, "NETWORK_ERROR", {"endpoint": endpoint, "status_code": status_code}
+        )
         self.endpoint = endpoint
         self.status_code = status_code
 

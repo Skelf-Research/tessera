@@ -12,7 +12,10 @@ import os
 from pathlib import Path
 from typing import Optional
 
-from ..network.async_node import AsyncDecentralizedNode, AsyncPrivacyPreservingBroadcaster
+from ..network.async_node import (
+    AsyncDecentralizedNode,
+    AsyncPrivacyPreservingBroadcaster,
+)
 from ..network.decentralized import NodeType
 from .transport import NodeTransport
 
@@ -20,8 +23,8 @@ from .transport import NodeTransport
 def main():
     """Main entry point for the Tessera node CLI."""
     parser = argparse.ArgumentParser(
-        prog='tessera-node',
-        description='Tessera Node - Run a decentralized network node',
+        prog="tessera-node",
+        description="Tessera Node - Run a decentralized network node",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
@@ -39,57 +42,77 @@ Examples:
 
   # List peers
   tessera-node peers --port 8100
-        """
+        """,
     )
 
-    subparsers = parser.add_subparsers(dest='command', help='Available commands')
+    subparsers = parser.add_subparsers(dest="command", help="Available commands")
 
     # Start command
-    start_parser = subparsers.add_parser('start', help='Start a Tessera node')
-    start_parser.add_argument('--type', '-t', required=True,
-                              choices=['core', 'org', 'customer'],
-                              help='Node type')
-    start_parser.add_argument('--id', '-i', required=True, help='Node identifier')
-    start_parser.add_argument('--port', '-p', type=int, default=8100,
-                              help='Port to listen on (default: 8100)')
-    start_parser.add_argument('--host', default='0.0.0.0',
-                              help='Host to bind to (default: 0.0.0.0)')
-    start_parser.add_argument('--data-dir', '-d',
-                              help='Data directory (default: ./tessera_data/<node_id>)')
-    start_parser.add_argument('--peer', action='append', default=[],
-                              help='Peer to connect to (format: id@host:port)')
-    start_parser.add_argument('--api-port', type=int,
-                              help='HTTP API port (optional)')
-    start_parser.add_argument('--jwt-secret',
-                              help='JWT secret for org node authentication (or set CALLDNS_JWT_SECRET)')
-    start_parser.add_argument('--rate-limit', type=int, default=60,
-                              help='Rate limit requests per minute for core nodes (default: 60)')
+    start_parser = subparsers.add_parser("start", help="Start a Tessera node")
+    start_parser.add_argument(
+        "--type",
+        "-t",
+        required=True,
+        choices=["core", "org", "customer"],
+        help="Node type",
+    )
+    start_parser.add_argument("--id", "-i", required=True, help="Node identifier")
+    start_parser.add_argument(
+        "--port", "-p", type=int, default=8100, help="Port to listen on (default: 8100)"
+    )
+    start_parser.add_argument(
+        "--host", default="0.0.0.0", help="Host to bind to (default: 0.0.0.0)"
+    )
+    start_parser.add_argument(
+        "--data-dir", "-d", help="Data directory (default: ./tessera_data/<node_id>)"
+    )
+    start_parser.add_argument(
+        "--peer",
+        action="append",
+        default=[],
+        help="Peer to connect to (format: id@host:port)",
+    )
+    start_parser.add_argument("--api-port", type=int, help="HTTP API port (optional)")
+    start_parser.add_argument(
+        "--jwt-secret",
+        help="JWT secret for org node authentication (or set TESSERA_JWT_SECRET)",
+    )
+    start_parser.add_argument(
+        "--rate-limit",
+        type=int,
+        default=60,
+        help="Rate limit requests per minute for core nodes (default: 60)",
+    )
 
     # Status command
-    status_parser = subparsers.add_parser('status', help='Get node status')
-    status_parser.add_argument('--host', default='localhost', help='Node host')
-    status_parser.add_argument('--port', '-p', type=int, default=8100, help='Node port')
+    status_parser = subparsers.add_parser("status", help="Get node status")
+    status_parser.add_argument("--host", default="localhost", help="Node host")
+    status_parser.add_argument("--port", "-p", type=int, default=8100, help="Node port")
 
     # Peers command
-    peers_parser = subparsers.add_parser('peers', help='List connected peers')
-    peers_parser.add_argument('--host', default='localhost', help='Node host')
-    peers_parser.add_argument('--port', '-p', type=int, default=8100, help='Node port')
+    peers_parser = subparsers.add_parser("peers", help="List connected peers")
+    peers_parser.add_argument("--host", default="localhost", help="Node host")
+    peers_parser.add_argument("--port", "-p", type=int, default=8100, help="Node port")
 
     # Connect command
-    connect_parser = subparsers.add_parser('connect', help='Connect to a peer')
-    connect_parser.add_argument('peer', help='Peer to connect to (format: id@host:port)')
-    connect_parser.add_argument('--host', default='localhost', help='Local node host')
-    connect_parser.add_argument('--port', '-p', type=int, default=8100, help='Local node port')
+    connect_parser = subparsers.add_parser("connect", help="Connect to a peer")
+    connect_parser.add_argument(
+        "peer", help="Peer to connect to (format: id@host:port)"
+    )
+    connect_parser.add_argument("--host", default="localhost", help="Local node host")
+    connect_parser.add_argument(
+        "--port", "-p", type=int, default=8100, help="Local node port"
+    )
 
     args = parser.parse_args()
 
-    if args.command == 'start':
+    if args.command == "start":
         asyncio.run(handle_start_command(args))
-    elif args.command == 'status':
+    elif args.command == "status":
         asyncio.run(handle_status_command(args))
-    elif args.command == 'peers':
+    elif args.command == "peers":
         asyncio.run(handle_peers_command(args))
-    elif args.command == 'connect':
+    elif args.command == "connect":
         asyncio.run(handle_connect_command(args))
     else:
         parser.print_help()
@@ -106,9 +129,7 @@ async def handle_start_command(args):
 
     # Create node
     node = AsyncDecentralizedNode(
-        node_id=node_id,
-        node_type=node_type,
-        data_dir=args.data_dir
+        node_id=node_id, node_type=node_type, data_dir=args.data_dir
     )
 
     # Initialize storage
@@ -127,8 +148,8 @@ async def handle_start_command(args):
     # Connect to initial peers
     for peer_spec in args.peer:
         try:
-            peer_id, peer_addr = peer_spec.split('@')
-            peer_host, peer_port = peer_addr.split(':')
+            peer_id, peer_addr = peer_spec.split("@")
+            peer_host, peer_port = peer_addr.split(":")
             peer_port = int(peer_port)
 
             print(f"  Connecting to peer: {peer_id}@{peer_host}:{peer_port}")
@@ -142,11 +163,13 @@ async def handle_start_command(args):
         from .api_server import start_api_server
 
         # Get JWT secret from args or environment
-        jwt_secret = args.jwt_secret or os.environ.get('CALLDNS_JWT_SECRET')
+        jwt_secret = args.jwt_secret or os.environ.get("TESSERA_JWT_SECRET")
 
         # Warn if org node without JWT
         if node_type == NodeType.ORG and not jwt_secret:
-            print("  Warning: Org node running without JWT secret - authentication disabled")
+            print(
+                "  Warning: Org node running without JWT secret - authentication disabled"
+            )
 
         api_task = asyncio.create_task(
             start_api_server(
@@ -154,7 +177,7 @@ async def handle_start_command(args):
                 args.host,
                 args.api_port,
                 jwt_secret=jwt_secret,
-                rate_limit_rpm=args.rate_limit
+                rate_limit_rpm=args.rate_limit,
             )
         )
         print(f"  API server: http://{args.host}:{args.api_port}")
@@ -213,9 +236,7 @@ async def handle_status_command(args):
     try:
         async with websockets.connect(uri) as ws:
             # Send status request
-            await ws.send(json.dumps({
-                "type": "status_request"
-            }))
+            await ws.send(json.dumps({"type": "status_request"}))
 
             response = await asyncio.wait_for(ws.recv(), timeout=5.0)
             data = json.loads(response)
@@ -230,7 +251,7 @@ async def handle_status_command(args):
                 print(f"  Pending proofs: {stats.get('pending_proofs', 0)}")
                 print(f"  DB size: {stats.get('db_size_bytes', 0)} bytes")
 
-                counters = stats.get('counters', {})
+                counters = stats.get("counters", {})
                 if counters:
                     print("  Counters:")
                     for key, value in counters.items():
@@ -250,9 +271,7 @@ async def handle_peers_command(args):
 
     try:
         async with websockets.connect(uri) as ws:
-            await ws.send(json.dumps({
-                "type": "peers_request"
-            }))
+            await ws.send(json.dumps({"type": "peers_request"}))
 
             response = await asyncio.wait_for(ws.recv(), timeout=5.0)
             data = json.loads(response)
@@ -266,7 +285,9 @@ async def handle_peers_command(args):
                     for peer in peers:
                         print(f"  - {peer.get('peer_id', 'unknown')}")
                         print(f"    Type: {peer.get('node_type', 'unknown')}")
-                        print(f"    Address: {peer.get('host', '?')}:{peer.get('port', '?')}")
+                        print(
+                            f"    Address: {peer.get('host', '?')}:{peer.get('port', '?')}"
+                        )
             else:
                 print(f"Unexpected response: {data}")
 
@@ -279,8 +300,8 @@ async def handle_connect_command(args):
     import websockets
 
     try:
-        peer_id, peer_addr = args.peer.split('@')
-        peer_host, peer_port = peer_addr.split(':')
+        peer_id, peer_addr = args.peer.split("@")
+        peer_host, peer_port = peer_addr.split(":")
         peer_port = int(peer_port)
     except ValueError:
         print(f"Invalid peer format: {args.peer} (expected: id@host:port)")
@@ -290,12 +311,16 @@ async def handle_connect_command(args):
 
     try:
         async with websockets.connect(uri) as ws:
-            await ws.send(json.dumps({
-                "type": "connect_request",
-                "peer_id": peer_id,
-                "peer_host": peer_host,
-                "peer_port": peer_port
-            }))
+            await ws.send(
+                json.dumps(
+                    {
+                        "type": "connect_request",
+                        "peer_id": peer_id,
+                        "peer_host": peer_host,
+                        "peer_port": peer_port,
+                    }
+                )
+            )
 
             response = await asyncio.wait_for(ws.recv(), timeout=10.0)
             data = json.loads(response)
@@ -312,5 +337,5 @@ async def handle_connect_command(args):
         print(f"Failed to connect to node: {e}")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

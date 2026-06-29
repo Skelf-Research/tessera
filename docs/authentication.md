@@ -1,8 +1,7 @@
 # Sender Authentication
 
 How a sender proves identity to a recipient with no central authority and no
-cross-recipient linkability. The formal proofs live in
-[`../../tessera-paper-msg/formal/security_proofs.md`](../../tessera-paper-msg/formal/security_proofs.md);
+cross-recipient linkability. The formal proofs live in [`../research.md`](../research.md);
 this doc is the engineer-facing summary of the flow and where each piece lives
 in the code.
 

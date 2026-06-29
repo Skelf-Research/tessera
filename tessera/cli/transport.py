@@ -35,7 +35,7 @@ class NodeTransport:
             self.port,
             ping_interval=30,
             ping_timeout=10,
-            max_size=10 * 1024 * 1024  # 10MB max message size
+            max_size=10 * 1024 * 1024,  # 10MB max message size
         )
         self._running = True
         print(f"  Transport listening on ws://{self.host}:{self.port}")
@@ -60,20 +60,20 @@ class NodeTransport:
         uri = f"ws://{host}:{port}"
 
         try:
-            ws = await websockets.connect(
-                uri,
-                ping_interval=30,
-                ping_timeout=10
-            )
+            ws = await websockets.connect(uri, ping_interval=30, ping_timeout=10)
 
             # Send handshake
-            await ws.send(json.dumps({
-                "type": "handshake",
-                "node_id": self.node.node_id,
-                "node_type": self.node.node_type.value,
-                "host": self.host,
-                "port": self.port
-            }))
+            await ws.send(
+                json.dumps(
+                    {
+                        "type": "handshake",
+                        "node_id": self.node.node_id,
+                        "node_type": self.node.node_type.value,
+                        "host": self.host,
+                        "port": self.port,
+                    }
+                )
+            )
 
             # Wait for handshake response
             response = await asyncio.wait_for(ws.recv(), timeout=5.0)
@@ -84,15 +84,14 @@ class NodeTransport:
                 self.connection_info[peer_id] = {
                     "host": host,
                     "port": port,
-                    "node_type": data.get("node_type", "unknown")
+                    "node_type": data.get("node_type", "unknown"),
                 }
 
                 # Register peer in node
-                await self.node.connect_peer(peer_id, {
-                    "node_type": data.get("node_type"),
-                    "host": host,
-                    "port": port
-                })
+                await self.node.connect_peer(
+                    peer_id,
+                    {"node_type": data.get("node_type"), "host": host, "port": port},
+                )
 
                 # Start receiving messages
                 asyncio.create_task(self._receive_loop(peer_id, ws))
@@ -113,15 +112,14 @@ class NodeTransport:
 
         try:
             ws = self.connections[peer_id]
-            await ws.send(json.dumps({
-                "type": "proof",
-                "proof": proof
-            }))
+            await ws.send(json.dumps({"type": "proof", "proof": proof}))
         except Exception as e:
             print(f"  Failed to send to {peer_id}: {e}")
             await self._close_connection(peer_id)
 
-    async def _handle_connection(self, websocket: WebSocketServerProtocol, path: str = ""):
+    async def _handle_connection(
+        self, websocket: WebSocketServerProtocol, path: str = ""
+    ):
         """Handle incoming WebSocket connection."""
         peer_id = None
 
@@ -135,26 +133,33 @@ class NodeTransport:
 
                 if peer_id:
                     # Send handshake acknowledgment
-                    await websocket.send(json.dumps({
-                        "type": "handshake_ack",
-                        "node_id": self.node.node_id,
-                        "node_type": self.node.node_type.value
-                    }))
+                    await websocket.send(
+                        json.dumps(
+                            {
+                                "type": "handshake_ack",
+                                "node_id": self.node.node_id,
+                                "node_type": self.node.node_type.value,
+                            }
+                        )
+                    )
 
                     # Store connection
                     self.connections[peer_id] = websocket
                     self.connection_info[peer_id] = {
                         "host": data.get("host", "unknown"),
                         "port": data.get("port", 0),
-                        "node_type": data.get("node_type", "unknown")
+                        "node_type": data.get("node_type", "unknown"),
                     }
 
                     # Register peer in node
-                    await self.node.connect_peer(peer_id, {
-                        "node_type": data.get("node_type"),
-                        "host": data.get("host"),
-                        "port": data.get("port")
-                    })
+                    await self.node.connect_peer(
+                        peer_id,
+                        {
+                            "node_type": data.get("node_type"),
+                            "host": data.get("host"),
+                            "port": data.get("port"),
+                        },
+                    )
 
                     print(f"  Peer connected: {peer_id} ({data.get('node_type')})")
 
@@ -213,11 +218,15 @@ class NodeTransport:
             subscriber_id = data.get("subscriber_id")
             if subscriber_id and peer_id in self.connections:
                 proofs = await self.node.get_pending_proofs(subscriber_id)
-                await self.connections[peer_id].send(json.dumps({
-                    "type": "proofs",
-                    "subscriber_id": subscriber_id,
-                    "proofs": proofs
-                }))
+                await self.connections[peer_id].send(
+                    json.dumps(
+                        {
+                            "type": "proofs",
+                            "subscriber_id": subscriber_id,
+                            "proofs": proofs,
+                        }
+                    )
+                )
 
     async def _handle_management_command(self, websocket, data: dict):
         """Handle management commands from CLI."""
@@ -225,22 +234,15 @@ class NodeTransport:
 
         if msg_type == "status_request":
             stats = await self.node.get_stats()
-            await websocket.send(json.dumps({
-                "type": "status_response",
-                "stats": stats
-            }))
+            await websocket.send(
+                json.dumps({"type": "status_response", "stats": stats})
+            )
 
         elif msg_type == "peers_request":
             peers = []
             for peer_id, info in self.connection_info.items():
-                peers.append({
-                    "peer_id": peer_id,
-                    **info
-                })
-            await websocket.send(json.dumps({
-                "type": "peers_response",
-                "peers": peers
-            }))
+                peers.append({"peer_id": peer_id, **info})
+            await websocket.send(json.dumps({"type": "peers_response", "peers": peers}))
 
         elif msg_type == "connect_request":
             peer_id = data.get("peer_id")
@@ -248,11 +250,15 @@ class NodeTransport:
             peer_port = data.get("peer_port")
 
             success = await self.connect_to_peer(peer_id, peer_host, peer_port)
-            await websocket.send(json.dumps({
-                "type": "connect_response",
-                "success": success,
-                "error": None if success else "Connection failed"
-            }))
+            await websocket.send(
+                json.dumps(
+                    {
+                        "type": "connect_response",
+                        "success": success,
+                        "error": None if success else "Connection failed",
+                    }
+                )
+            )
 
     async def _close_connection(self, peer_id: str):
         """Close connection to a peer."""

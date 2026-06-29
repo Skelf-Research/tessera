@@ -22,7 +22,9 @@ class KeyStore(ABC):
     """Abstract base class for key storage backends."""
 
     @abstractmethod
-    def store_key(self, key_id: str, key_data: dict, master_password: bytes = None) -> bool:
+    def store_key(
+        self, key_id: str, key_data: dict, master_password: bytes = None
+    ) -> bool:
         """Store a key securely."""
         pass
 
@@ -70,7 +72,9 @@ class FileKeyStore(KeyStore):
         # Set restrictive permissions
         os.chmod(self.storage_dir, 0o700)
 
-    def store_key(self, key_id: str, key_data: dict, master_password: bytes = None) -> bool:
+    def store_key(
+        self, key_id: str, key_data: dict, master_password: bytes = None
+    ) -> bool:
         """Store a key to file."""
         try:
             # Sanitize key_id for filesystem
@@ -79,13 +83,13 @@ class FileKeyStore(KeyStore):
 
             # Prepare storage data
             storage_data = {
-                'key_id': key_id,
-                'stored_at': int(time.time()),
-                'data': key_data
+                "key_id": key_id,
+                "stored_at": int(time.time()),
+                "data": key_data,
             }
 
             # Write to file with restrictive permissions
-            with open(key_file, 'w') as f:
+            with open(key_file, "w") as f:
                 json.dump(storage_data, f, indent=2, default=self._json_serializer)
 
             # Set restrictive file permissions
@@ -104,11 +108,11 @@ class FileKeyStore(KeyStore):
             if not key_file.exists():
                 return None
 
-            with open(key_file, 'r') as f:
+            with open(key_file, "r") as f:
                 storage_data = json.load(f)
 
             # Convert hex strings back to bytes for key data
-            data = storage_data.get('data')
+            data = storage_data.get("data")
             if data:
                 data = self._load_json_with_bytes(data)
             return data
@@ -138,9 +142,9 @@ class FileKeyStore(KeyStore):
 
             for key_file in key_files:
                 try:
-                    with open(key_file, 'r') as f:
+                    with open(key_file, "r") as f:
                         storage_data = json.load(f)
-                    key_ids.append(storage_data.get('key_id', key_file.stem))
+                    key_ids.append(storage_data.get("key_id", key_file.stem))
                 except:
                     continue  # Skip corrupted files
 
@@ -159,7 +163,7 @@ class FileKeyStore(KeyStore):
         """Sanitize a string for use as a filename."""
         # Replace unsafe characters
         safe_chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_."
-        sanitized = ''.join(c if c in safe_chars else '_' for c in filename)
+        sanitized = "".join(c if c in safe_chars else "_" for c in filename)
         return sanitized[:100]  # Limit length
 
     def _json_serializer(self, obj):
@@ -173,7 +177,7 @@ class FileKeyStore(KeyStore):
         if isinstance(data, dict):
             result = {}
             for key, value in data.items():
-                if key in ['private_key', 'public_key'] and isinstance(value, str):
+                if key in ["private_key", "public_key"] and isinstance(value, str):
                     try:
                         result[key] = bytes.fromhex(value)
                     except ValueError:
@@ -212,11 +216,15 @@ class EncryptedKeyStore(KeyStore):
         # Set restrictive permissions
         os.chmod(self.storage_dir, 0o700)
 
-    def store_key(self, key_id: str, key_data: dict, master_password: bytes = None) -> bool:
+    def store_key(
+        self, key_id: str, key_data: dict, master_password: bytes = None
+    ) -> bool:
         """Store a key with encryption."""
         try:
             if master_password is None:
-                raise EncryptionError("Master password required for encrypted storage", "storage")
+                raise EncryptionError(
+                    "Master password required for encrypted storage", "storage"
+                )
 
             # Sanitize key_id
             safe_key_id = self._sanitize_filename(key_id)
@@ -224,13 +232,15 @@ class EncryptedKeyStore(KeyStore):
 
             # Prepare storage data
             storage_data = {
-                'key_id': key_id,
-                'stored_at': int(time.time()),
-                'data': key_data
+                "key_id": key_id,
+                "stored_at": int(time.time()),
+                "data": key_data,
             }
 
             # Serialize to JSON
-            plaintext = json.dumps(storage_data, default=self._json_serializer).encode('utf-8')
+            plaintext = json.dumps(storage_data, default=self._json_serializer).encode(
+                "utf-8"
+            )
 
             # Generate salt and derive encryption key
             salt = secrets.token_bytes(32)
@@ -249,17 +259,17 @@ class EncryptedKeyStore(KeyStore):
 
             # Prepare encrypted storage format
             encrypted_data = {
-                'version': 1,
-                'algorithm': 'AES-GCM',
-                'kdf': 'PBKDF2-SHA256',
-                'iterations': self.default_iterations,
-                'salt': salt.hex(),
-                'nonce': nonce.hex(),
-                'ciphertext': ciphertext.hex()
+                "version": 1,
+                "algorithm": "AES-GCM",
+                "kdf": "PBKDF2-SHA256",
+                "iterations": self.default_iterations,
+                "salt": salt.hex(),
+                "nonce": nonce.hex(),
+                "ciphertext": ciphertext.hex(),
             }
 
             # Write encrypted data
-            with open(key_file, 'w') as f:
+            with open(key_file, "w") as f:
                 json.dump(encrypted_data, f, indent=2)
 
             # Set restrictive permissions
@@ -275,7 +285,9 @@ class EncryptedKeyStore(KeyStore):
         """Load and decrypt a key."""
         try:
             if master_password is None:
-                raise EncryptionError("Master password required for encrypted storage", "storage")
+                raise EncryptionError(
+                    "Master password required for encrypted storage", "storage"
+                )
 
             safe_key_id = self._sanitize_filename(key_id)
             key_file = self.storage_dir / f"{safe_key_id}.ekey"
@@ -284,18 +296,18 @@ class EncryptedKeyStore(KeyStore):
                 return None
 
             # Load encrypted data
-            with open(key_file, 'r') as f:
+            with open(key_file, "r") as f:
                 encrypted_data = json.load(f)
 
             # Validate format
-            if encrypted_data.get('version') != 1:
+            if encrypted_data.get("version") != 1:
                 raise EncryptionError("Unsupported key file version", "storage")
 
             # Extract encryption parameters
-            salt = bytes.fromhex(encrypted_data['salt'])
-            nonce = bytes.fromhex(encrypted_data['nonce'])
-            ciphertext = bytes.fromhex(encrypted_data['ciphertext'])
-            iterations = encrypted_data.get('iterations', self.default_iterations)
+            salt = bytes.fromhex(encrypted_data["salt"])
+            nonce = bytes.fromhex(encrypted_data["nonce"])
+            ciphertext = bytes.fromhex(encrypted_data["ciphertext"])
+            iterations = encrypted_data.get("iterations", self.default_iterations)
 
             # Derive decryption key
             kdf = PBKDF2HMAC(
@@ -311,8 +323,8 @@ class EncryptedKeyStore(KeyStore):
             plaintext = aesgcm.decrypt(nonce, ciphertext, b"")
 
             # Parse JSON and convert hex strings back to bytes
-            storage_data = json.loads(plaintext.decode('utf-8'))
-            data = storage_data.get('data')
+            storage_data = json.loads(plaintext.decode("utf-8"))
+            data = storage_data.get("data")
             if data:
                 data = self._load_json_with_bytes(data)
             return data
@@ -363,7 +375,7 @@ class EncryptedKeyStore(KeyStore):
     def _sanitize_filename(self, filename: str) -> str:
         """Sanitize a string for use as a filename."""
         safe_chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_."
-        sanitized = ''.join(c if c in safe_chars else '_' for c in filename)
+        sanitized = "".join(c if c in safe_chars else "_" for c in filename)
         return sanitized[:100]
 
     def _json_serializer(self, obj):
@@ -380,7 +392,7 @@ class EncryptedKeyStore(KeyStore):
                 file_size = file_path.stat().st_size
 
                 # Overwrite with random data (3 passes)
-                with open(file_path, 'r+b') as f:
+                with open(file_path, "r+b") as f:
                     for _ in range(3):
                         f.seek(0)
                         f.write(secrets.token_bytes(file_size))
@@ -402,7 +414,7 @@ class EncryptedKeyStore(KeyStore):
         if isinstance(data, dict):
             result = {}
             for key, value in data.items():
-                if key in ['private_key', 'public_key'] and isinstance(value, str):
+                if key in ["private_key", "public_key"] and isinstance(value, str):
                     try:
                         result[key] = bytes.fromhex(value)
                     except ValueError:

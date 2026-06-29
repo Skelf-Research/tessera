@@ -10,7 +10,15 @@ import hashlib
 from typing import Dict, List, Optional
 from collections import defaultdict
 
-from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect, Response, Depends, Request
+from fastapi import (
+    FastAPI,
+    HTTPException,
+    WebSocket,
+    WebSocketDisconnect,
+    Response,
+    Depends,
+    Request,
+)
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel
@@ -74,11 +82,7 @@ class JWTValidator:
         try:
             import jwt
 
-            claims = jwt.decode(
-                token,
-                self.secret_key,
-                algorithms=[self.algorithm]
-            )
+            claims = jwt.decode(token, self.secret_key, algorithms=[self.algorithm])
             return claims
 
         except jwt.ExpiredSignatureError:
@@ -127,7 +131,7 @@ class ProofLookup(BaseModel):
     limit: Optional[int] = 10
 
 
-class CallerVerification(BaseModel):
+class SenderVerification(BaseModel):
     customer_id: str
     sender_id: Optional[str] = None
 
@@ -137,7 +141,7 @@ def create_embedded_api(
     push_service: Optional[PushService] = None,
     commitment_storage: Optional[CommitmentStorage] = None,
     jwt_secret: Optional[str] = None,
-    rate_limit_rpm: int = 60
+    rate_limit_rpm: int = 60,
 ) -> FastAPI:
     """Create FastAPI app embedded in a node.
 
@@ -152,7 +156,7 @@ def create_embedded_api(
     app = FastAPI(
         title=f"Tessera Node API - {node.node_id}",
         description="Embedded HTTP API for Tessera node",
-        version="0.4.0"
+        version="0.4.0",
     )
 
     app.add_middleware(
@@ -182,12 +186,12 @@ def create_embedded_api(
             raise HTTPException(
                 status_code=429,
                 detail="Rate limit exceeded",
-                headers={"Retry-After": str(retry_after)}
+                headers={"Retry-After": str(retry_after)},
             )
 
     # Helper to validate JWT for org endpoints
     async def validate_jwt(
-        credentials: Optional[HTTPAuthorizationCredentials] = Depends(security)
+        credentials: Optional[HTTPAuthorizationCredentials] = Depends(security),
     ) -> Optional[Dict]:
         if not commitment_storage:
             # Not an org node, no auth needed
@@ -212,7 +216,7 @@ def create_embedded_api(
         "proofs_broadcast": 0,
         "subscriptions": 0,
         "registrations": 0,
-        "rate_limited": 0
+        "rate_limited": 0,
     }
 
     # Health & Stats
@@ -224,18 +228,14 @@ def create_embedded_api(
             "node_id": node.node_id,
             "node_type": node.node_type.value,
             "timestamp": int(time.time()),
-            "stats": stats
+            "stats": stats,
         }
 
     @app.get("/stats")
     async def get_stats():
         stats = await node.get_stats()
         push_stats = push_service.get_stats() if push_service else {}
-        return {
-            "node": stats,
-            "push": push_stats,
-            "api_metrics": metrics
-        }
+        return {"node": stats, "push": push_stats, "api_metrics": metrics}
 
     @app.get("/metrics")
     async def prometheus_metrics():
@@ -252,10 +252,7 @@ def create_embedded_api(
             f"# TYPE tessera_api_requests counter",
             f"tessera_api_requests {metrics['requests']}",
         ]
-        return Response(
-            content="\n".join(lines) + "\n",
-            media_type="text/plain"
-        )
+        return Response(content="\n".join(lines) + "\n", media_type="text/plain")
 
     # Proof endpoints (public, rate-limited)
     @app.post("/proofs/broadcast")
@@ -282,18 +279,14 @@ def create_embedded_api(
             "status": "broadcast",
             "notified": notified,
             "push": push_sent,
-            "timestamp": int(time.time())
+            "timestamp": int(time.time()),
         }
 
     @app.get("/proofs/{subscriber_id}")
     async def get_proofs(subscriber_id: str):
         metrics["requests"] += 1
         proofs = await node.get_pending_proofs(subscriber_id)
-        return {
-            "subscriber_id": subscriber_id,
-            "proofs": proofs,
-            "count": len(proofs)
-        }
+        return {"subscriber_id": subscriber_id, "proofs": proofs, "count": len(proofs)}
 
     # Subscription endpoints
     @app.post("/subscriptions/{subscriber_id}")
@@ -306,7 +299,7 @@ def create_embedded_api(
         return {
             "status": "subscribed",
             "subscriber_id": subscriber_id,
-            "bucket": subscription.bucket
+            "bucket": subscription.bucket,
         }
 
     @app.delete("/subscriptions/{subscriber_id}")
@@ -325,9 +318,7 @@ def create_embedded_api(
             raise HTTPException(503, "MQTT push not available")
 
         # Return MQTT topics to subscribe to
-        topics = [
-            f"tessera/proofs/{c}" for c in sub.commitments
-        ]
+        topics = [f"tessera/proofs/{c}" for c in sub.commitments]
 
         return {
             "status": "push_registered",
@@ -335,8 +326,8 @@ def create_embedded_api(
             "mqtt_topics": topics,
             "broker": {
                 "host": push_service.mqtt_bridge.broker_host,
-                "port": push_service.mqtt_bridge.broker_port
-            }
+                "port": push_service.mqtt_bridge.broker_port,
+            },
         }
 
     # WebSocket for real-time updates
@@ -353,25 +344,22 @@ def create_embedded_api(
                     commitments = data.get("commitments", [])
                     # Register with push service WebSocket
                     if push_service and push_service.ws_server:
-                        push_service.ws_server.subscriptions[subscriber_id] = commitments
+                        push_service.ws_server.subscriptions[subscriber_id] = (
+                            commitments
+                        )
 
-                    await websocket.send_json({
-                        "type": "subscribed",
-                        "commitments": commitments
-                    })
+                    await websocket.send_json(
+                        {"type": "subscribed", "commitments": commitments}
+                    )
 
                 elif msg_type == "fetch":
                     proofs = await node.get_pending_proofs(subscriber_id)
-                    await websocket.send_json({
-                        "type": "proofs",
-                        "proofs": proofs
-                    })
+                    await websocket.send_json({"type": "proofs", "proofs": proofs})
 
                 elif msg_type == "ping":
-                    await websocket.send_json({
-                        "type": "pong",
-                        "timestamp": int(time.time())
-                    })
+                    await websocket.send_json(
+                        {"type": "pong", "timestamp": int(time.time())}
+                    )
 
         except WebSocketDisconnect:
             pass
@@ -379,8 +367,7 @@ def create_embedded_api(
     # Customer commitment registration (for org nodes, JWT required)
     @app.post("/customers/register")
     async def register_commitment(
-        reg: CommitmentRegistration,
-        claims: Optional[Dict] = Depends(validate_jwt)
+        reg: CommitmentRegistration, claims: Optional[Dict] = Depends(validate_jwt)
     ):
         """
         Register a customer's commitment with this org node.
@@ -402,15 +389,12 @@ def create_embedded_api(
                 customer_id=reg.customer_id,
                 commitment=reg.commitment,
                 device_id=reg.device_id,
-                metadata=reg.metadata
+                metadata=reg.metadata,
             )
         except ValueError as e:
             raise HTTPException(400, str(e))
 
-        return {
-            "status": "registered",
-            **result
-        }
+        return {"status": "registered", **result}
 
     @app.get("/customers/{customer_id}/commitments")
     async def get_customer_commitments_endpoint(customer_id: str):
@@ -428,7 +412,7 @@ def create_embedded_api(
         return {
             "customer_id": customer_id,
             "commitments": [c["commitment"] for c in commitments],
-            "devices": commitments
+            "devices": commitments,
         }
 
     @app.delete("/customers/{customer_id}/commitments/{commitment}")
@@ -447,7 +431,7 @@ def create_embedded_api(
         return {
             "status": "removed",
             "customer_id": customer_id,
-            "commitment": commitment
+            "commitment": commitment,
         }
 
     @app.post("/customers/{customer_id}/broadcast")
@@ -482,25 +466,31 @@ def create_embedded_api(
             # Push to mobile
             push_sent = {}
             if push_service:
-                push_sent = await push_service.push_proof(device["commitment"], proof_copy)
+                push_sent = await push_service.push_proof(
+                    device["commitment"], proof_copy
+                )
 
-            results.append({
-                "device_id": device.get("device_id"),
-                "commitment": device["commitment"][:16] + "...",
-                "notified": notified,
-                "push": push_sent
-            })
+            results.append(
+                {
+                    "device_id": device.get("device_id"),
+                    "commitment": device["commitment"][:16] + "...",
+                    "notified": notified,
+                    "push": push_sent,
+                }
+            )
 
         return {
             "status": "broadcast",
             "customer_id": customer_id,
             "devices": len(results),
-            "results": results
+            "results": results,
         }
 
     # Contact center verification endpoints (org nodes only)
     @app.get("/proofs/lookup")
-    async def lookup_proofs(commitment: str, since: Optional[int] = None, limit: int = 10):
+    async def lookup_proofs(
+        commitment: str, since: Optional[int] = None, limit: int = 10
+    ):
         """
         Look up proofs by commitment for contact center verification.
 
@@ -510,7 +500,9 @@ def create_embedded_api(
         metrics["requests"] += 1
 
         if not commitment_storage:
-            raise HTTPException(503, "Contact center endpoints only available on org nodes")
+            raise HTTPException(
+                503, "Contact center endpoints only available on org nodes"
+            )
 
         # Get proofs from node's cache that match this commitment
         matching_proofs = []
@@ -529,11 +521,11 @@ def create_embedded_api(
         return {
             "commitment": commitment,
             "proofs": matching_proofs,
-            "count": len(matching_proofs)
+            "count": len(matching_proofs),
         }
 
     @app.post("/verify/incoming-sender")
-    async def verify_incoming_caller(verification: CallerVerification):
+    async def verify_incoming_sender(verification: SenderVerification):
         """
         Verify an incoming sender using their registered commitment.
 
@@ -545,13 +537,15 @@ def create_embedded_api(
             raise HTTPException(503, "Commitment storage not configured")
 
         # Look up customer's commitment
-        commitments = await commitment_storage.get_customer_commitments(verification.customer_id)
+        commitments = await commitment_storage.get_customer_commitments(
+            verification.customer_id
+        )
 
         if not commitments:
             return {
                 "verified": False,
                 "customer_id": verification.customer_id,
-                "reason": "customer_not_registered"
+                "reason": "customer_not_registered",
             }
 
         # Check for recent proofs from any of customer's commitments
@@ -563,26 +557,28 @@ def create_embedded_api(
             for proof in node.proof_cache.values():
                 if proof.get("commitment_id") == commitment:
                     if proof.get("timestamp", 0) >= since_time:
-                        found_proofs.append({
-                            "commitment": commitment[:16] + "...",
-                            "device_id": device.get("device_id"),
-                            "timestamp": proof.get("timestamp"),
-                            "metadata": proof.get("metadata", {})
-                        })
+                        found_proofs.append(
+                            {
+                                "commitment": commitment[:16] + "...",
+                                "device_id": device.get("device_id"),
+                                "timestamp": proof.get("timestamp"),
+                                "metadata": proof.get("metadata", {}),
+                            }
+                        )
 
         if found_proofs:
             return {
                 "verified": True,
                 "customer_id": verification.customer_id,
                 "proofs": found_proofs,
-                "confidence": "high"
+                "confidence": "high",
             }
 
         return {
             "verified": False,
             "customer_id": verification.customer_id,
             "reason": "no_recent_proof",
-            "registered_devices": len(commitments)
+            "registered_devices": len(commitments),
         }
 
     # Peers endpoint
@@ -591,10 +587,7 @@ def create_embedded_api(
         metrics["requests"] += 1
         peers = []
         for peer_id, info in node.peers.items():
-            peers.append({
-                "peer_id": peer_id,
-                **info
-            })
+            peers.append({"peer_id": peer_id, **info})
         return {"peers": peers, "count": len(peers)}
 
     return app
@@ -607,7 +600,7 @@ async def run_embedded_api(
     push_service: Optional[PushService] = None,
     commitment_storage: Optional[CommitmentStorage] = None,
     jwt_secret: Optional[str] = None,
-    rate_limit_rpm: int = 60
+    rate_limit_rpm: int = 60,
 ):
     """Run the embedded API server.
 
@@ -621,18 +614,9 @@ async def run_embedded_api(
         rate_limit_rpm: Requests per minute for rate limiting
     """
     app = create_embedded_api(
-        node,
-        push_service,
-        commitment_storage,
-        jwt_secret,
-        rate_limit_rpm
+        node, push_service, commitment_storage, jwt_secret, rate_limit_rpm
     )
 
-    config = uvicorn.Config(
-        app,
-        host=host,
-        port=port,
-        log_level="warning"
-    )
+    config = uvicorn.Config(app, host=host, port=port, log_level="warning")
     server = uvicorn.Server(config)
     await server.serve()

@@ -17,9 +17,9 @@ from .storage import NodeStorage
 
 
 class NodeType(Enum):
-    CORE = "core"           # High-availability, run by Tessera
-    ORGANIZATION = "org"    # Run by banks, healthcare providers, etc.
-    CUSTOMER = "customer"   # Run by end users (mobile/desktop app)
+    CORE = "core"  # High-availability, run by Tessera
+    ORGANIZATION = "org"  # Run by banks, healthcare providers, etc.
+    CUSTOMER = "customer"  # Run by end users (mobile/desktop app)
 
 
 class BloomFilter:
@@ -34,8 +34,8 @@ class BloomFilter:
         """Generate multiple hash positions for an item."""
         positions = []
         for i in range(self.hash_count):
-            h = hashlib.sha256(item + i.to_bytes(2, 'big')).digest()
-            pos = int.from_bytes(h[:4], 'big') % self.size
+            h = hashlib.sha256(item + i.to_bytes(2, "big")).digest()
+            pos = int.from_bytes(h[:4], "big") % self.size
             positions.append(pos)
         return positions
 
@@ -54,11 +54,13 @@ class BloomFilter:
         byte_array = bytearray((self.size + 7) // 8)
         for i, bit in enumerate(self.bit_array):
             if bit:
-                byte_array[i // 8] |= (1 << (i % 8))
+                byte_array[i // 8] |= 1 << (i % 8)
         return bytes(byte_array)
 
     @classmethod
-    def from_bytes(cls, data: bytes, size: int = 1024, hash_count: int = 3) -> 'BloomFilter':
+    def from_bytes(
+        cls, data: bytes, size: int = 1024, hash_count: int = 3
+    ) -> "BloomFilter":
         """Deserialize bloom filter."""
         bf = cls(size=size, hash_count=hash_count)
         for i in range(min(size, len(data) * 8)):
@@ -69,20 +71,20 @@ class BloomFilter:
 
 # ─────────────────────────────────────────────────────────────────────
 # Canonical routing functions — the single source of truth shared by proof
-# *producers* (callers/orgs) and *consumers* (subscribers). A proof and a
+# *producers* (senders) and *consumers* (subscribers). A proof and a
 # subscription only match if both derive bucket and fingerprint identically,
 # so these MUST be the only place this logic lives.
 # ─────────────────────────────────────────────────────────────────────
 
 NUM_BUCKETS = 64
-WINDOW_SECONDS = 10            # fingerprint time-window granularity
-DEFAULT_TIME_WINDOW = 600      # 10 minutes of recent windows kept matchable
+WINDOW_SECONDS = 10  # fingerprint time-window granularity
+DEFAULT_TIME_WINDOW = 600  # 10 minutes of recent windows kept matchable
 
 
 def compute_bucket(commitment: bytes, num_buckets: int = NUM_BUCKETS) -> int:
     """Map a commitment to a routing bucket: int(SHA256(commitment)[:2]) mod B."""
     h = hashlib.sha256(commitment).digest()
-    return int.from_bytes(h[:2], 'big') % num_buckets
+    return int.from_bytes(h[:2], "big") % num_buckets
 
 
 def compute_fingerprint(commitment: bytes, timestamp: int) -> bytes:
@@ -93,11 +95,12 @@ def compute_fingerprint(commitment: bytes, timestamp: int) -> bytes:
     without coordinating clocks (beyond coarse agreement on wall-clock seconds).
     """
     window = int(timestamp) - (int(timestamp) % WINDOW_SECONDS)
-    return hashlib.sha256(commitment + window.to_bytes(8, 'big')).digest()[:8]
+    return hashlib.sha256(commitment + window.to_bytes(8, "big")).digest()[:8]
 
 
-def make_routing_fields(commitment: bytes, timestamp: int = None,
-                        num_buckets: int = NUM_BUCKETS) -> dict:
+def make_routing_fields(
+    commitment: bytes, timestamp: int = None, num_buckets: int = NUM_BUCKETS
+) -> dict:
     """Routing fields a proof producer attaches so subscribers can match the proof.
 
     Returns ``{bucket, bloom_fingerprint (b64), timestamp}`` consistent with how
@@ -106,7 +109,9 @@ def make_routing_fields(commitment: bytes, timestamp: int = None,
     ts = int(time.time()) if timestamp is None else int(timestamp)
     return {
         "bucket": compute_bucket(commitment, num_buckets),
-        "bloom_fingerprint": base64.b64encode(compute_fingerprint(commitment, ts)).decode(),
+        "bloom_fingerprint": base64.b64encode(
+            compute_fingerprint(commitment, ts)
+        ).decode(),
         "timestamp": ts,
     }
 
@@ -146,7 +151,7 @@ class Subscription:
             "bucket": self.bucket,
             "bloom_filter": base64.b64encode(self.bloom_filter.to_bytes()).decode(),
             "org_hints": self.linked_orgs,
-            "since_timestamp": int(time.time()) - self.time_window
+            "since_timestamp": int(time.time()) - self.time_window,
         }
 
     def matches_proof(self, proof: dict) -> bool:
@@ -402,7 +407,7 @@ class DecentralizedNode:
             "nonce": base64.b64encode(secrets.token_bytes(12)).decode(),
             "timestamp": int(time.time()),
             "org_hint": org_hint,
-            "is_decoy": True  # Only known to org, stripped before broadcast
+            "is_decoy": True,  # Only known to org, stripped before broadcast
         }
 
     def _send_to_core_nodes(self, proof: dict):
@@ -418,7 +423,9 @@ class DecentralizedNode:
     # Customer Node Functions
     # ─────────────────────────────────────────────────────────────
 
-    def subscribe(self, commitment: bytes, linked_orgs: List[str] = None) -> Subscription:
+    def subscribe(
+        self, commitment: bytes, linked_orgs: List[str] = None
+    ) -> Subscription:
         """
         Create subscription for this customer node.
 
@@ -520,7 +527,7 @@ class DecentralizedNode:
             "cached_proofs": db_stats.get("total_proofs", 0),
             "pending_proofs": db_stats.get("total_pending", 0),
             "db_size_bytes": db_stats.get("db_size_bytes", 0),
-            "counters": counter_stats
+            "counters": counter_stats,
         }
 
     def shutdown(self):
@@ -580,7 +587,7 @@ class PrivacyPreservingBroadcaster:
             "real_bucket": real_bucket,
             "decoy_buckets": decoy_buckets,
             "total_broadcasts": 1 + len(decoy_buckets),
-            "privacy_ratio": len(decoy_buckets) / (1 + len(decoy_buckets))
+            "privacy_ratio": len(decoy_buckets) / (1 + len(decoy_buckets)),
         }
 
 
@@ -595,7 +602,7 @@ class CustomerNodeClient:
         self.core_node_urls = [
             "core1.tessera.network",
             "core2.tessera.network",
-            "core3.tessera.network"
+            "core3.tessera.network",
         ]
 
     def get_subscription_data(self) -> dict:

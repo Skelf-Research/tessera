@@ -16,7 +16,7 @@ async def start_api_server(
     host: str,
     port: int,
     jwt_secret: Optional[str] = None,
-    rate_limit_rpm: int = 60
+    rate_limit_rpm: int = 60,
 ):
     """Start the embedded API server.
 
@@ -28,7 +28,7 @@ async def start_api_server(
         rate_limit_rpm: Rate limit requests per minute
     """
     # Get commitment storage if this is an org node
-    commitment_storage = getattr(node, 'commitment_storage', None)
+    commitment_storage = getattr(node, "commitment_storage", None)
 
     # Create the FastAPI app
     app = create_embedded_api(
@@ -36,16 +36,12 @@ async def start_api_server(
         push_service=None,
         commitment_storage=commitment_storage,
         jwt_secret=jwt_secret,
-        rate_limit_rpm=rate_limit_rpm
+        rate_limit_rpm=rate_limit_rpm,
     )
 
     # Configure uvicorn
     config = uvicorn.Config(
-        app,
-        host=host,
-        port=port,
-        log_level="warning",
-        access_log=False
+        app, host=host, port=port, log_level="warning", access_log=False
     )
 
     server = uvicorn.Server(config)

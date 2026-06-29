@@ -22,30 +22,38 @@ class SecurityLogFormatter(logging.Formatter):
     def __init__(self):
         super().__init__()
         self.sensitive_fields = {
-            'private_key', 'master_password', 'secret', 'password',
-            'token', 'signature', 'proof_data', 'key_material'
+            "private_key",
+            "master_password",
+            "secret",
+            "password",
+            "token",
+            "signature",
+            "proof_data",
+            "key_material",
         }
 
     def format(self, record):
         """Format log record with sensitive data protection."""
         log_data = {
-            'timestamp': datetime.fromtimestamp(record.created, timezone.utc).isoformat(),
-            'level': record.levelname,
-            'logger': record.name,
-            'message': record.getMessage(),
-            'module': record.module,
-            'function': record.funcName,
-            'line': record.lineno
+            "timestamp": datetime.fromtimestamp(
+                record.created, timezone.utc
+            ).isoformat(),
+            "level": record.levelname,
+            "logger": record.name,
+            "message": record.getMessage(),
+            "module": record.module,
+            "function": record.funcName,
+            "line": record.lineno,
         }
 
         # Add extra fields if present
-        if hasattr(record, 'extra_data'):
+        if hasattr(record, "extra_data"):
             extra = self._sanitize_data(record.extra_data)
             log_data.update(extra)
 
         # Add exception info if present
         if record.exc_info:
-            log_data['exception'] = self.formatException(record.exc_info)
+            log_data["exception"] = self.formatException(record.exc_info)
 
         return json.dumps(log_data, default=str)
 
@@ -77,9 +85,14 @@ class TesseraLogger:
     Provides structured logging with security considerations.
     """
 
-    def __init__(self, name: str = "tessera", log_dir: str = None,
-                 log_level: str = "INFO", max_bytes: int = 10*1024*1024,
-                 backup_count: int = 5):
+    def __init__(
+        self,
+        name: str = "tessera",
+        log_dir: str = None,
+        log_level: str = "INFO",
+        max_bytes: int = 10 * 1024 * 1024,
+        backup_count: int = 5,
+    ):
         """
         Initialize Tessera logger.
 
@@ -119,7 +132,7 @@ class TesseraLogger:
         self.logger.addHandler(file_handler)
 
         # Console handler for development
-        if os.getenv('CALLDNS_DEBUG'):
+        if os.getenv("TESSERA_DEBUG"):
             console_handler = logging.StreamHandler()
             console_handler.setFormatter(SecurityLogFormatter())
             self.logger.addHandler(console_handler)
@@ -132,28 +145,28 @@ class TesseraLogger:
         log_method = getattr(self.logger, level.lower())
 
         # Create log record with extra data
-        extra = {'extra_data': kwargs} if kwargs else {}
+        extra = {"extra_data": kwargs} if kwargs else {}
         log_method(message, extra=extra)
 
     def info(self, message: str, **kwargs):
         """Log info message."""
-        self.log('info', message, **kwargs)
+        self.log("info", message, **kwargs)
 
     def warning(self, message: str, **kwargs):
         """Log warning message."""
-        self.log('warning', message, **kwargs)
+        self.log("warning", message, **kwargs)
 
     def error(self, message: str, **kwargs):
         """Log error message."""
-        self.log('error', message, **kwargs)
+        self.log("error", message, **kwargs)
 
     def debug(self, message: str, **kwargs):
         """Log debug message."""
-        self.log('debug', message, **kwargs)
+        self.log("debug", message, **kwargs)
 
     def critical(self, message: str, **kwargs):
         """Log critical message."""
-        self.log('critical', message, **kwargs)
+        self.log("critical", message, **kwargs)
 
 
 class SecurityLogger(TesseraLogger):
@@ -172,113 +185,131 @@ class SecurityLogger(TesseraLogger):
         # Additional handler for security alerts
         security_log_file = self.log_dir / "security.log"
         security_handler = logging.handlers.RotatingFileHandler(
-            security_log_file, maxBytes=5*1024*1024, backupCount=10
+            security_log_file, maxBytes=5 * 1024 * 1024, backupCount=10
         )
         security_handler.setFormatter(SecurityLogFormatter())
         self.logger.addHandler(security_handler)
 
         os.chmod(security_log_file, 0o600)
 
-    def log_authentication(self, identity_id: str, success: bool,
-                         remote_addr: str = None, user_agent: str = None):
+    def log_authentication(
+        self,
+        identity_id: str,
+        success: bool,
+        remote_addr: str = None,
+        user_agent: str = None,
+    ):
         """Log authentication attempt."""
         event_data = {
-            'event_type': 'authentication',
-            'identity_id': identity_id,
-            'success': success,
-            'remote_addr': remote_addr,
-            'user_agent': user_agent,
-            'timestamp': time.time()
+            "event_type": "authentication",
+            "identity_id": identity_id,
+            "success": success,
+            "remote_addr": remote_addr,
+            "user_agent": user_agent,
+            "timestamp": time.time(),
         }
 
-        level = 'info' if success else 'warning'
+        level = "info" if success else "warning"
         message = f"Authentication {'successful' if success else 'failed'} for identity {identity_id}"
 
         self.log(level, message, **event_data)
         self.security_events.append(event_data)
 
-    def log_proof_generation(self, identity_id: str, proof_type: str,
-                           metadata: Dict[str, Any] = None):
+    def log_proof_generation(
+        self, identity_id: str, proof_type: str, metadata: Dict[str, Any] = None
+    ):
         """Log proof generation event."""
         event_data = {
-            'event_type': 'proof_generation',
-            'identity_id': identity_id,
-            'proof_type': proof_type,
-            'metadata': metadata or {},
-            'timestamp': time.time()
+            "event_type": "proof_generation",
+            "identity_id": identity_id,
+            "proof_type": proof_type,
+            "metadata": metadata or {},
+            "timestamp": time.time(),
         }
 
         message = f"Proof generated for identity {identity_id}, type: {proof_type}"
         self.info(message, **event_data)
         self.security_events.append(event_data)
 
-    def log_proof_verification(self, verifier_id: str, proof_valid: bool,
-                             sender_id: str = None, metadata: Dict[str, Any] = None):
+    def log_proof_verification(
+        self,
+        verifier_id: str,
+        proof_valid: bool,
+        sender_id: str = None,
+        metadata: Dict[str, Any] = None,
+    ):
         """Log proof verification event."""
         event_data = {
-            'event_type': 'proof_verification',
-            'verifier_id': verifier_id,
-            'sender_id': sender_id,
-            'proof_valid': proof_valid,
-            'metadata': metadata or {},
-            'timestamp': time.time()
+            "event_type": "proof_verification",
+            "verifier_id": verifier_id,
+            "sender_id": sender_id,
+            "proof_valid": proof_valid,
+            "metadata": metadata or {},
+            "timestamp": time.time(),
         }
 
-        level = 'info' if proof_valid else 'warning'
+        level = "info" if proof_valid else "warning"
         message = f"Proof verification {'successful' if proof_valid else 'failed'} by {verifier_id}"
 
         self.log(level, message, **event_data)
         self.security_events.append(event_data)
 
-    def log_key_operation(self, operation: str, identity_id: str,
-                         success: bool, metadata: Dict[str, Any] = None):
+    def log_key_operation(
+        self,
+        operation: str,
+        identity_id: str,
+        success: bool,
+        metadata: Dict[str, Any] = None,
+    ):
         """Log key management operation."""
         event_data = {
-            'event_type': 'key_operation',
-            'operation': operation,
-            'identity_id': identity_id,
-            'success': success,
-            'metadata': metadata or {},
-            'timestamp': time.time()
+            "event_type": "key_operation",
+            "operation": operation,
+            "identity_id": identity_id,
+            "success": success,
+            "metadata": metadata or {},
+            "timestamp": time.time(),
         }
 
-        level = 'info' if success else 'error'
+        level = "info" if success else "error"
         message = f"Key operation '{operation}' {'successful' if success else 'failed'} for {identity_id}"
 
         self.log(level, message, **event_data)
         self.security_events.append(event_data)
 
-    def log_security_violation(self, violation_type: str, details: Dict[str, Any],
-                              severity: str = 'high'):
+    def log_security_violation(
+        self, violation_type: str, details: Dict[str, Any], severity: str = "high"
+    ):
         """Log security violation or suspicious activity."""
         event_data = {
-            'event_type': 'security_violation',
-            'violation_type': violation_type,
-            'severity': severity,
-            'details': details,
-            'timestamp': time.time()
+            "event_type": "security_violation",
+            "violation_type": violation_type,
+            "severity": severity,
+            "details": details,
+            "timestamp": time.time(),
         }
 
-        level = 'critical' if severity == 'critical' else 'error'
+        level = "critical" if severity == "critical" else "error"
         message = f"Security violation detected: {violation_type}"
 
         self.log(level, message, **event_data)
         self.security_events.append(event_data)
 
-    def get_recent_events(self, event_type: str = None,
-                         hours: int = 24) -> List[Dict[str, Any]]:
+    def get_recent_events(
+        self, event_type: str = None, hours: int = 24
+    ) -> List[Dict[str, Any]]:
         """Get recent security events."""
         cutoff_time = time.time() - (hours * 3600)
 
         recent_events = [
-            event for event in self.security_events
-            if event['timestamp'] > cutoff_time
+            event for event in self.security_events if event["timestamp"] > cutoff_time
         ]
 
         if event_type:
             recent_events = [
-                event for event in recent_events
-                if event.get('event_type') == event_type
+                event
+                for event in recent_events
+                if event.get("event_type") == event_type
             ]
 
         return recent_events
@@ -288,15 +319,46 @@ class SecurityLogger(TesseraLogger):
         recent_events = self.get_recent_events(hours=hours)
 
         summary = {
-            'total_events': len(recent_events),
-            'authentication_attempts': len([e for e in recent_events if e.get('event_type') == 'authentication']),
-            'failed_authentications': len([e for e in recent_events if e.get('event_type') == 'authentication' and not e.get('success')]),
-            'proof_generations': len([e for e in recent_events if e.get('event_type') == 'proof_generation']),
-            'proof_verifications': len([e for e in recent_events if e.get('event_type') == 'proof_verification']),
-            'failed_verifications': len([e for e in recent_events if e.get('event_type') == 'proof_verification' and not e.get('proof_valid')]),
-            'security_violations': len([e for e in recent_events if e.get('event_type') == 'security_violation']),
-            'key_operations': len([e for e in recent_events if e.get('event_type') == 'key_operation']),
-            'period_hours': hours
+            "total_events": len(recent_events),
+            "authentication_attempts": len(
+                [e for e in recent_events if e.get("event_type") == "authentication"]
+            ),
+            "failed_authentications": len(
+                [
+                    e
+                    for e in recent_events
+                    if e.get("event_type") == "authentication" and not e.get("success")
+                ]
+            ),
+            "proof_generations": len(
+                [e for e in recent_events if e.get("event_type") == "proof_generation"]
+            ),
+            "proof_verifications": len(
+                [
+                    e
+                    for e in recent_events
+                    if e.get("event_type") == "proof_verification"
+                ]
+            ),
+            "failed_verifications": len(
+                [
+                    e
+                    for e in recent_events
+                    if e.get("event_type") == "proof_verification"
+                    and not e.get("proof_valid")
+                ]
+            ),
+            "security_violations": len(
+                [
+                    e
+                    for e in recent_events
+                    if e.get("event_type") == "security_violation"
+                ]
+            ),
+            "key_operations": len(
+                [e for e in recent_events if e.get("event_type") == "key_operation"]
+            ),
+            "period_hours": hours,
         }
 
         return summary

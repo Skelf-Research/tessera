@@ -34,8 +34,9 @@ class WebSocketManager:
         self.max_pending_per_device = 100
         self.pending_retention_seconds = 3600  # 1 hour
 
-    def register_connection(self, connection_id: str, websocket, device_id: str,
-                           commitments: list) -> Dict:
+    def register_connection(
+        self, connection_id: str, websocket, device_id: str, commitments: list
+    ) -> Dict:
         """
         Register a new WebSocket connection.
 
@@ -55,7 +56,7 @@ class WebSocketManager:
             "device_id": device_id,
             "commitments": commitments,
             "connected_at": int(time.time()),
-            "last_ping": int(time.time())
+            "last_ping": int(time.time()),
         }
 
         self.connections[connection_id] = connection_info
@@ -128,7 +129,7 @@ class WebSocketManager:
             "type": "proof_received",
             "commitment": commitment,
             "proof": proof_data,
-            "timestamp": int(time.time())
+            "timestamp": int(time.time()),
         }
 
         message_json = json.dumps(message)
@@ -159,16 +160,15 @@ class WebSocketManager:
 
     def _store_pending_proof(self, commitment: str, proof_data: Dict):
         """Store proof for offline device."""
-        pending_entry = {
-            "proof": proof_data,
-            "timestamp": int(time.time())
-        }
+        pending_entry = {"proof": proof_data, "timestamp": int(time.time())}
 
         self.pending_proofs[commitment].append(pending_entry)
 
         # Limit pending proofs
         if len(self.pending_proofs[commitment]) > self.max_pending_per_device:
-            self.pending_proofs[commitment] = self.pending_proofs[commitment][-self.max_pending_per_device:]
+            self.pending_proofs[commitment] = self.pending_proofs[commitment][
+                -self.max_pending_per_device :
+            ]
 
     def get_pending_proofs(self, commitment: str) -> list:
         """
@@ -184,7 +184,8 @@ class WebSocketManager:
 
         # Filter out expired proofs
         valid_proofs = [
-            entry for entry in self.pending_proofs.get(commitment, [])
+            entry
+            for entry in self.pending_proofs.get(commitment, [])
             if current_time - entry["timestamp"] < self.pending_retention_seconds
         ]
 
@@ -213,7 +214,8 @@ class WebSocketManager:
         """
         current_time = int(time.time())
         stale_connections = [
-            conn_id for conn_id, info in self.connections.items()
+            conn_id
+            for conn_id, info in self.connections.items()
             if current_time - info.get("last_ping", 0) > timeout_seconds
         ]
 
@@ -245,18 +247,18 @@ def create_socketio_handlers(socketio, customer_manager):
     from flask_socketio import emit, join_room, leave_room
     from flask import request
 
-    @socketio.on('connect')
+    @socketio.on("connect")
     def handle_connect():
         """Handle new WebSocket connection."""
         print(f"Client connected: {request.sid}")
 
-    @socketio.on('disconnect')
+    @socketio.on("disconnect")
     def handle_disconnect():
         """Handle WebSocket disconnection."""
         ws_manager.unregister_connection(request.sid)
         print(f"Client disconnected: {request.sid}")
 
-    @socketio.on('subscribe')
+    @socketio.on("subscribe")
     def handle_subscribe(data):
         """
         Handle device subscription to commitments.
@@ -267,11 +269,11 @@ def create_socketio_handlers(socketio, customer_manager):
             "commitments": ["commitment1", "commitment2"]
         }
         """
-        device_id = data.get('device_id')
-        commitments = data.get('commitments', [])
+        device_id = data.get("device_id")
+        commitments = data.get("commitments", [])
 
         if not device_id or not commitments:
-            emit('error', {'message': 'Missing device_id or commitments'})
+            emit("error", {"message": "Missing device_id or commitments"})
             return
 
         # Register connection
@@ -279,7 +281,7 @@ def create_socketio_handlers(socketio, customer_manager):
             connection_id=request.sid,
             websocket=None,  # Socket.IO handles this differently
             device_id=device_id,
-            commitments=commitments
+            commitments=commitments,
         )
 
         # Join rooms for each commitment
@@ -291,37 +293,43 @@ def create_socketio_handlers(socketio, customer_manager):
             pending = ws_manager.get_pending_proofs(commitment)
             if pending:
                 for proof in pending:
-                    emit('proof_received', {
-                        'commitment': commitment,
-                        'proof': proof,
-                        'timestamp': int(time.time()),
-                        'pending': True
-                    })
+                    emit(
+                        "proof_received",
+                        {
+                            "commitment": commitment,
+                            "proof": proof,
+                            "timestamp": int(time.time()),
+                            "pending": True,
+                        },
+                    )
                 ws_manager.clear_pending_proofs(commitment)
 
-        emit('subscribed', {
-            'device_id': device_id,
-            'commitments': commitments,
-            'count': len(commitments)
-        })
+        emit(
+            "subscribed",
+            {
+                "device_id": device_id,
+                "commitments": commitments,
+                "count": len(commitments),
+            },
+        )
 
         print(f"Device {device_id} subscribed to {len(commitments)} commitments")
 
-    @socketio.on('unsubscribe')
+    @socketio.on("unsubscribe")
     def handle_unsubscribe(data):
         """Handle device unsubscription."""
-        commitments = data.get('commitments', [])
+        commitments = data.get("commitments", [])
 
         for commitment in commitments:
             leave_room(commitment)
 
-        emit('unsubscribed', {'commitments': commitments})
+        emit("unsubscribed", {"commitments": commitments})
 
-    @socketio.on('ping')
+    @socketio.on("ping")
     def handle_ping():
         """Handle keepalive ping."""
         ws_manager.update_ping(request.sid)
-        emit('pong', {'timestamp': int(time.time())})
+        emit("pong", {"timestamp": int(time.time())})
 
     return socketio
 
@@ -336,10 +344,10 @@ def broadcast_to_room(socketio, commitment: str, proof_data: Dict):
         proof_data: Proof data to broadcast
     """
     message = {
-        'type': 'proof_received',
-        'commitment': commitment,
-        'proof': proof_data,
-        'timestamp': int(time.time())
+        "type": "proof_received",
+        "commitment": commitment,
+        "proof": proof_data,
+        "timestamp": int(time.time()),
     }
 
     # Check if anyone is subscribed
@@ -349,7 +357,7 @@ def broadcast_to_room(socketio, commitment: str, proof_data: Dict):
         return 0
 
     # Broadcast to room
-    socketio.emit('proof_received', message, room=commitment)
+    socketio.emit("proof_received", message, room=commitment)
 
     return len(ws_manager.get_subscribers(commitment))
 
@@ -370,44 +378,51 @@ async def websocket_handler(websocket, path, customer_manager):
     try:
         async for message in websocket:
             data = json.loads(message)
-            msg_type = data.get('type')
+            msg_type = data.get("type")
 
-            if msg_type == 'subscribe':
-                device_id = data.get('device_id')
-                commitments = data.get('commitments', [])
+            if msg_type == "subscribe":
+                device_id = data.get("device_id")
+                commitments = data.get("commitments", [])
 
                 ws_manager.register_connection(
                     connection_id=connection_id,
                     websocket=websocket,
                     device_id=device_id,
-                    commitments=commitments
+                    commitments=commitments,
                 )
 
                 # Send pending proofs
                 for commitment in commitments:
                     pending = ws_manager.get_pending_proofs(commitment)
                     for proof in pending:
-                        await websocket.send(json.dumps({
-                            'type': 'proof_received',
-                            'commitment': commitment,
-                            'proof': proof,
-                            'timestamp': int(time.time()),
-                            'pending': True
-                        }))
+                        await websocket.send(
+                            json.dumps(
+                                {
+                                    "type": "proof_received",
+                                    "commitment": commitment,
+                                    "proof": proof,
+                                    "timestamp": int(time.time()),
+                                    "pending": True,
+                                }
+                            )
+                        )
                     ws_manager.clear_pending_proofs(commitment)
 
-                await websocket.send(json.dumps({
-                    'type': 'subscribed',
-                    'device_id': device_id,
-                    'commitments': commitments
-                }))
+                await websocket.send(
+                    json.dumps(
+                        {
+                            "type": "subscribed",
+                            "device_id": device_id,
+                            "commitments": commitments,
+                        }
+                    )
+                )
 
-            elif msg_type == 'ping':
+            elif msg_type == "ping":
                 ws_manager.update_ping(connection_id)
-                await websocket.send(json.dumps({
-                    'type': 'pong',
-                    'timestamp': int(time.time())
-                }))
+                await websocket.send(
+                    json.dumps({"type": "pong", "timestamp": int(time.time())})
+                )
 
     except Exception as e:
         print(f"WebSocket error: {e}")
@@ -415,8 +430,9 @@ async def websocket_handler(websocket, path, customer_manager):
         ws_manager.unregister_connection(connection_id)
 
 
-async def run_websocket_server(host: str = '0.0.0.0', port: int = 8001,
-                               customer_manager=None):
+async def run_websocket_server(
+    host: str = "0.0.0.0", port: int = 8001, customer_manager=None
+):
     """
     Run standalone WebSocket server.
 

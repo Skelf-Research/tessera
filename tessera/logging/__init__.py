@@ -14,5 +14,5 @@ __all__ = [
     "ProofMetrics",
     "NetworkMetrics",
     "SecurityMonitor",
-    "PerformanceMonitor"
+    "PerformanceMonitor",
 ]

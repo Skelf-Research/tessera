@@ -29,23 +29,30 @@ import websockets
 
 from tessera.network.decentralized import Subscription, make_routing_fields
 
-PAPER = Path(__file__).resolve().parents[2] / "tessera-paper-msg"
-DEFAULT_RESULTS = PAPER / "results"
+RESULTS_DIR = Path(__file__).resolve().parents[2] / "results"
+DEFAULT_RESULTS = RESULTS_DIR
 
 
 def commitment_for(i: int) -> bytes:
     import hashlib
+
     return hashlib.sha256(f"bench-commit-{i}".encode()).digest()
 
 
 def build_message(op: str, i: int) -> dict:
     if op == "subscribe":
         c = commitment_for(i)
-        return {"type": "subscribe", "subscriber_id": f"sub-{i}",
-                "subscription": Subscription(c, linked_orgs=["bench"]).to_dict()}
+        return {
+            "type": "subscribe",
+            "subscriber_id": f"sub-{i}",
+            "subscription": Subscription(c, linked_orgs=["bench"]).to_dict(),
+        }
     if op == "route":
         c = commitment_for(i)
-        return {"type": "proof", "proof": {**make_routing_fields(c), "org_hint": "bench"}}
+        return {
+            "type": "proof",
+            "proof": {**make_routing_fields(c), "org_hint": "bench"},
+        }
     if op == "fetch":
         return {"type": "fetch", "subscriber_id": f"sub-{i}"}
     raise ValueError(op)
@@ -114,14 +121,18 @@ async def run(args):
 
 
 def print_report(r):
-    print(f"\nE4 throughput — op={r['op']}, {r['connections']} conns x {r['ops_per_conn']} ops")
+    print(
+        f"\nE4 throughput — op={r['op']}, {r['connections']} conns x {r['ops_per_conn']} ops"
+    )
     print("=" * 60)
     print(f"total ops   : {r['total_ops']}")
     print(f"duration    : {r['duration_s']:.2f} s")
     print(f"throughput  : {r['throughput_ops_per_s']:.0f} ops/s")
     lat = r["latency_ms"]
-    print(f"latency ms  : p50={lat['p50']:.2f}  p99={lat['p99']:.2f}  "
-          f"mean={lat['mean']:.2f}  max={lat['max']:.2f}")
+    print(
+        f"latency ms  : p50={lat['p50']:.2f}  p99={lat['p99']:.2f}  "
+        f"mean={lat['mean']:.2f}  max={lat['max']:.2f}"
+    )
 
 
 def main():

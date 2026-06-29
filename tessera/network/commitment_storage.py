@@ -26,7 +26,7 @@ class CommitmentStorage(ABC):
         customer_id: str,
         commitment: str,
         device_id: Optional[str] = None,
-        metadata: Optional[Dict] = None
+        metadata: Optional[Dict] = None,
     ) -> Dict:
         """Register a customer's commitment."""
         pass
@@ -129,48 +129,64 @@ class SQLiteCommitmentStorage(CommitmentStorage):
         customer_id: str,
         commitment: str,
         device_id: Optional[str] = None,
-        metadata: Optional[Dict] = None
+        metadata: Optional[Dict] = None,
     ) -> Dict:
         """Register a customer's commitment."""
         now = int(time.time())
 
         async with aiosqlite.connect(self.db_path) as db:
             # Ensure customer exists
-            await db.execute("""
+            await db.execute(
+                """
                 INSERT INTO customers (customer_id, created_at, updated_at, metadata)
                 VALUES (?, ?, ?, ?)
                 ON CONFLICT(customer_id) DO UPDATE SET updated_at = ?
-            """, (customer_id, now, now, json.dumps({}), now))
+            """,
+                (customer_id, now, now, json.dumps({}), now),
+            )
 
             # Check if commitment already exists
             cursor = await db.execute(
                 "SELECT customer_id FROM commitments WHERE commitment = ?",
-                (commitment,)
+                (commitment,),
             )
             existing = await cursor.fetchone()
 
             if existing:
                 if existing[0] != customer_id:
-                    raise ValueError(f"Commitment already registered to different customer")
+                    raise ValueError(
+                        f"Commitment already registered to different customer"
+                    )
                 # Update existing
-                await db.execute("""
+                await db.execute(
+                    """
                     UPDATE commitments
                     SET device_id = ?, metadata = ?, registered_at = ?
                     WHERE commitment = ?
-                """, (device_id, json.dumps(metadata or {}), now, commitment))
+                """,
+                    (device_id, json.dumps(metadata or {}), now, commitment),
+                )
             else:
                 # Insert new
-                await db.execute("""
+                await db.execute(
+                    """
                     INSERT INTO commitments (customer_id, commitment, device_id, registered_at, metadata)
                     VALUES (?, ?, ?, ?, ?)
-                """, (customer_id, commitment, device_id, now, json.dumps(metadata or {})))
+                """,
+                    (
+                        customer_id,
+                        commitment,
+                        device_id,
+                        now,
+                        json.dumps(metadata or {}),
+                    ),
+                )
 
             await db.commit()
 
             # Get total devices for customer
             cursor = await db.execute(
-                "SELECT COUNT(*) FROM commitments WHERE customer_id = ?",
-                (customer_id,)
+                "SELECT COUNT(*) FROM commitments WHERE customer_id = ?", (customer_id,)
             )
             total = (await cursor.fetchone())[0]
 
@@ -179,19 +195,22 @@ class SQLiteCommitmentStorage(CommitmentStorage):
             "commitment": commitment,
             "device_id": device_id,
             "registered_at": now,
-            "total_devices": total
+            "total_devices": total,
         }
 
     async def get_customer_commitments(self, customer_id: str) -> List[Dict]:
         """Get all commitments for a customer."""
         async with aiosqlite.connect(self.db_path) as db:
             db.row_factory = aiosqlite.Row
-            cursor = await db.execute("""
+            cursor = await db.execute(
+                """
                 SELECT commitment, device_id, registered_at, metadata
                 FROM commitments
                 WHERE customer_id = ?
                 ORDER BY registered_at DESC
-            """, (customer_id,))
+            """,
+                (customer_id,),
+            )
 
             rows = await cursor.fetchall()
 
@@ -200,7 +219,7 @@ class SQLiteCommitmentStorage(CommitmentStorage):
                 "commitment": row["commitment"],
                 "device_id": row["device_id"],
                 "registered_at": row["registered_at"],
-                "metadata": json.loads(row["metadata"]) if row["metadata"] else {}
+                "metadata": json.loads(row["metadata"]) if row["metadata"] else {},
             }
             for row in rows
         ]
@@ -210,7 +229,7 @@ class SQLiteCommitmentStorage(CommitmentStorage):
         async with aiosqlite.connect(self.db_path) as db:
             cursor = await db.execute(
                 "SELECT customer_id FROM commitments WHERE commitment = ?",
-                (commitment,)
+                (commitment,),
             )
             row = await cursor.fetchone()
 
@@ -219,10 +238,13 @@ class SQLiteCommitmentStorage(CommitmentStorage):
     async def remove_commitment(self, customer_id: str, commitment: str) -> bool:
         """Remove a specific commitment."""
         async with aiosqlite.connect(self.db_path) as db:
-            cursor = await db.execute("""
+            cursor = await db.execute(
+                """
                 DELETE FROM commitments
                 WHERE customer_id = ? AND commitment = ?
-            """, (customer_id, commitment))
+            """,
+                (customer_id, commitment),
+            )
             await db.commit()
 
         return cursor.rowcount > 0
@@ -232,15 +254,13 @@ class SQLiteCommitmentStorage(CommitmentStorage):
         async with aiosqlite.connect(self.db_path) as db:
             # Remove commitments
             cursor = await db.execute(
-                "DELETE FROM commitments WHERE customer_id = ?",
-                (customer_id,)
+                "DELETE FROM commitments WHERE customer_id = ?", (customer_id,)
             )
             count = cursor.rowcount
 
             # Remove customer
             await db.execute(
-                "DELETE FROM customers WHERE customer_id = ?",
-                (customer_id,)
+                "DELETE FROM customers WHERE customer_id = ?", (customer_id,)
             )
 
             await db.commit()
@@ -250,11 +270,14 @@ class SQLiteCommitmentStorage(CommitmentStorage):
     async def list_customers(self, limit: int = 100, offset: int = 0) -> List[str]:
         """List customer IDs."""
         async with aiosqlite.connect(self.db_path) as db:
-            cursor = await db.execute("""
+            cursor = await db.execute(
+                """
                 SELECT customer_id FROM customers
                 ORDER BY updated_at DESC
                 LIMIT ? OFFSET ?
-            """, (limit, offset))
+            """,
+                (limit, offset),
+            )
 
             rows = await cursor.fetchall()
 
@@ -272,13 +295,15 @@ class SQLiteCommitmentStorage(CommitmentStorage):
             total_commitments = (await cursor.fetchone())[0]
 
             # Database size
-            cursor = await db.execute("SELECT page_count * page_size FROM pragma_page_count(), pragma_page_size()")
+            cursor = await db.execute(
+                "SELECT page_count * page_size FROM pragma_page_count(), pragma_page_size()"
+            )
             db_size = (await cursor.fetchone())[0]
 
         return {
             "total_customers": total_customers,
             "total_commitments": total_commitments,
-            "db_size_bytes": db_size
+            "db_size_bytes": db_size,
         }
 
     async def vacuum(self):
@@ -307,7 +332,7 @@ class MemoryCommitmentStorage(CommitmentStorage):
         customer_id: str,
         commitment: str,
         device_id: Optional[str] = None,
-        metadata: Optional[Dict] = None
+        metadata: Optional[Dict] = None,
     ) -> Dict:
         now = int(time.time())
 
@@ -318,10 +343,7 @@ class MemoryCommitmentStorage(CommitmentStorage):
 
         # Ensure customer exists
         if customer_id not in self.customers:
-            self.customers[customer_id] = {
-                "created_at": now,
-                "commitments": []
-            }
+            self.customers[customer_id] = {"created_at": now, "commitments": []}
 
         # Register commitment
         self.commitments[commitment] = {
@@ -329,7 +351,7 @@ class MemoryCommitmentStorage(CommitmentStorage):
             "commitment": commitment,
             "device_id": device_id,
             "registered_at": now,
-            "metadata": metadata or {}
+            "metadata": metadata or {},
         }
         self.commitment_to_customer[commitment] = customer_id
 
@@ -341,7 +363,7 @@ class MemoryCommitmentStorage(CommitmentStorage):
             "commitment": commitment,
             "device_id": device_id,
             "registered_at": now,
-            "total_devices": len(self.customers[customer_id]["commitments"])
+            "total_devices": len(self.customers[customer_id]["commitments"]),
         }
 
     async def get_customer_commitments(self, customer_id: str) -> List[Dict]:
@@ -388,23 +410,20 @@ class MemoryCommitmentStorage(CommitmentStorage):
 
     async def list_customers(self, limit: int = 100, offset: int = 0) -> List[str]:
         customers = list(self.customers.keys())
-        return customers[offset:offset + limit]
+        return customers[offset : offset + limit]
 
     async def get_stats(self) -> Dict:
         return {
             "total_customers": len(self.customers),
             "total_commitments": len(self.commitments),
-            "db_size_bytes": 0
+            "db_size_bytes": 0,
         }
 
     async def close(self):
         pass
 
 
-def create_commitment_storage(
-    backend: str = "sqlite",
-    **kwargs
-) -> CommitmentStorage:
+def create_commitment_storage(backend: str = "sqlite", **kwargs) -> CommitmentStorage:
     """Factory function to create commitment storage."""
     if backend == "sqlite":
         return SQLiteCommitmentStorage(kwargs.get("db_path", "commitments.db"))

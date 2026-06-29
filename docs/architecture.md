@@ -2,8 +2,8 @@
 
 Tessera is a one-to-one delivery protocol that gives sender authentication and
 metadata privacy in the same primitive. This document is the engineer's tour of
-how the parts fit together. The canonical spec lives in
-[`../../tessera-paper-msg/spec/protocol_spec.md`](../../tessera-paper-msg/spec/protocol_spec.md).
+how the parts fit together. The formal spec lives in
+[`research.md`](../research.md).
 
 ## The 30-second picture
 
@@ -74,13 +74,12 @@ O(matches) in-memory checks + one queued INSERT per match. Result: subscribe
 
 ## What's not in scope here
 
-- **Telephony binding** (PSTN / SIP / out-of-band call channel) — not in the
-  current code; the messaging-pivot paper treats telephony as a possible
-  application only.
+- **Telephony binding** — not in the current code; telephony is one possible
+  application but not the primary domain.
 - **Distributed DP-noise generation without a coordinator** — design space
-  noted as future work in the paper.
-- **Phase 3 (Tessera-Agent)** — delegation tokens, scope-bound blinding, and
-  revocation will land after Paper A is submitted.
+  noted as open research in `research.md`.
+- **Verifiable AI-agent identity** — delegation tokens, scope-bound blinding,
+  and revocation is a planned extension.
 
 ## Where to read next
 

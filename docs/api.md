@@ -84,7 +84,7 @@ await cluster.start_node("node-2")
 await cluster.stop()
 ```
 
-CLI: `poetry run python -m tessera.deploy.cluster --nodes 5 --topology mesh`.
+CLI: `uv run python -m tessera.deploy.cluster --nodes 5 --topology mesh`.
 
 ### `tessera.keystore`
 
@@ -129,7 +129,7 @@ The most current contract for the API is the test suite:
 | `tests/test_cluster.py` | 3-node mesh + churn resilience. |
 
 ```bash
-poetry run pytest tests/ -q     # expect: 151 passed
+uv run pytest tests/ -q     # expect: 151 passed
 ```
 
 ## Related

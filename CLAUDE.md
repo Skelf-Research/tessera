@@ -4,40 +4,30 @@ Guidance for Claude Code (claude.ai/code) when working in this repo.
 
 ## What Tessera is
 
-Tessera is the protocol implementation behind two papers (see strategy memo
-`~/.claude/projects/-home-dipankar-Code-tessera/memory/`). The core primitive is
-**authenticated, metadata-private, one-to-one delivery**: a sender proves identity
-to a recipient using a Schnorr / Fiat–Shamir zero-knowledge proof under a per-recipient
-*blinded pseudonym* `Y' = Y + tG` (`t = H(seed ‖ session_id) mod q`); the proof is
+Tessera is an open-source privacy protocol for **authenticated, metadata-private,
+one-to-one delivery**: a sender proves identity to a recipient using a
+Schnorr / Fiat–Shamir zero-knowledge proof under a per-recipient *blinded
+pseudonym* `Y' = Y + tG` (`t = H(seed ‖ session_id) mod q`); the proof is
 AES-GCM encrypted and routed over a bucketed broadcast network with calibrated
 **(ε,δ)-differentially-private cover traffic**. No central authority; pairwise
 local enrolment.
 
-Two papers, same protocol:
-- **Paper A** (`../tessera-paper-msg`): authenticated, metadata-private messaging
-  → PoPETs 2027.2 (Aug 31, 2026).
-- **Paper B** (`../tessera-paper-agent`, created Phase 3): verifiable AI-agent
-  identity with cross-service unlinkability → USENIX Sec 2027 C2 (Jan 26, 2027).
-
-The project was previously called CallDNS and framed for telecom; it has been
-pivoted away from that domain (see memory).
-
 ## Dev commands
 
 ```bash
-poetry install
-poetry run pytest tests/ -q                       # expect: 151 passed
-poetry run pytest tests/test_crypto.py -v
-poetry run black tessera/ tests/                  # format
-poetry run flake8 tessera/ tests/                 # lint
+uv sync
+uv run pytest tests/ -q                       # expect: 151 passed
+uv run pytest tests/test_crypto.py -v
+uv run black tessera/ tests/                  # format
+uv run flake8 tessera/ tests/                 # lint
 ```
 
 ```bash
 # run a node over WebSocket
-poetry run python -m tessera.network.ws_server --port 8100
+uv run python -m tessera.network.ws_server --port 8100
 
 # multi-node cluster (mesh or ring)
-poetry run python -m tessera.deploy.cluster --nodes 5 --topology ring
+uv run python -m tessera.deploy.cluster --nodes 5 --topology ring
 ```
 
 ## Architecture
@@ -51,10 +41,9 @@ poetry run python -m tessera.deploy.cluster --nodes 5 --topology ring
 | Keystore | `tessera/keystore/` | PBKDF2-encrypted keystore, key rotation |
 | Service | `tessera/service/` | Flask REST + WS service |
 
-## Experiment harnesses (Paper A artifact)
+## Experiment harnesses
 
-Live under `scripts/` and emit results to `../tessera-paper-msg/results/` (will be
-renamed `../tessera-paper-msg/results/` in Phase 2):
+Live under `scripts/` and emit results to `results/`:
 
 - `bench_crypto.py` (E1) — proof gen/verify/AES latency + sizes
 - `bench_security.py` (E6) — verifier FAR/FRR
@@ -62,15 +51,14 @@ renamed `../tessera-paper-msg/results/` in Phase 2):
 - `analysis/anonymity_sim.py` (E2) — bucket k-anonymity + bloom FPR
 - `analysis/linkability_sim.py` (E3) — DP cover-traffic privacy/overhead
 - `analysis/churn_sim.py` (E5) — mesh vs ring delivery under churn
-- `analysis/leakage_compare.py` (E7) — comparative leakage matrix (will be
-  reworked for messaging observers in Phase 2)
+- `analysis/leakage_compare.py` (E7) — comparative leakage matrix
 
 ## Domain conventions
 
 - The protocol uses **sender / recipient** terminology. The SDK class is
-  `Sender` (formerly `Caller`); `Verifier` is unchanged. Avoid telecom-flavoured
-  terms (caller, callee, PSTN, SIP, STIR/SHAKEN) in new code/docs.
-- Cross-platform SDKs in `sdks/` are auxiliary; the paper artifact is the Python
+  `Sender`; `Verifier` is unchanged. Avoid telecom-flavoured terms (caller,
+  callee, PSTN, SIP, STIR/SHAKEN) in new code/docs.
+- Cross-platform SDKs in `sdks/` are auxiliary; the main artifact is the Python
   package + scripts + tests.
 
 ## Testing strategy
@@ -86,4 +74,4 @@ quantitative harness in `scripts/`.
 - `EncryptedKeyStore` for prod; PBKDF2 with 100k iters; configurable rotation.
 - Flask web service is dev-grade; behind a real WSGI server for prod.
 - The single-writer SQLite design (one persistent connection + lock,
-  `synchronous=NORMAL`) is the verified bottleneck mitigation (see paper §Eval).
+  `synchronous=NORMAL`) is the verified bottleneck mitigation (see research.md).

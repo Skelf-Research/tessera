@@ -12,5 +12,5 @@ __all__ = [
     "TesseraError",
     "ProofError",
     "EncryptionError",
-    "NetworkError"
+    "NetworkError",
 ]

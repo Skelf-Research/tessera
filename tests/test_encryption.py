@@ -23,9 +23,9 @@ class TestSecureEncryption(unittest.TestCase):
         encrypted_data = SecureEncryption.encrypt(self.plaintext, self.key, self.aad)
 
         # Check encrypted data structure
-        self.assertIn('nonce', encrypted_data)
-        self.assertIn('ciphertext', encrypted_data)
-        self.assertIn('additional_data', encrypted_data)
+        self.assertIn("nonce", encrypted_data)
+        self.assertIn("ciphertext", encrypted_data)
+        self.assertIn("additional_data", encrypted_data)
 
         # Decrypt
         decrypted = SecureEncryption.decrypt(encrypted_data, self.key)
@@ -52,9 +52,9 @@ class TestSecureEncryption(unittest.TestCase):
         encrypted_data = SecureEncryption.encrypt(self.plaintext, self.key, self.aad)
 
         # Tamper with ciphertext
-        tampered_ciphertext = bytearray(encrypted_data['ciphertext'])
+        tampered_ciphertext = bytearray(encrypted_data["ciphertext"])
         tampered_ciphertext[0] ^= 1  # Flip one bit
-        encrypted_data['ciphertext'] = bytes(tampered_ciphertext)
+        encrypted_data["ciphertext"] = bytes(tampered_ciphertext)
 
         with self.assertRaises(EncryptionError):
             SecureEncryption.decrypt(encrypted_data, self.key)
@@ -64,7 +64,7 @@ class TestSecureEncryption(unittest.TestCase):
         encrypted_data = SecureEncryption.encrypt(self.plaintext, self.key, self.aad)
 
         # Tamper with AAD
-        encrypted_data['additional_data'] = b"tampered_aad"
+        encrypted_data["additional_data"] = b"tampered_aad"
 
         with self.assertRaises(EncryptionError):
             SecureEncryption.decrypt(encrypted_data, self.key)
@@ -90,7 +90,7 @@ class TestSecureEncryption(unittest.TestCase):
         encrypted2 = SecureEncryption.encrypt(self.plaintext, self.key)
 
         # Nonces should be different
-        self.assertNotEqual(encrypted1['nonce'], encrypted2['nonce'])
+        self.assertNotEqual(encrypted1["nonce"], encrypted2["nonce"])
 
         # But both should decrypt to the same plaintext
         decrypted1 = SecureEncryption.decrypt(encrypted1, self.key)

@@ -9,7 +9,14 @@ import asyncio
 from typing import Dict, List, Optional
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect, Depends, Response
+from fastapi import (
+    FastAPI,
+    HTTPException,
+    WebSocket,
+    WebSocketDisconnect,
+    Depends,
+    Response,
+)
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
@@ -17,10 +24,10 @@ from ..network.async_storage import AsyncNodeStorage
 from ..network.decentralized import NodeType, BloomFilter
 from ..sdk import Sender, Verifier
 
-
 # ─────────────────────────────────────────────────────────────
 # Prometheus Metrics
 # ─────────────────────────────────────────────────────────────
+
 
 class PrometheusMetrics:
     """Simple Prometheus metrics collector."""
@@ -89,6 +96,7 @@ metrics = PrometheusMetrics()
 # Pydantic Models
 # ─────────────────────────────────────────────────────────────
 
+
 class CustomerRegistration(BaseModel):
     customer_id: str
     metadata: Optional[Dict] = None
@@ -134,13 +142,16 @@ class ProofVerify(BaseModel):
 # WebSocket Connection Manager
 # ─────────────────────────────────────────────────────────────
 
+
 class ConnectionManager:
     """Manages WebSocket connections for real-time proof delivery."""
 
     def __init__(self):
         self.active_connections: Dict[str, WebSocket] = {}
         self.subscriptions: Dict[str, List[str]] = {}  # subscriber_id -> commitments
-        self.commitment_to_subscribers: Dict[str, set] = {}  # commitment -> subscriber_ids
+        self.commitment_to_subscribers: Dict[str, set] = (
+            {}
+        )  # commitment -> subscriber_ids
 
     async def connect(self, websocket: WebSocket, subscriber_id: str):
         await websocket.accept()
@@ -178,13 +189,14 @@ class ConnectionManager:
     def get_stats(self) -> dict:
         return {
             "active_connections": len(self.active_connections),
-            "total_subscriptions": sum(len(s) for s in self.subscriptions.values())
+            "total_subscriptions": sum(len(s) for s in self.subscriptions.values()),
         }
 
 
 # ─────────────────────────────────────────────────────────────
 # Application State
 # ─────────────────────────────────────────────────────────────
+
 
 class AppState:
     """Application state container."""
@@ -219,6 +231,7 @@ state = AppState()
 # ─────────────────────────────────────────────────────────────
 # Lifespan Management
 # ─────────────────────────────────────────────────────────────
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -262,7 +275,7 @@ app = FastAPI(
     title="Tessera API",
     description="Decentralized sender verification network",
     version="0.2.0",
-    lifespan=lifespan
+    lifespan=lifespan,
 )
 
 # CORS
@@ -279,6 +292,7 @@ app.add_middleware(
 # Health & Stats
 # ─────────────────────────────────────────────────────────────
 
+
 @app.get("/health")
 async def health_check():
     """Health check endpoint."""
@@ -293,7 +307,7 @@ async def health_check():
         "database": db_stats,
         "websocket": ws_stats,
         "customers": len(state.customers),
-        "organizations": len(state.organizations)
+        "organizations": len(state.organizations),
     }
 
 
@@ -307,7 +321,7 @@ async def get_stats():
         "status": "success",
         "database": db_stats,
         "counters": counter_stats,
-        "timestamp": int(time.time())
+        "timestamp": int(time.time()),
     }
 
 
@@ -319,17 +333,19 @@ async def prometheus_metrics():
     metrics.set_gauge("active_subscriptions", db_stats.get("total_subscriptions", 0))
     metrics.set_gauge("cached_proofs", db_stats.get("total_proofs", 0))
     metrics.set_gauge("pending_proofs", db_stats.get("total_pending", 0))
-    metrics.set_gauge("active_websocket_connections", len(state.ws_manager.active_connections))
+    metrics.set_gauge(
+        "active_websocket_connections", len(state.ws_manager.active_connections)
+    )
 
     return Response(
-        content=metrics.format_prometheus(),
-        media_type="text/plain; charset=utf-8"
+        content=metrics.format_prometheus(), media_type="text/plain; charset=utf-8"
     )
 
 
 # ─────────────────────────────────────────────────────────────
 # Proof Endpoints
 # ─────────────────────────────────────────────────────────────
+
 
 @app.post("/proofs/broadcast")
 async def broadcast_proof(request: ProofBroadcast):
@@ -352,6 +368,7 @@ async def broadcast_proof(request: ProofBroadcast):
 
     # Generate proof ID
     import hashlib
+
     proof_data = f"{proof.get('bloom_fingerprint', '')}{proof.get('timestamp', 0)}"
     proof_id = hashlib.sha256(proof_data.encode()).hexdigest()[:16]
 
@@ -380,11 +397,14 @@ async def broadcast_proof(request: ProofBroadcast):
             # WebSocket delivery
             commitment = sub_data.get("commitment_id")
             if commitment:
-                await state.ws_manager.broadcast_to_commitment(commitment, {
-                    "type": "proof_received",
-                    "proof": proof,
-                    "timestamp": int(time.time())
-                })
+                await state.ws_manager.broadcast_to_commitment(
+                    commitment,
+                    {
+                        "type": "proof_received",
+                        "proof": proof,
+                        "timestamp": int(time.time()),
+                    },
+                )
                 ws_delivered += 1
 
     await state.storage.increment_stat("proofs_routed")
@@ -397,7 +417,7 @@ async def broadcast_proof(request: ProofBroadcast):
         "recipients": len(recipients),
         "commitments_targeted": len(commitments),
         "websocket_delivered": ws_delivered,
-        "timestamp": int(time.time())
+        "timestamp": int(time.time()),
     }
 
 
@@ -407,10 +427,10 @@ async def verify_proof(request: ProofVerify):
     proof = request.proof
 
     # Convert base64 to bytes if needed
-    if isinstance(proof.get('R'), str):
+    if isinstance(proof.get("R"), str):
         proof_bytes = {}
         for key, value in proof.items():
-            if key in ['R', 'public_key'] and isinstance(value, str):
+            if key in ["R", "public_key"] and isinstance(value, str):
                 try:
                     proof_bytes[key] = base64.b64decode(value)
                 except:
@@ -423,11 +443,7 @@ async def verify_proof(request: ProofVerify):
 
     await state.storage.increment_stat("proofs_verified")
 
-    return {
-        "status": "verified",
-        "valid": is_valid,
-        "timestamp": int(time.time())
-    }
+    return {"status": "verified", "valid": is_valid, "timestamp": int(time.time())}
 
 
 async def _matches_subscription(proof: dict, sub_data: dict) -> bool:
@@ -459,6 +475,7 @@ async def _matches_subscription(proof: dict, sub_data: dict) -> bool:
 # Subscription Endpoints
 # ─────────────────────────────────────────────────────────────
 
+
 @app.post("/subscriptions/{subscriber_id}")
 async def register_subscription(subscriber_id: str, subscription: Subscription):
     """Register a subscription for proof delivery."""
@@ -479,7 +496,7 @@ async def register_subscription(subscriber_id: str, subscription: Subscription):
         "status": "subscription_registered",
         "subscriber_id": subscriber_id,
         "bucket": bucket,
-        "timestamp": int(time.time())
+        "timestamp": int(time.time()),
     }
 
 
@@ -491,10 +508,7 @@ async def get_subscription(subscriber_id: str):
     if not sub_data:
         raise HTTPException(status_code=404, detail="Subscription not found")
 
-    return {
-        "status": "success",
-        "subscription": sub_data
-    }
+    return {"status": "success", "subscription": sub_data}
 
 
 @app.delete("/subscriptions/{subscriber_id}")
@@ -512,10 +526,7 @@ async def delete_subscription(subscriber_id: str):
     if not deleted:
         raise HTTPException(status_code=404, detail="Subscription not found")
 
-    return {
-        "status": "subscription_deleted",
-        "subscriber_id": subscriber_id
-    }
+    return {"status": "subscription_deleted", "subscriber_id": subscriber_id}
 
 
 @app.get("/subscriptions/{subscriber_id}/proofs")
@@ -530,7 +541,7 @@ async def get_pending_proofs(subscriber_id: str):
         "subscriber_id": subscriber_id,
         "proofs": proofs,
         "count": len(proofs),
-        "timestamp": int(time.time())
+        "timestamp": int(time.time()),
     }
 
 
@@ -538,29 +549,27 @@ async def get_pending_proofs(subscriber_id: str):
 # Customer Endpoints
 # ─────────────────────────────────────────────────────────────
 
+
 @app.post("/customers")
 async def register_customer(request: CustomerRegistration):
     """Register a new customer."""
     customer_id = request.customer_id
 
     if customer_id in state.customers:
-        return {
-            "status": "customer_exists",
-            "customer_id": customer_id
-        }
+        return {"status": "customer_exists", "customer_id": customer_id}
 
     state.customers[customer_id] = {
         "customer_id": customer_id,
         "created_at": int(time.time()),
         "devices": {},
         "organization_links": {},
-        "metadata": request.metadata or {}
+        "metadata": request.metadata or {},
     }
 
     return {
         "status": "customer_registered",
         "customer_id": customer_id,
-        "created_at": state.customers[customer_id]["created_at"]
+        "created_at": state.customers[customer_id]["created_at"],
     }
 
 
@@ -574,7 +583,7 @@ async def register_device(customer_id: str, device: DeviceRegistration):
             "created_at": int(time.time()),
             "devices": {},
             "organization_links": {},
-            "metadata": {}
+            "metadata": {},
         }
 
     device_data = {
@@ -584,7 +593,7 @@ async def register_device(customer_id: str, device: DeviceRegistration):
         "public_key": device.public_key,
         "registered_at": int(time.time()),
         "last_seen": int(time.time()),
-        "active": True
+        "active": True,
     }
 
     state.customers[customer_id]["devices"][device.device_id] = device_data
@@ -593,7 +602,7 @@ async def register_device(customer_id: str, device: DeviceRegistration):
         "status": "device_registered",
         "customer_id": customer_id,
         "device_id": device.device_id,
-        "device_name": device_data["device_name"]
+        "device_name": device_data["device_name"],
     }
 
 
@@ -609,7 +618,7 @@ async def get_customer_devices(customer_id: str):
         "status": "success",
         "customer_id": customer_id,
         "devices": devices,
-        "count": len(devices)
+        "count": len(devices),
     }
 
 
@@ -629,7 +638,7 @@ async def get_customer_commitments(customer_id: str):
         "status": "success",
         "customer_id": customer_id,
         "commitments": commitments,
-        "count": len(commitments)
+        "count": len(commitments),
     }
 
 
@@ -637,12 +646,14 @@ async def get_customer_commitments(customer_id: str):
 # Organization Endpoints
 # ─────────────────────────────────────────────────────────────
 
+
 @app.post("/organizations")
 async def register_organization(request: OrganizationRegistration):
     """Register an organization."""
     org_id = request.organization_id
 
     import secrets
+
     api_key = secrets.token_urlsafe(32)
 
     state.organizations[org_id] = {
@@ -650,14 +661,14 @@ async def register_organization(request: OrganizationRegistration):
         "organization_name": request.organization_name or org_id,
         "api_key": api_key,
         "created_at": int(time.time()),
-        "metadata": request.metadata or {}
+        "metadata": request.metadata or {},
     }
 
     return {
         "status": "organization_registered",
         "organization_id": org_id,
         "api_key": api_key,
-        "created_at": state.organizations[org_id]["created_at"]
+        "created_at": state.organizations[org_id]["created_at"],
     }
 
 
@@ -674,8 +685,7 @@ async def org_get_customer_commitments(org_id: str, customer_id: str):
     customer = state.customers[customer_id]
     if org_id not in customer.get("organization_links", {}):
         raise HTTPException(
-            status_code=403,
-            detail="Organization not authorized for this customer"
+            status_code=403, detail="Organization not authorized for this customer"
         )
 
     commitments = [
@@ -689,13 +699,14 @@ async def org_get_customer_commitments(org_id: str, customer_id: str):
         "organization_id": org_id,
         "customer_id": customer_id,
         "commitments": commitments,
-        "count": len(commitments)
+        "count": len(commitments),
     }
 
 
 # ─────────────────────────────────────────────────────────────
 # WebSocket Endpoint
 # ─────────────────────────────────────────────────────────────
+
 
 @app.websocket("/ws/{subscriber_id}")
 async def websocket_endpoint(websocket: WebSocket, subscriber_id: str):
@@ -716,22 +727,22 @@ async def websocket_endpoint(websocket: WebSocket, subscriber_id: str):
                     subscriber_id, delete_after=True
                 )
                 if proofs:
-                    await websocket.send_json({
-                        "type": "pending_proofs",
-                        "proofs": proofs,
-                        "count": len(proofs)
-                    })
+                    await websocket.send_json(
+                        {
+                            "type": "pending_proofs",
+                            "proofs": proofs,
+                            "count": len(proofs),
+                        }
+                    )
 
-                await websocket.send_json({
-                    "type": "subscribed",
-                    "commitments": commitments
-                })
+                await websocket.send_json(
+                    {"type": "subscribed", "commitments": commitments}
+                )
 
             elif msg_type == "ping":
-                await websocket.send_json({
-                    "type": "pong",
-                    "timestamp": int(time.time())
-                })
+                await websocket.send_json(
+                    {"type": "pong", "timestamp": int(time.time())}
+                )
 
     except WebSocketDisconnect:
         state.ws_manager.disconnect(subscriber_id)
@@ -741,9 +752,11 @@ async def websocket_endpoint(websocket: WebSocket, subscriber_id: str):
 # Run Application
 # ─────────────────────────────────────────────────────────────
 
+
 def run(host: str = "0.0.0.0", port: int = 8000):
     """Run the FastAPI application."""
     import uvicorn
+
     uvicorn.run(app, host=host, port=port)
 
 

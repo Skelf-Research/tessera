@@ -1,5 +1,5 @@
 """
-Tests for per-call key blinding (resolves F11): sender unlinkability with callee
+Tests for per-delivery key blinding (resolves F11): sender unlinkability with recipient
 authentication. See tessera/crypto/blinding.py.
 """
 
@@ -7,7 +7,10 @@ import unittest
 
 from tessera.crypto.crypto_utils import CryptoUtils
 from tessera.crypto.blinding import (
-    BlindedSender, BlindedVerifier, blind_public_key, derive_blinding,
+    BlindedSender,
+    BlindedVerifier,
+    blind_public_key,
+    derive_blinding,
 )
 
 
@@ -17,41 +20,45 @@ class TestBlindedIdentity(unittest.TestCase):
         self.sender = BlindedSender(self.x, self.Y)
         self.verifier = BlindedVerifier()
         self.seed = b"enrolment-shared-seed-with-bank"
-        self.meta = {"call_type": "voice"}
+        self.meta = {"delivery_type": "voice"}
 
-    def test_callee_authenticates_blinded_proof(self):
+    def test_recipient_authenticates_blinded_proof(self):
         proof = self.sender.prove(self.seed, "session-1", self.meta)
         self.assertTrue(
-            self.verifier.authenticate(proof, self.Y, self.seed, "session-1"))
+            self.verifier.authenticate(proof, self.Y, self.seed, "session-1")
+        )
 
     def test_blinded_key_is_not_the_longterm_key(self):
         proof = self.sender.prove(self.seed, "session-1", self.meta)
         self.assertNotEqual(proof["public_key"], self.Y)
 
-    def test_cross_call_unlinkability(self):
+    def test_cross_delivery_unlinkability(self):
         p1 = self.sender.prove(self.seed, "session-1", self.meta)
         p2 = self.sender.prove(self.seed, "session-2", self.meta)
-        # Same sender, different calls -> different pseudonyms.
+        # Same sender, different deliveries -> different pseudonyms.
         self.assertNotEqual(p1["public_key"], p2["public_key"])
 
-    def test_different_callee_cannot_link(self):
-        # A different callee holds a different shared seed and cannot recompute the
+    def test_different_recipient_cannot_link(self):
+        # A different recipient holds a different shared seed and cannot recompute the
         # pseudonym, so it cannot authenticate (or link) the sender.
         proof = self.sender.prove(self.seed, "session-1", self.meta)
-        other_seed = b"some-other-callees-seed"
+        other_seed = b"some-other-recipients-seed"
         self.assertFalse(
-            self.verifier.authenticate(proof, self.Y, other_seed, "session-1"))
+            self.verifier.authenticate(proof, self.Y, other_seed, "session-1")
+        )
 
     def test_wrong_session_id_fails(self):
         proof = self.sender.prove(self.seed, "session-1", self.meta)
         self.assertFalse(
-            self.verifier.authenticate(proof, self.Y, self.seed, "session-2"))
+            self.verifier.authenticate(proof, self.Y, self.seed, "session-2")
+        )
 
     def test_tampered_proof_fails(self):
         proof = self.sender.prove(self.seed, "session-1", self.meta)
         proof["s"] = proof["s"] + 1
         self.assertFalse(
-            self.verifier.authenticate(proof, self.Y, self.seed, "session-1"))
+            self.verifier.authenticate(proof, self.Y, self.seed, "session-1")
+        )
 
     def test_blinding_is_deterministic_for_seed_session(self):
         t1 = derive_blinding(self.seed, "session-1")

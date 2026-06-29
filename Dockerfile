@@ -47,7 +47,7 @@ RUN mkdir -p /data && chown -R tessera:tessera /data /app
 USER tessera
 
 # Environment variables
-ENV CALLDNS_DATA_DIR=/data
+ENV TESSERA_DATA_DIR=/data
 ENV PYTHONUNBUFFERED=1
 
 # Health check

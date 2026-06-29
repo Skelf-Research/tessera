@@ -27,9 +27,9 @@ spec:
           image: tessera:latest
           command: ["python", "-m", "tessera.service.api"]
           env:
-            - name: CALLDNS_HOST
+            - name: TESSERA_HOST
               value: "0.0.0.0"
-            - name: CALLDNS_PORT
+            - name: TESSERA_PORT
               value: "8000"
           ports:
             - containerPort: 8000

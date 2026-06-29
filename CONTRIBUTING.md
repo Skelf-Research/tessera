@@ -27,8 +27,8 @@ This project follows a standard code of conduct. Be respectful, professional, an
 
 ### Prerequisites
 
-- Python 3.8 or higher
-- Poetry for dependency management
+- Python 3.10 or higher
+- uv for dependency management
 - Git
 
 ### Setup Commands
@@ -42,8 +42,8 @@ cd tessera
 ./scripts/setup_dev.sh
 
 # Or manually:
-poetry install
-poetry run pytest tests/
+uv sync
+uv run pytest tests/
 ```
 
 ## Making Changes
@@ -89,10 +89,10 @@ Use conventional commit format:
 ./scripts/run_tests.sh
 
 # Run specific test file
-poetry run pytest tests/test_crypto.py -v
+uv run pytest tests/test_crypto.py -v
 
 # Run with coverage
-poetry run pytest tests/ --cov=tessera
+uv run pytest tests/ --cov=tessera
 ```
 
 ### Writing Tests

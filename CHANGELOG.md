@@ -39,9 +39,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   mismatch that previously broke 14 integration tests.
 - Experiment harnesses E1–E7 in `scripts/` (crypto microbench, anonymity sim,
   linkability sim, throughput driver, churn sim, security FAR/FRR, leakage
-  comparison) producing the paper's tables and figures.
-- Paper draft + reproduction artefact in sibling repo
-  `sarkar-dipankar/tessera-paper-msg` (target PoPETs 2027.2, 31 Aug 2026).
+  comparison) producing the protocol evaluation tables and figures.
 
 ### Fixed
 - `Subscription.__init__` referenced `self.time_window` before assignment —

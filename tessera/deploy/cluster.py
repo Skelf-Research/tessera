@@ -44,8 +44,13 @@ class _NodeHandle:
 class LocalCluster:
     """A set of peered Tessera nodes running in the current event loop."""
 
-    def __init__(self, n: int = 3, topology: str = "mesh",
-                 host: str = "127.0.0.1", base_dir: str = None):
+    def __init__(
+        self,
+        n: int = 3,
+        topology: str = "mesh",
+        host: str = "127.0.0.1",
+        base_dir: str = None,
+    ):
         if topology not in ("mesh", "ring"):
             raise ValueError("topology must be 'mesh' or 'ring'")
         self.n = n
@@ -60,14 +65,18 @@ class LocalCluster:
         if self.topology == "mesh":
             return [names[j] for j in range(self.n) if j != idx]
         # ring: connect to next neighbour (bidirectional ring)
-        return [names[(idx + 1) % self.n], names[(idx - 1) % self.n]] if self.n > 1 else []
+        return (
+            [names[(idx + 1) % self.n], names[(idx - 1) % self.n]] if self.n > 1 else []
+        )
 
     async def start_node(self, name: str):
         """Start (or restart) a single node and (re)wire its peer links."""
         h = self.handles[name]
         h.node = AsyncDecentralizedNode(name, NodeType.CORE, data_dir=h.data_dir)
         await h.node.initialize()
-        server = await websockets.serve(NodeWebSocketServer(h.node).handler, self.host, 0)
+        server = await websockets.serve(
+            NodeWebSocketServer(h.node).handler, self.host, 0
+        )
         h.server = server
         h.uri = f"ws://{self.host}:{server.sockets[0].getsockname()[1]}"
 
@@ -117,8 +126,11 @@ class LocalCluster:
 
 
 async def _run_forever(args):
-    cluster = LocalCluster(n=args.nodes, topology=args.topology,
-                           base_dir=str(Path(args.data_dir).resolve()) if args.data_dir else None)
+    cluster = LocalCluster(
+        n=args.nodes,
+        topology=args.topology,
+        base_dir=str(Path(args.data_dir).resolve()) if args.data_dir else None,
+    )
     await cluster.start()
     print(f"Tessera local cluster up ({args.nodes} nodes, {args.topology}):")
     for name, uri in cluster.uris().items():

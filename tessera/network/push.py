@@ -16,6 +16,7 @@ from websockets.server import WebSocketServerProtocol
 @dataclass
 class PushSubscription:
     """A push subscription for a device."""
+
     subscriber_id: str
     device_token: Optional[str] = None  # For MQTT
     commitments: List[str] = None
@@ -46,7 +47,7 @@ class WebSocketPushServer:
             self.host,
             self.port,
             ping_interval=30,
-            ping_timeout=10
+            ping_timeout=10,
         )
         self._running = True
         print(f"  WebSocket push server on ws://{self.host}:{self.port}")
@@ -58,7 +59,9 @@ class WebSocketPushServer:
             self.server.close()
             await self.server.wait_closed()
 
-    async def _handle_connection(self, websocket: WebSocketServerProtocol, path: str = ""):
+    async def _handle_connection(
+        self, websocket: WebSocketServerProtocol, path: str = ""
+    ):
         """Handle incoming WebSocket connection."""
         subscriber_id = None
 
@@ -76,7 +79,7 @@ class WebSocketPushServer:
                         self.subscriptions[subscriber_id] = PushSubscription(
                             subscriber_id=subscriber_id,
                             commitments=commitments,
-                            last_seen=time.time()
+                            last_seen=time.time(),
                         )
 
                         # Map commitments
@@ -85,19 +88,22 @@ class WebSocketPushServer:
                                 self.commitment_subscribers[commitment] = set()
                             self.commitment_subscribers[commitment].add(subscriber_id)
 
-                        await websocket.send(json.dumps({
-                            "type": "subscribed",
-                            "subscriber_id": subscriber_id,
-                            "commitments": commitments
-                        }))
+                        await websocket.send(
+                            json.dumps(
+                                {
+                                    "type": "subscribed",
+                                    "subscriber_id": subscriber_id,
+                                    "commitments": commitments,
+                                }
+                            )
+                        )
 
                 elif msg_type == "ping":
                     if subscriber_id:
                         self.subscriptions[subscriber_id].last_seen = time.time()
-                    await websocket.send(json.dumps({
-                        "type": "pong",
-                        "timestamp": int(time.time())
-                    }))
+                    await websocket.send(
+                        json.dumps({"type": "pong", "timestamp": int(time.time())})
+                    )
 
         except websockets.exceptions.ConnectionClosed:
             pass
@@ -114,7 +120,7 @@ class WebSocketPushServer:
 
         if subscriber_id in self.subscriptions:
             sub = self.subscriptions[subscriber_id]
-            for commitment in (sub.commitments or []):
+            for commitment in sub.commitments or []:
                 if commitment in self.commitment_subscribers:
                     self.commitment_subscribers[commitment].discard(subscriber_id)
             del self.subscriptions[subscriber_id]
@@ -128,12 +134,16 @@ class WebSocketPushServer:
             ws = self.connections.get(subscriber_id)
             if ws:
                 try:
-                    await ws.send(json.dumps({
-                        "type": "proof",
-                        "commitment": commitment,
-                        "proof": proof,
-                        "timestamp": int(time.time())
-                    }))
+                    await ws.send(
+                        json.dumps(
+                            {
+                                "type": "proof",
+                                "commitment": commitment,
+                                "proof": proof,
+                                "timestamp": int(time.time()),
+                            }
+                        )
+                    )
                     sent += 1
                 except Exception:
                     self._cleanup_subscriber(subscriber_id)
@@ -155,7 +165,7 @@ class WebSocketPushServer:
         return {
             "active_connections": len(self.connections),
             "total_subscriptions": len(self.subscriptions),
-            "commitment_mappings": len(self.commitment_subscribers)
+            "commitment_mappings": len(self.commitment_subscribers),
         }
 
 
@@ -171,7 +181,7 @@ class MQTTBridge:
         broker_port: int = 1883,
         username: str = None,
         password: str = None,
-        use_tls: bool = False
+        use_tls: bool = False,
     ):
         self.broker_host = broker_host
         self.broker_port = broker_port
@@ -199,7 +209,7 @@ class MQTTBridge:
                 hostname=self.broker_host,
                 port=self.broker_port,
                 username=self.username,
-                password=self.password
+                password=self.password,
             )
             await self.client.__aenter__()
             self._connected = True
@@ -221,12 +231,14 @@ class MQTTBridge:
             return False
 
         topic = self.proof_topic_pattern.format(commitment=commitment)
-        payload = json.dumps({
-            "type": "proof",
-            "commitment": commitment,
-            "proof": proof,
-            "timestamp": int(time.time())
-        })
+        payload = json.dumps(
+            {
+                "type": "proof",
+                "commitment": commitment,
+                "proof": proof,
+                "timestamp": int(time.time()),
+            }
+        )
 
         try:
             await self.client.publish(topic, payload, qos=1)
@@ -273,7 +285,7 @@ class PushService:
         broker_host: str = "localhost",
         broker_port: int = 1883,
         username: str = None,
-        password: str = None
+        password: str = None,
     ):
         """Start MQTT bridge."""
         self.mqtt_bridge = MQTTBridge(broker_host, broker_port, username, password)
@@ -288,10 +300,7 @@ class PushService:
 
     async def push_proof(self, commitment: str, proof: dict) -> dict:
         """Push a proof via all available channels."""
-        results = {
-            "websocket": 0,
-            "mqtt": False
-        }
+        results = {"websocket": 0, "mqtt": False}
 
         if self.ws_server:
             results["websocket"] = await self.ws_server.push_proof(commitment, proof)

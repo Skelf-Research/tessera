@@ -130,7 +130,9 @@ class AsyncDecentralizedNode:
             return 0
 
         # Store proof
-        is_new = await self.storage.store_proof(proof_id, proof, from_peer, self.proof_ttl)
+        is_new = await self.storage.store_proof(
+            proof_id, proof, from_peer, self.proof_ttl
+        )
         if not is_new:
             return 0
 
@@ -156,8 +158,9 @@ class AsyncDecentralizedNode:
         await self.storage.increment_stat("proofs_forwarded")
         return notified
 
-    async def _check_and_queue_proof(self, subscriber_id: str, proof: dict,
-                                     proof_id: str) -> int:
+    async def _check_and_queue_proof(
+        self, subscriber_id: str, proof: dict, proof_id: str
+    ) -> int:
         """Check if proof matches subscriber and queue it."""
         # In-memory lookup (fixes F9): avoid a storage read per candidate subscriber.
         sub_data = self.subscription_cache.get(subscriber_id)
@@ -181,8 +184,9 @@ class AsyncDecentralizedNode:
             self._bloom_cache[subscriber_id] = bloom
         return bloom
 
-    def _matches_subscription_data(self, proof: dict, sub_data: dict,
-                                   bloom: BloomFilter = None) -> bool:
+    def _matches_subscription_data(
+        self, proof: dict, sub_data: dict, bloom: BloomFilter = None
+    ) -> bool:
         """Check if proof matches subscription filters."""
         # Time check
         time_window = sub_data.get("time_window", 600)
@@ -236,7 +240,7 @@ class AsyncDecentralizedNode:
             "ciphertext": base64.b64encode(secrets.token_bytes(128)).decode(),
             "nonce": base64.b64encode(secrets.token_bytes(12)).decode(),
             "timestamp": int(time.time()),
-            "org_hint": org_hint
+            "org_hint": org_hint,
         }
 
     async def _send_to_core_nodes(self, proof: dict):
@@ -252,7 +256,9 @@ class AsyncDecentralizedNode:
     # Customer Node Functions
     # ─────────────────────────────────────────────────────────────
 
-    def subscribe(self, commitment: bytes, linked_orgs: List[str] = None) -> Subscription:
+    def subscribe(
+        self, commitment: bytes, linked_orgs: List[str] = None
+    ) -> Subscription:
         """Create subscription for this customer node."""
         sub = Subscription(commitment, linked_orgs)
         self.my_subscriptions.append(sub)
@@ -332,7 +338,7 @@ class AsyncDecentralizedNode:
             "cached_proofs": db_stats.get("total_proofs", 0),
             "pending_proofs": db_stats.get("total_pending", 0),
             "db_size_bytes": db_stats.get("db_size_bytes", 0),
-            "counters": counter_stats
+            "counters": counter_stats,
         }
 
     async def shutdown(self):
@@ -374,5 +380,5 @@ class AsyncPrivacyPreservingBroadcaster:
             "real_bucket": real_bucket,
             "decoy_buckets": decoy_buckets,
             "total_broadcasts": 1 + len(decoy_buckets),
-            "privacy_ratio": len(decoy_buckets) / (1 + len(decoy_buckets))
+            "privacy_ratio": len(decoy_buckets) / (1 + len(decoy_buckets)),
         }

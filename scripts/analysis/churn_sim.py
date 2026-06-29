@@ -30,8 +30,8 @@ import websockets
 from tessera.deploy.cluster import LocalCluster
 from tessera.network.decentralized import Subscription, make_routing_fields
 
-PAPER = Path(__file__).resolve().parents[3] / "tessera-paper-msg"
-DEFAULT_RESULTS = PAPER / "results"
+RESULTS_DIR = Path(__file__).resolve().parents[2] / "results"
+DEFAULT_RESULTS = RESULTS_DIR
 
 
 async def _rt(uri, msg):
@@ -48,10 +48,21 @@ async def _trial(cluster, live_names, commitment) -> bool:
         s_name = e_name = live_names[0]
     uris = cluster.uris()
     sub_id = f"sub-{commitment.hex()[:8]}"
-    await _rt(uris[s_name], {"type": "subscribe", "subscriber_id": sub_id,
-                             "subscription": Subscription(commitment, ["org"]).to_dict()})
-    await _rt(uris[e_name], {"type": "proof",
-                             "proof": {**make_routing_fields(commitment), "org_hint": "org"}})
+    await _rt(
+        uris[s_name],
+        {
+            "type": "subscribe",
+            "subscriber_id": sub_id,
+            "subscription": Subscription(commitment, ["org"]).to_dict(),
+        },
+    )
+    await _rt(
+        uris[e_name],
+        {
+            "type": "proof",
+            "proof": {**make_routing_fields(commitment), "org_hint": "org"},
+        },
+    )
     resp = await _rt(uris[s_name], {"type": "fetch", "subscriber_id": sub_id})
     return len(resp["proofs"]) >= 1
 
@@ -75,8 +86,11 @@ async def sweep_config(topology, n, offline_frac, trials):
             if await _trial(cluster, live, commitment):
                 successes += 1
         return {
-            "topology": topology, "nodes": n, "offline_frac": offline_frac,
-            "offline_count": k, "trials": trials,
+            "topology": topology,
+            "nodes": n,
+            "offline_frac": offline_frac,
+            "offline_count": k,
+            "trials": trials,
             "delivery_rate": successes / trials,
         }
     finally:
@@ -89,13 +103,18 @@ async def run(args):
         for frac in args.offline_fracs:
             row = await sweep_config(topology, args.nodes, frac, args.trials)
             rows.append(row)
-            print(f"{topology:<5} offline={frac:<4} ({row['offline_count']}/{args.nodes}) "
-                  f"-> delivery {row['delivery_rate']*100:5.1f}%")
+            print(
+                f"{topology:<5} offline={frac:<4} ({row['offline_count']}/{args.nodes}) "
+                f"-> delivery {row['delivery_rate'] * 100:5.1f}%"
+            )
     return {
         "experiment": "E5_churn",
-        "params": {"nodes": args.nodes, "trials": args.trials,
-                   "offline_fracs": args.offline_fracs,
-                   "timestamp_utc": datetime.now(timezone.utc).isoformat()},
+        "params": {
+            "nodes": args.nodes,
+            "trials": args.trials,
+            "offline_fracs": args.offline_fracs,
+            "timestamp_utc": datetime.now(timezone.utc).isoformat(),
+        },
         "rows": rows,
     }
 
@@ -104,7 +123,9 @@ def main():
     ap = argparse.ArgumentParser(description="Tessera churn-resilience sweep (E5)")
     ap.add_argument("--nodes", type=int, default=8)
     ap.add_argument("--trials", type=int, default=30)
-    ap.add_argument("--offline-fracs", type=float, nargs="+", default=[0.0, 0.125, 0.25, 0.5])
+    ap.add_argument(
+        "--offline-fracs", type=float, nargs="+", default=[0.0, 0.125, 0.25, 0.5]
+    )
     ap.add_argument("--out-dir", type=Path, default=DEFAULT_RESULTS)
     ap.add_argument("--no-write", action="store_true")
     args = ap.parse_args()

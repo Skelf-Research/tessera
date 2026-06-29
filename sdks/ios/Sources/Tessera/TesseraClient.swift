@@ -307,7 +307,7 @@ extension TesseraClient: CXCallObserverDelegate {
                 verifyIncomingCall(callContext: callContext) { result in
                     // Handle verification result
                     NotificationCenter.default.post(
-                        name: .callDNSVerificationCompleted,
+                        name: .tesseraVerificationCompleted,
                         object: result
                     )
                 }
@@ -318,6 +318,6 @@ extension TesseraClient: CXCallObserverDelegate {
 
 // MARK: - Notification Names
 extension Notification.Name {
-    static let callDNSVerificationCompleted = Notification.Name("TesseraVerificationCompleted")
-    static let callDNSProofGenerated = Notification.Name("TesseraProofGenerated")
+    static let tesseraVerificationCompleted = Notification.Name("TesseraVerificationCompleted")
+    static let tesseraProofGenerated = Notification.Name("TesseraProofGenerated")
 }

@@ -3,22 +3,22 @@
 E1 — Cryptographic microbenchmark for Tessera.
 
 Measures the per-operation cost and wire size of the cryptographic core that
-gates every authenticated call:
+gates every authenticated delivery:
 
   * ZK proof generation      (ZKProver.generate_proof  — Schnorr / Fiat-Shamir)
   * ZK proof verification    (ZKVerifier.verify_proof)
   * AES-256-GCM encrypt      (SecureEncryption.encrypt — proof routing)
   * AES-256-GCM decrypt      (SecureEncryption.decrypt)
   * Key generation           (CryptoUtils.generate_keypair)
-  * ECDSA sign/verify        (reference baseline ~ STIR/SHAKEN-style signing)
+  * ECDSA sign/verify        (reference baseline ~ conventional signed messaging)
 
 Outputs:
   * a formatted table to stdout
   * a JSON results blob          (results/<name>.json)
   * a ready-to-\\input LaTeX table (results/<name>.tex)
 
-By repo convention (see ../tessera-paper-msg), this harness lives in tessera/ and
-writes its artefacts into the sibling paper repo's results/ directory.
+By repo convention, this harness lives in tessera/scripts/ and writes its
+artefacts into the local results/ directory.
 
 Usage:
   poetry run python scripts/bench_crypto.py
@@ -37,10 +37,15 @@ from pathlib import Path
 import ecdsa
 from ecdsa import SECP256k1
 
-from tessera.crypto.crypto_utils import CryptoUtils, ZKProver, ZKVerifier, SecureEncryption
+from tessera.crypto.crypto_utils import (
+    CryptoUtils,
+    ZKProver,
+    ZKVerifier,
+    SecureEncryption,
+)
 
 
-DEFAULT_OUT = Path(__file__).resolve().parents[2] / "tessera-paper-msg" / "results"
+DEFAULT_OUT = Path(__file__).resolve().parents[2] / "results"
 
 
 def time_op(fn, iterations, warmup):
@@ -79,7 +84,11 @@ def proof_wire_sizes(proof):
     pk = proof["public_key"]
     s_bytes = 32  # s is an int mod q (256-bit) -> 32 bytes on the wire
     meta = proof.get("metadata") or ""
-    meta_bytes = len(json.dumps(meta).encode()) if not isinstance(meta, str) else len(meta.encode())
+    meta_bytes = (
+        len(json.dumps(meta).encode())
+        if not isinstance(meta, str)
+        else len(meta.encode())
+    )
     return {
         "R_bytes": len(R),
         "s_bytes": s_bytes,
@@ -98,7 +107,9 @@ def run(iterations, warmup):
     results = {"ops": [], "sizes": {}, "params": {}}
 
     # --- Key generation ---
-    lat, _ = time_op(lambda: CryptoUtils.generate_keypair(), iterations // 10 or 1, warmup)
+    lat, _ = time_op(
+        lambda: CryptoUtils.generate_keypair(), iterations // 10 or 1, warmup
+    )
     results["ops"].append(summarize("keygen", lat))
 
     # --- Proof generation ---
@@ -115,17 +126,23 @@ def run(iterations, warmup):
 
     # --- AES-GCM encrypt / decrypt (proof routing) ---
     proof_json = json.dumps(
-        {"R": proof["R"].hex(), "s": proof["s"], "public_key": proof["public_key"].hex(),
-         "metadata": proof["metadata"]}
+        {
+            "R": proof["R"].hex(),
+            "s": proof["s"],
+            "public_key": proof["public_key"].hex(),
+            "metadata": proof["metadata"],
+        }
     ).encode()
     key = CryptoUtils.hash_data(b"routing-key-seed")
-    lat, enc = time_op(lambda: SecureEncryption.encrypt(proof_json, key, b"aad"), iterations, warmup)
+    lat, enc = time_op(
+        lambda: SecureEncryption.encrypt(proof_json, key, b"aad"), iterations, warmup
+    )
     results["ops"].append(summarize("aesgcm_encrypt", lat))
     lat, _ = time_op(lambda: SecureEncryption.decrypt(enc, key), iterations, warmup)
     results["ops"].append(summarize("aesgcm_decrypt", lat))
 
-    # --- ECDSA baseline (reference for STIR/SHAKEN-style signing) ---
-    msg = b"sip-identity-header-canonical-form"
+    # --- ECDSA baseline (reference for conventional signed messaging) ---
+    msg = b"canonical-message-form"
     lat, sig = time_op(lambda: sk.sign(msg), iterations, warmup)
     results["ops"].append(summarize("ecdsa_sign_baseline", lat))
     vk = sk.get_verifying_key()
@@ -156,19 +173,27 @@ def run(iterations, warmup):
 def print_table(results):
     print("\nTessera cryptographic microbenchmark (E1)")
     print("=" * 78)
-    print(f"{'operation':<24}{'mean us':>10}{'p50 us':>10}{'p99 us':>10}{'ops/sec':>14}")
+    print(
+        f"{'operation':<24}{'mean us':>10}{'p50 us':>10}{'p99 us':>10}{'ops/sec':>14}"
+    )
     print("-" * 78)
     for o in results["ops"]:
-        print(f"{o['op']:<24}{o['mean_us']:>10.2f}{o['p50_us']:>10.2f}"
-              f"{o['p99_us']:>10.2f}{o['throughput_ops_per_s']:>14.0f}")
+        print(
+            f"{o['op']:<24}{o['mean_us']:>10.2f}{o['p50_us']:>10.2f}"
+            f"{o['p99_us']:>10.2f}{o['throughput_ops_per_s']:>14.0f}"
+        )
     print("-" * 78)
     p = results["sizes"]["proof"]
-    print(f"\nProof wire size: {p['total_bytes']} B "
-          f"(R={p['R_bytes']}, s={p['s_bytes']}, pubkey={p['public_key_bytes']}, "
-          f"meta={p['metadata_bytes']})")
+    print(
+        f"\nProof wire size: {p['total_bytes']} B "
+        f"(R={p['R_bytes']}, s={p['s_bytes']}, pubkey={p['public_key_bytes']}, "
+        f"meta={p['metadata_bytes']})"
+    )
     a = results["sizes"]["aesgcm_overhead_bytes"]
-    print(f"AES-GCM: {a['plaintext_bytes']} B -> {a['ciphertext_bytes']} B "
-          f"+ {a['nonce_bytes']} B nonce (overhead {a['overhead_bytes']} B)")
+    print(
+        f"AES-GCM: {a['plaintext_bytes']} B -> {a['ciphertext_bytes']} B "
+        f"+ {a['nonce_bytes']} B nonce (overhead {a['overhead_bytes']} B)"
+    )
     pr = results["params"]
     print(f"\n{pr['iterations']} iters, {pr['python']} on {pr['platform']}")
 
@@ -215,7 +240,9 @@ def main():
     ap.add_argument("--warmup", type=int, default=200)
     ap.add_argument("--out-dir", type=Path, default=DEFAULT_OUT)
     ap.add_argument("--name", default="e1_crypto_microbench")
-    ap.add_argument("--no-write", action="store_true", help="print only, do not write files")
+    ap.add_argument(
+        "--no-write", action="store_true", help="print only, do not write files"
+    )
     args = ap.parse_args()
 
     results = run(args.iterations, args.warmup)

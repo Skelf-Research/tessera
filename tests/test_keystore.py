@@ -7,7 +7,12 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from tessera.keystore import KeyManager, KeyRotationManager, FileKeyStore, EncryptedKeyStore
+from tessera.keystore import (
+    KeyManager,
+    KeyRotationManager,
+    FileKeyStore,
+    EncryptedKeyStore,
+)
 from tessera.keystore.utils import KeyDerivation, KeyBackup
 from tessera.utils.exceptions import IdentityError, EncryptionError
 
@@ -25,16 +30,19 @@ class TestKeyManager(unittest.TestCase):
     def tearDown(self):
         """Clean up test fixtures."""
         import shutil
+
         shutil.rmtree(self.temp_dir, ignore_errors=True)
 
     def test_generate_identity_keypair(self):
         """Test identity keypair generation."""
-        private_key, public_key = self.key_manager.generate_identity_keypair(self.test_identity)
+        private_key, public_key = self.key_manager.generate_identity_keypair(
+            self.test_identity
+        )
 
         self.assertIsInstance(private_key, bytes)
         self.assertIsInstance(public_key, bytes)
         self.assertEqual(len(private_key), 32)  # SECP256k1 private key
-        self.assertEqual(len(public_key), 64)   # SECP256k1 public key
+        self.assertEqual(len(public_key), 64)  # SECP256k1 public key
 
         # Verify key is stored
         self.assertTrue(self.key_manager.key_exists(self.test_identity))
@@ -42,17 +50,23 @@ class TestKeyManager(unittest.TestCase):
     def test_get_identity_keys(self):
         """Test retrieving identity keys."""
         # Generate keys first
-        orig_private, orig_public = self.key_manager.generate_identity_keypair(self.test_identity)
+        orig_private, orig_public = self.key_manager.generate_identity_keypair(
+            self.test_identity
+        )
 
         # Retrieve keys
-        retrieved_private, retrieved_public = self.key_manager.get_identity_keys(self.test_identity)
+        retrieved_private, retrieved_public = self.key_manager.get_identity_keys(
+            self.test_identity
+        )
 
         self.assertEqual(orig_private, retrieved_private)
         self.assertEqual(orig_public, retrieved_public)
 
     def test_get_public_key_only(self):
         """Test retrieving only public key."""
-        orig_private, orig_public = self.key_manager.generate_identity_keypair(self.test_identity)
+        orig_private, orig_public = self.key_manager.generate_identity_keypair(
+            self.test_identity
+        )
 
         public_key = self.key_manager.get_public_key(self.test_identity)
         self.assertEqual(orig_public, public_key)
@@ -61,23 +75,33 @@ class TestKeyManager(unittest.TestCase):
         """Test key derivation."""
         self.key_manager.generate_identity_keypair(self.test_identity)
 
-        derived_key1 = self.key_manager.derive_encryption_key(self.test_identity, "proof_encryption")
-        derived_key2 = self.key_manager.derive_encryption_key(self.test_identity, "storage")
+        derived_key1 = self.key_manager.derive_encryption_key(
+            self.test_identity, "proof_encryption"
+        )
+        derived_key2 = self.key_manager.derive_encryption_key(
+            self.test_identity, "storage"
+        )
 
         self.assertIsInstance(derived_key1, bytes)
         self.assertIsInstance(derived_key2, bytes)
         self.assertEqual(len(derived_key1), 32)
         self.assertEqual(len(derived_key2), 32)
-        self.assertNotEqual(derived_key1, derived_key2)  # Different purposes should yield different keys
+        self.assertNotEqual(
+            derived_key1, derived_key2
+        )  # Different purposes should yield different keys
 
         # Same purpose should yield same key
-        derived_key1_again = self.key_manager.derive_encryption_key(self.test_identity, "proof_encryption")
+        derived_key1_again = self.key_manager.derive_encryption_key(
+            self.test_identity, "proof_encryption"
+        )
         self.assertEqual(derived_key1, derived_key1_again)
 
     def test_key_rotation(self):
         """Test key rotation."""
         # Generate initial keys
-        old_private, old_public = self.key_manager.generate_identity_keypair(self.test_identity)
+        old_private, old_public = self.key_manager.generate_identity_keypair(
+            self.test_identity
+        )
 
         # Rotate keys
         new_private, new_public = self.key_manager.rotate_keys(self.test_identity)
@@ -86,7 +110,9 @@ class TestKeyManager(unittest.TestCase):
         self.assertNotEqual(old_public, new_public)
 
         # Verify new keys are active
-        current_private, current_public = self.key_manager.get_identity_keys(self.test_identity)
+        current_private, current_public = self.key_manager.get_identity_keys(
+            self.test_identity
+        )
         self.assertEqual(new_private, current_private)
         self.assertEqual(new_public, current_public)
 
@@ -95,12 +121,14 @@ class TestKeyManager(unittest.TestCase):
         identities = ["user1", "user2", "user3"]
 
         for identity in identities:
-            self.key_manager.generate_identity_keypair(identity, {"test": f"metadata_{identity}"})
+            self.key_manager.generate_identity_keypair(
+                identity, {"test": f"metadata_{identity}"}
+            )
 
         listed_identities = self.key_manager.list_identities()
         self.assertEqual(len(listed_identities), 3)
 
-        identity_ids = [identity['identity_id'] for identity in listed_identities]
+        identity_ids = [identity["identity_id"] for identity in listed_identities]
         for identity in identities:
             self.assertIn(identity, identity_ids)
 
@@ -139,14 +167,15 @@ class TestEncryptedKeyStore(unittest.TestCase):
         self.storage = EncryptedKeyStore(self.temp_dir)
         self.master_password = b"test_master_password"
         self.test_key_data = {
-            'private_key': b'x' * 32,
-            'public_key': b'y' * 64,
-            'metadata': {'test': 'data'}
+            "private_key": b"x" * 32,
+            "public_key": b"y" * 64,
+            "metadata": {"test": "data"},
         }
 
     def tearDown(self):
         """Clean up test fixtures."""
         import shutil
+
         shutil.rmtree(self.temp_dir, ignore_errors=True)
 
     def test_store_and_load_encrypted_key(self):
@@ -154,7 +183,9 @@ class TestEncryptedKeyStore(unittest.TestCase):
         key_id = "test_key"
 
         # Store key
-        result = self.storage.store_key(key_id, self.test_key_data, self.master_password)
+        result = self.storage.store_key(
+            key_id, self.test_key_data, self.master_password
+        )
         self.assertTrue(result)
 
         # Load key
@@ -210,6 +241,7 @@ class TestKeyRotationManager(unittest.TestCase):
     def tearDown(self):
         """Clean up test fixtures."""
         import shutil
+
         shutil.rmtree(self.temp_dir, ignore_errors=True)
 
     def test_rotation_policy(self):
@@ -217,13 +249,15 @@ class TestKeyRotationManager(unittest.TestCase):
         self.key_manager.generate_identity_keypair(self.test_identity)
 
         # Set rotation policy
-        self.rotation_manager.set_rotation_policy(self.test_identity, max_age_days=30, auto_rotate=True)
+        self.rotation_manager.set_rotation_policy(
+            self.test_identity, max_age_days=30, auto_rotate=True
+        )
 
         # Check rotation status
         status = self.rotation_manager.get_rotation_status()
         self.assertIn(self.test_identity, status)
-        self.assertEqual(status[self.test_identity]['max_age_days'], 30)
-        self.assertTrue(status[self.test_identity]['auto_rotate'])
+        self.assertEqual(status[self.test_identity]["max_age_days"], 30)
+        self.assertTrue(status[self.test_identity]["auto_rotate"])
 
     def test_rotation_needed_check(self):
         """Test rotation needed check."""
@@ -242,7 +276,7 @@ class TestKeyDerivation(unittest.TestCase):
 
     def test_hkdf_derivation(self):
         """Test HKDF key derivation."""
-        master_key = b'x' * 32
+        master_key = b"x" * 32
         purpose = "test_purpose"
 
         derived_key = KeyDerivation.derive_key_hkdf(master_key, purpose)
@@ -300,11 +334,14 @@ class TestKeyBackup(unittest.TestCase):
         # Create test identities
         self.identities = ["user1", "user2", "user3"]
         for identity in self.identities:
-            self.key_manager.generate_identity_keypair(identity, {"test": f"metadata_{identity}"})
+            self.key_manager.generate_identity_keypair(
+                identity, {"test": f"metadata_{identity}"}
+            )
 
     def tearDown(self):
         """Clean up test fixtures."""
         import shutil
+
         shutil.rmtree(self.temp_dir, ignore_errors=True)
 
     def test_create_backup(self):
@@ -314,7 +351,7 @@ class TestKeyBackup(unittest.TestCase):
         backup_path = self.backup.create_backup(self.key_manager, backup_password)
 
         self.assertTrue(os.path.exists(backup_path))
-        self.assertTrue(backup_path.endswith('.cbk'))
+        self.assertTrue(backup_path.endswith(".cbk"))
 
     def test_verify_backup(self):
         """Test backup verification."""
@@ -323,9 +360,9 @@ class TestKeyBackup(unittest.TestCase):
         backup_path = self.backup.create_backup(self.key_manager, backup_password)
         info = self.backup.verify_backup(backup_path, backup_password)
 
-        self.assertTrue(info['valid'])
-        self.assertEqual(info['total_identities'], len(self.identities))
-        self.assertEqual(set(info['identities']), set(self.identities))
+        self.assertTrue(info["valid"])
+        self.assertEqual(info["total_identities"], len(self.identities))
+        self.assertEqual(set(info["identities"]), set(self.identities))
 
     def test_restore_backup(self):
         """Test restoring from backup."""
@@ -357,12 +394,14 @@ class TestKeyBackup(unittest.TestCase):
 
         # Create multiple backups
         backup_path1 = self.backup.create_backup(self.key_manager, backup_password)
-        backup_path2 = self.backup.create_backup(self.key_manager, backup_password, ["user1"])
+        backup_path2 = self.backup.create_backup(
+            self.key_manager, backup_password, ["user1"]
+        )
 
         backups = self.backup.list_backups()
         self.assertEqual(len(backups), 2)
 
-        backup_paths = [backup['path'] for backup in backups]
+        backup_paths = [backup["path"] for backup in backups]
         self.assertIn(backup_path1, backup_paths)
         self.assertIn(backup_path2, backup_paths)
 

@@ -14,7 +14,12 @@ import pytest_asyncio
 import websockets
 
 from tessera.network.async_node import AsyncDecentralizedNode
-from tessera.network.decentralized import NodeType, Subscription, make_routing_fields, compute_bucket
+from tessera.network.decentralized import (
+    NodeType,
+    Subscription,
+    make_routing_fields,
+    compute_bucket,
+)
 from tessera.network.ws_server import NodeWebSocketServer
 
 
@@ -48,8 +53,9 @@ async def test_subscribe_route_fetch(ws_node):
     async with websockets.connect(uri) as ws:
         # Subscribe using the canonical Subscription serialization.
         sub = Subscription(commitment, linked_orgs=["test-org"]).to_dict()
-        resp = await _roundtrip(ws, {"type": "subscribe",
-                                     "subscriber_id": "dev-1", "subscription": sub})
+        resp = await _roundtrip(
+            ws, {"type": "subscribe", "subscriber_id": "dev-1", "subscription": sub}
+        )
         assert resp["type"] == "subscribed"
 
         # Route a proof produced with the canonical routing fields.

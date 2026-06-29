@@ -25,6 +25,6 @@ flutter:
     platforms:
       android:
         package: com.tessera.flutter
-        pluginClass: CallDnsFlutterPlugin
+        pluginClass: TesseraFlutterPlugin
       ios:
-        pluginClass: CallDnsFlutterPlugin
+        pluginClass: TesseraFlutterPlugin

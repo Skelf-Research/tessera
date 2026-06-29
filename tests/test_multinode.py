@@ -65,7 +65,8 @@ async def test_proof_gossips_to_peer_subscriber(cluster):
 
     # Subscriber exists ONLY on node B.
     await cluster["B"].node.register_subscription(
-        "sub-on-B", Subscription(commitment, linked_orgs=["org"]).to_dict())
+        "sub-on-B", Subscription(commitment, linked_orgs=["org"]).to_dict()
+    )
 
     # Proof is submitted to node A (which has no local subscriber for it).
     proof = {**make_routing_fields(commitment), "org_hint": "org"}

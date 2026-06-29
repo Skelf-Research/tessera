@@ -102,7 +102,7 @@ class TestJWTValidator:
             "iss": "test-bank",
             "exp": datetime.datetime.utcnow() + datetime.timedelta(hours=1),
             "iat": datetime.datetime.utcnow(),
-            "scope": ["register", "verify"]
+            "scope": ["register", "verify"],
         }
         token = jwt.encode(payload, secret, algorithm="HS256")
 
@@ -124,7 +124,7 @@ class TestJWTValidator:
         payload = {
             "sub": "customer-123",
             "exp": datetime.datetime.utcnow() - datetime.timedelta(hours=1),
-            "iat": datetime.datetime.utcnow() - datetime.timedelta(hours=2)
+            "iat": datetime.datetime.utcnow() - datetime.timedelta(hours=2),
         }
         token = jwt.encode(payload, secret, algorithm="HS256")
 
@@ -142,7 +142,7 @@ class TestJWTValidator:
         # Create token with different secret
         payload = {
             "sub": "customer-123",
-            "exp": datetime.datetime.utcnow() + datetime.timedelta(hours=1)
+            "exp": datetime.datetime.utcnow() + datetime.timedelta(hours=1),
         }
         token = jwt.encode(payload, "wrong-secret", algorithm="HS256")
 
@@ -171,9 +171,11 @@ class TestAuthenticationIntegration:
         node.node_id = "test-node"
         node.node_type = MagicMock()
         node.node_type.value = "org"
+
         # Make get_stats an async function
         async def async_stats():
             return {"node_id": "test-node"}
+
         node.get_stats = async_stats
         return node
 
@@ -182,13 +184,17 @@ class TestAuthenticationIntegration:
         """Create mock commitment storage."""
         storage = MagicMock()
         storage.get_commitment.return_value = None
+
         # Make register_commitment an async function
         async def async_register(**kwargs):
             return {"status": "registered", "customer_id": kwargs.get("customer_id")}
+
         storage.register_commitment = async_register
         return storage
 
-    def test_api_requires_jwt_for_org_endpoints(self, mock_node, mock_commitment_storage):
+    def test_api_requires_jwt_for_org_endpoints(
+        self, mock_node, mock_commitment_storage
+    ):
         """Org node endpoints should require JWT when configured."""
         from tessera.network.embedded_api import create_embedded_api
         from fastapi.testclient import TestClient
@@ -197,7 +203,7 @@ class TestAuthenticationIntegration:
             node=mock_node,
             commitment_storage=mock_commitment_storage,
             jwt_secret="test-secret",
-            rate_limit_rpm=60
+            rate_limit_rpm=60,
         )
         client = TestClient(app)
 
@@ -207,8 +213,8 @@ class TestAuthenticationIntegration:
             json={
                 "customer_id": "cust-123",
                 "commitment": "abc123",
-                "device_id": "device-1"
-            }
+                "device_id": "device-1",
+            },
         )
         assert response.status_code == 401
 
@@ -217,10 +223,7 @@ class TestAuthenticationIntegration:
         from tessera.network.embedded_api import create_embedded_api
         from fastapi.testclient import TestClient
 
-        app = create_embedded_api(
-            node=mock_node,
-            rate_limit_rpm=60
-        )
+        app = create_embedded_api(node=mock_node, rate_limit_rpm=60)
         client = TestClient(app)
 
         # Make many requests quickly
@@ -246,7 +249,7 @@ class TestAuthenticationIntegration:
             node=mock_node,
             commitment_storage=mock_commitment_storage,
             jwt_secret=secret,
-            rate_limit_rpm=1000
+            rate_limit_rpm=1000,
         )
         client = TestClient(app)
 
@@ -254,7 +257,7 @@ class TestAuthenticationIntegration:
         payload = {
             "sub": "customer-123",
             "exp": datetime.datetime.utcnow() + datetime.timedelta(hours=1),
-            "scope": ["register"]
+            "scope": ["register"],
         }
         token = jwt.encode(payload, secret, algorithm="HS256")
 
@@ -266,9 +269,9 @@ class TestAuthenticationIntegration:
             json={
                 "customer_id": "cust-123",
                 "commitment": "abc123",
-                "device_id": "device-1"
+                "device_id": "device-1",
             },
-            headers={"Authorization": f"Bearer {token}"}
+            headers={"Authorization": f"Bearer {token}"},
         )
 
         # Should not be 401

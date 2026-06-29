@@ -11,8 +11,11 @@ from pathlib import Path
 from unittest.mock import Mock, patch
 
 from tessera.logging import (
-    TesseraLogger, SecurityLogger, MetricsCollector,
-    SecurityMonitor, PerformanceMonitor
+    TesseraLogger,
+    SecurityLogger,
+    MetricsCollector,
+    SecurityMonitor,
+    PerformanceMonitor,
 )
 
 
@@ -27,6 +30,7 @@ class TestTesseraLogger(unittest.TestCase):
     def tearDown(self):
         """Clean up test fixtures."""
         import shutil
+
         shutil.rmtree(self.temp_dir, ignore_errors=True)
 
     def test_basic_logging(self):
@@ -40,7 +44,7 @@ class TestTesseraLogger(unittest.TestCase):
         self.assertTrue(log_file.exists())
 
         # Check log content
-        with open(log_file, 'r') as f:
+        with open(log_file, "r") as f:
             log_content = f.read()
             self.assertIn("Test info message", log_content)
             self.assertIn("Test warning", log_content)
@@ -48,10 +52,12 @@ class TestTesseraLogger(unittest.TestCase):
 
     def test_sensitive_data_sanitization(self):
         """Test that sensitive data is sanitized in logs."""
-        self.logger.info("Login attempt", private_key="secret123", password="password123")
+        self.logger.info(
+            "Login attempt", private_key="secret123", password="password123"
+        )
 
         log_file = Path(self.temp_dir) / "test_logger.log"
-        with open(log_file, 'r') as f:
+        with open(log_file, "r") as f:
             log_content = f.read()
             # Should not contain actual sensitive values
             self.assertNotIn("secret123", log_content)
@@ -86,6 +92,7 @@ class TestSecurityLogger(unittest.TestCase):
     def tearDown(self):
         """Clean up test fixtures."""
         import shutil
+
         shutil.rmtree(self.temp_dir, ignore_errors=True)
 
     def test_authentication_logging(self):
@@ -97,31 +104,31 @@ class TestSecurityLogger(unittest.TestCase):
         events = self.security_logger.get_recent_events("authentication", 1)
         self.assertEqual(len(events), 2)
 
-        success_event = [e for e in events if e['success']][0]
-        self.assertEqual(success_event['identity_id'], "user123")
-        self.assertEqual(success_event['remote_addr'], "192.168.1.1")
+        success_event = [e for e in events if e["success"]][0]
+        self.assertEqual(success_event["identity_id"], "user123")
+        self.assertEqual(success_event["remote_addr"], "192.168.1.1")
 
     def test_proof_generation_logging(self):
         """Test proof generation event logging."""
         metadata = {"call_type": "voice", "duration": 120}
-        self.security_logger.log_proof_generation("caller123", "voice_call", metadata)
+        self.security_logger.log_proof_generation("sender123", "voice_call", metadata)
 
         events = self.security_logger.get_recent_events("proof_generation", 1)
         self.assertEqual(len(events), 1)
-        self.assertEqual(events[0]['identity_id'], "caller123")
-        self.assertEqual(events[0]['proof_type'], "voice_call")
+        self.assertEqual(events[0]["identity_id"], "sender123")
+        self.assertEqual(events[0]["proof_type"], "voice_call")
 
     def test_proof_verification_logging(self):
         """Test proof verification event logging."""
-        self.security_logger.log_proof_verification("verifier123", True, "caller456")
-        self.security_logger.log_proof_verification("verifier456", False, "caller789")
+        self.security_logger.log_proof_verification("verifier123", True, "sender456")
+        self.security_logger.log_proof_verification("verifier456", False, "sender789")
 
         events = self.security_logger.get_recent_events("proof_verification", 1)
         self.assertEqual(len(events), 2)
 
-        failed_event = [e for e in events if not e['proof_valid']][0]
-        self.assertEqual(failed_event['verifier_id'], "verifier456")
-        self.assertEqual(failed_event['sender_id'], "caller789")
+        failed_event = [e for e in events if not e["proof_valid"]][0]
+        self.assertEqual(failed_event["verifier_id"], "verifier456")
+        self.assertEqual(failed_event["sender_id"], "sender789")
 
     def test_security_violation_logging(self):
         """Test security violation logging."""
@@ -130,25 +137,25 @@ class TestSecurityLogger(unittest.TestCase):
 
         events = self.security_logger.get_recent_events("security_violation", 1)
         self.assertEqual(len(events), 1)
-        self.assertEqual(events[0]['violation_type'], "brute_force")
-        self.assertEqual(events[0]['severity'], "high")
+        self.assertEqual(events[0]["violation_type"], "brute_force")
+        self.assertEqual(events[0]["severity"], "high")
 
     def test_security_summary(self):
         """Test security summary generation."""
         # Generate various events
         self.security_logger.log_authentication("user1", True)
         self.security_logger.log_authentication("user2", False)
-        self.security_logger.log_proof_generation("caller1", "voice")
+        self.security_logger.log_proof_generation("sender1", "voice")
         self.security_logger.log_proof_verification("verifier1", True)
         self.security_logger.log_security_violation("test_violation", {})
 
         summary = self.security_logger.get_security_summary(24)
-        self.assertEqual(summary['total_events'], 5)
-        self.assertEqual(summary['authentication_attempts'], 2)
-        self.assertEqual(summary['failed_authentications'], 1)
-        self.assertEqual(summary['proof_generations'], 1)
-        self.assertEqual(summary['proof_verifications'], 1)
-        self.assertEqual(summary['security_violations'], 1)
+        self.assertEqual(summary["total_events"], 5)
+        self.assertEqual(summary["authentication_attempts"], 2)
+        self.assertEqual(summary["failed_authentications"], 1)
+        self.assertEqual(summary["proof_generations"], 1)
+        self.assertEqual(summary["proof_verifications"], 1)
+        self.assertEqual(summary["security_violations"], 1)
 
 
 class TestMetricsCollector(unittest.TestCase):
@@ -162,6 +169,7 @@ class TestMetricsCollector(unittest.TestCase):
     def tearDown(self):
         """Clean up test fixtures."""
         import shutil
+
         shutil.rmtree(self.temp_dir, ignore_errors=True)
 
     def test_proof_metrics(self):
@@ -173,13 +181,13 @@ class TestMetricsCollector(unittest.TestCase):
         self.metrics.record_proof_verification(0.3, False)
 
         summary = self.metrics.get_metrics_summary()
-        proof_metrics = summary['proof_metrics']
+        proof_metrics = summary["proof_metrics"]
 
-        self.assertEqual(proof_metrics['total_generated'], 2)
-        self.assertEqual(proof_metrics['total_verified'], 2)
-        self.assertEqual(proof_metrics['successful_verifications'], 1)
-        self.assertEqual(proof_metrics['failed_verifications'], 1)
-        self.assertAlmostEqual(proof_metrics['avg_generation_time'], 0.6, places=1)
+        self.assertEqual(proof_metrics["total_generated"], 2)
+        self.assertEqual(proof_metrics["total_verified"], 2)
+        self.assertEqual(proof_metrics["successful_verifications"], 1)
+        self.assertEqual(proof_metrics["failed_verifications"], 1)
+        self.assertAlmostEqual(proof_metrics["avg_generation_time"], 0.6, places=1)
 
     def test_network_metrics(self):
         """Test network operation metrics."""
@@ -188,46 +196,46 @@ class TestMetricsCollector(unittest.TestCase):
         self.metrics.record_network_request(0.5, False, 0)
 
         summary = self.metrics.get_metrics_summary()
-        network_metrics = summary['network_metrics']
+        network_metrics = summary["network_metrics"]
 
-        self.assertEqual(network_metrics['total_requests'], 3)
-        self.assertEqual(network_metrics['successful_requests'], 2)
-        self.assertEqual(network_metrics['failed_requests'], 1)
-        self.assertEqual(network_metrics['total_bandwidth_bytes'], 3072)
+        self.assertEqual(network_metrics["total_requests"], 3)
+        self.assertEqual(network_metrics["successful_requests"], 2)
+        self.assertEqual(network_metrics["failed_requests"], 1)
+        self.assertEqual(network_metrics["total_bandwidth_bytes"], 3072)
 
     def test_key_metrics(self):
         """Test key operation metrics."""
-        self.metrics.record_key_operation('generation', 0.1, True)
-        self.metrics.record_key_operation('rotation', 0.2, True)
-        self.metrics.record_key_operation('backup', 0.3, True)
+        self.metrics.record_key_operation("generation", 0.1, True)
+        self.metrics.record_key_operation("rotation", 0.2, True)
+        self.metrics.record_key_operation("backup", 0.3, True)
 
         summary = self.metrics.get_metrics_summary()
-        key_metrics = summary['key_metrics']
+        key_metrics = summary["key_metrics"]
 
-        self.assertEqual(key_metrics['total_keys_generated'], 1)
-        self.assertEqual(key_metrics['total_keys_rotated'], 1)
-        self.assertEqual(key_metrics['total_backups_created'], 1)
+        self.assertEqual(key_metrics["total_keys_generated"], 1)
+        self.assertEqual(key_metrics["total_keys_rotated"], 1)
+        self.assertEqual(key_metrics["total_backups_created"], 1)
 
     def test_custom_metrics(self):
         """Test custom metrics functionality."""
-        self.metrics.increment_custom_metric('api_calls')
-        self.metrics.increment_custom_metric('api_calls', 5)
-        self.metrics.set_custom_metric('cache_hits', 100)
+        self.metrics.increment_custom_metric("api_calls")
+        self.metrics.increment_custom_metric("api_calls", 5)
+        self.metrics.set_custom_metric("cache_hits", 100)
 
         summary = self.metrics.get_metrics_summary()
-        custom_metrics = summary['custom_metrics']
+        custom_metrics = summary["custom_metrics"]
 
-        self.assertEqual(custom_metrics['api_calls'], 6)
-        self.assertEqual(custom_metrics['cache_hits'], 100)
+        self.assertEqual(custom_metrics["api_calls"], 6)
+        self.assertEqual(custom_metrics["cache_hits"], 100)
 
     def test_time_series_data(self):
         """Test time series data collection."""
-        self.metrics.record_custom_time_series('cpu_usage', 75.5)
-        self.metrics.record_custom_time_series('memory_usage', 60.2)
+        self.metrics.record_custom_time_series("cpu_usage", 75.5)
+        self.metrics.record_custom_time_series("memory_usage", 60.2)
 
-        time_series = self.metrics.get_time_series('cpu_usage', 1)
+        time_series = self.metrics.get_time_series("cpu_usage", 1)
         self.assertEqual(len(time_series), 1)
-        self.assertEqual(time_series[0]['value'], 75.5)
+        self.assertEqual(time_series[0]["value"], 75.5)
 
     def test_performance_report(self):
         """Test performance report generation."""
@@ -237,10 +245,10 @@ class TestMetricsCollector(unittest.TestCase):
         self.metrics.record_network_request(1.0, True, 1024)
 
         report = self.metrics.get_performance_report(24)
-        self.assertIn('proof_performance', report)
-        self.assertIn('network_performance', report)
-        self.assertEqual(report['proof_performance']['total_generations'], 1)
-        self.assertEqual(report['network_performance']['total_requests'], 1)
+        self.assertIn("proof_performance", report)
+        self.assertIn("network_performance", report)
+        self.assertEqual(report["proof_performance"]["total_generations"], 1)
+        self.assertEqual(report["network_performance"]["total_requests"], 1)
 
 
 class TestSecurityMonitor(unittest.TestCase):
@@ -256,6 +264,7 @@ class TestSecurityMonitor(unittest.TestCase):
     def tearDown(self):
         """Clean up test fixtures."""
         import shutil
+
         shutil.rmtree(self.temp_dir, ignore_errors=True)
         self.monitor.stop_monitoring()
 
@@ -270,7 +279,7 @@ class TestSecurityMonitor(unittest.TestCase):
         self.assertGreater(len(violations), 0)
 
         violation = violations[0]
-        self.assertEqual(violation['violation_type'], 'excessive_auth_failures')
+        self.assertEqual(violation["violation_type"], "excessive_auth_failures")
 
     def test_verification_failure_tracking(self):
         """Test verification failure tracking."""
@@ -280,7 +289,11 @@ class TestSecurityMonitor(unittest.TestCase):
 
         # Should trigger security violation alert
         violations = self.security_logger.get_recent_events("security_violation", 1)
-        violation = [v for v in violations if v['violation_type'] == 'excessive_verification_failures']
+        violation = [
+            v
+            for v in violations
+            if v["violation_type"] == "excessive_verification_failures"
+        ]
         self.assertGreater(len(violation), 0)
 
     def test_request_pattern_tracking(self):
@@ -291,7 +304,9 @@ class TestSecurityMonitor(unittest.TestCase):
 
         # Should trigger rate limiting violation
         violations = self.security_logger.get_recent_events("security_violation", 1)
-        rate_limit_violations = [v for v in violations if v['violation_type'] == 'rate_limit_exceeded']
+        rate_limit_violations = [
+            v for v in violations if v["violation_type"] == "rate_limit_exceeded"
+        ]
         self.assertGreater(len(rate_limit_violations), 0)
 
     def test_security_status(self):
@@ -301,8 +316,8 @@ class TestSecurityMonitor(unittest.TestCase):
         self.monitor.track_verification_failure("verifier1")
 
         status = self.monitor.get_security_status()
-        self.assertTrue(status['active_monitoring'])
-        self.assertGreaterEqual(status['tracked_identities'], 1)
+        self.assertTrue(status["active_monitoring"])
+        self.assertGreaterEqual(status["tracked_identities"], 1)
 
 
 class TestPerformanceMonitor(unittest.TestCase):
@@ -320,19 +335,21 @@ class TestPerformanceMonitor(unittest.TestCase):
     def tearDown(self):
         """Clean up test fixtures."""
         import shutil
+
         shutil.rmtree(self.temp_dir, ignore_errors=True)
         self.monitor.stop_monitoring()
 
     def test_health_check_addition(self):
         """Test adding custom health checks."""
+
         def mock_health_check():
             return True
 
         self.monitor.add_health_check("test_check", mock_health_check, critical=True)
 
         health = self.monitor.get_system_health()
-        self.assertIn("test_check", health['health_checks'])
-        self.assertTrue(health['health_checks']['test_check']['status'])
+        self.assertIn("test_check", health["health_checks"])
+        self.assertTrue(health["health_checks"]["test_check"]["status"])
 
     def test_alert_creation_and_management(self):
         """Test alert creation and management."""
@@ -365,6 +382,7 @@ class TestPerformanceMonitor(unittest.TestCase):
 
     def test_system_health_reporting(self):
         """Test system health reporting."""
+
         def healthy_check():
             return True
 
@@ -375,9 +393,11 @@ class TestPerformanceMonitor(unittest.TestCase):
         self.monitor.add_health_check("unhealthy", unhealthy_check, critical=True)
 
         health = self.monitor.get_system_health()
-        self.assertFalse(health['overall_healthy'])  # Should be false due to critical failure
-        self.assertIn('healthy', health['health_checks'])
-        self.assertIn('unhealthy', health['health_checks'])
+        self.assertFalse(
+            health["overall_healthy"]
+        )  # Should be false due to critical failure
+        self.assertIn("healthy", health["health_checks"])
+        self.assertIn("unhealthy", health["health_checks"])
 
 
 if __name__ == "__main__":

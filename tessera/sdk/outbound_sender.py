@@ -14,8 +14,9 @@ from .device_registration import DeviceRegistration
 
 
 @dataclass
-class OutboundCallProof:
-    """Proof generated for an outbound call."""
+class OutboundDeliveryProof:
+    """Proof generated for an outbound delivery."""
+
     proof_id: str
     commitment: str
     bucket: int
@@ -26,89 +27,85 @@ class OutboundCallProof:
     ttl: int = 300  # 5 minutes default
 
 
-class OutboundCaller:
+class OutboundSender:
     """
-    Handles outbound call verification where customer proves identity to organization.
+    Handles outbound delivery verification where customer proves identity to organization.
 
     Flow:
-    1. Customer taps "Verified Call" button in app
+    1. Customer taps "Verified Delivery" button in app
     2. SDK generates proof and broadcasts to network
-    3. Customer places call (via dialer)
+    3. Customer places delivery (via app)
     4. Organization's contact center verifies proof
     """
 
     def __init__(
         self,
         core_node_url: str,
-        device_registration: Optional[DeviceRegistration] = None
+        device_registration: Optional[DeviceRegistration] = None,
     ):
         self.core_node_url = core_node_url
         self.sender = Sender()
         self.device_registration = device_registration
-        self._pending_proofs: Dict[str, OutboundCallProof] = {}
+        self._pending_proofs: Dict[str, OutboundDeliveryProof] = {}
 
-    async def prepare_verified_call(
+    async def prepare_verified_delivery(
         self,
         destination_id: str,
         destination_commitment: bytes,
-        metadata: Optional[Dict[str, Any]] = None
-    ) -> OutboundCallProof:
+        metadata: Optional[Dict[str, Any]] = None,
+    ) -> OutboundDeliveryProof:
         """
-        Prepare a verified outbound call.
+        Prepare a verified outbound delivery.
 
         Args:
             destination_id: Organization identifier (e.g., "natwest-uk")
             destination_commitment: Organization's reception commitment
-            metadata: Optional call metadata (purpose, account hint, etc.)
+            metadata: Optional delivery metadata (purpose, account hint, etc.)
 
         Returns:
-            OutboundCallProof ready for broadcast
+            OutboundDeliveryProof ready for broadcast
         """
         # Generate base proof
-        call_metadata = {
+        delivery_metadata = {
             "direction": "outbound",
             "destination": destination_id,
             "timestamp": int(time.time()),
-            **(metadata or {})
+            **(metadata or {}),
         }
 
-        proof = self.sender.generate_call_proof(call_metadata)
+        proof = self.sender.generate_call_proof(delivery_metadata)
 
         # Encrypt for destination
-        encrypted = self.sender.encrypt_proof_for_callee(
-            proof,
-            destination_commitment,
-            call_metadata
+        encrypted = self.sender.encrypt_proof_for_recipient(
+            proof, destination_commitment, delivery_metadata
         )
 
         # Calculate bucket for routing
-        bucket = int.from_bytes(destination_commitment[:2], 'big') % 64
+        bucket = int.from_bytes(destination_commitment[:2], "big") % 64
 
         # Generate proof ID
         proof_id = hashlib.sha256(
             f"{encrypted['ciphertext'][:32]}{time.time()}".encode()
         ).hexdigest()[:16]
 
-        outbound_proof = OutboundCallProof(
+        outbound_proof = OutboundDeliveryProof(
             proof_id=proof_id,
             commitment=destination_commitment.hex(),
             bucket=bucket,
-            ciphertext=encrypted['ciphertext'],
-            fingerprint=encrypted['bloom_fingerprint'],
+            ciphertext=encrypted["ciphertext"],
+            fingerprint=encrypted["bloom_fingerprint"],
             destination=destination_id,
-            timestamp=int(time.time())
+            timestamp=int(time.time()),
         )
 
         self._pending_proofs[proof_id] = outbound_proof
         return outbound_proof
 
-    async def broadcast_and_call(
-        self,
-        proof: OutboundCallProof,
-        phone_number: str
+    async def broadcast_and_deliver(
+        self, proof: OutboundDeliveryProof, phone_number: str
     ) -> Dict[str, Any]:
         """
-        Broadcast proof to network then initiate call.
+        Broadcast proof to network then initiate delivery.
 
         Args:
             proof: The prepared outbound proof
@@ -132,10 +129,10 @@ class OutboundCaller:
                         "ciphertext": proof.ciphertext,
                         "commitment_id": proof.commitment,
                         "timestamp": proof.timestamp,
-                        "ttl": proof.ttl
+                        "ttl": proof.ttl,
                     },
-                    "decoys": 3
-                }
+                    "decoys": 3,
+                },
             ) as resp:
                 broadcast_result = await resp.json()
 
@@ -143,43 +140,38 @@ class OutboundCaller:
             "status": "ready_to_dial",
             "proof_id": proof.proof_id,
             "broadcast": broadcast_result,
-            "dial": {
-                "phone_number": phone_number,
-                "intent": f"tel:{phone_number}"
-            },
-            "verification_window": proof.ttl
+            "dial": {"phone_number": phone_number, "intent": f"tel:{phone_number}"},
+            "verification_window": proof.ttl,
         }
 
-    async def quick_verified_call(
+    async def quick_verified_delivery(
         self,
         destination_id: str,
         destination_commitment: bytes,
         phone_number: str,
-        metadata: Optional[Dict[str, Any]] = None
+        metadata: Optional[Dict[str, Any]] = None,
     ) -> Dict[str, Any]:
         """
-        One-step verified call - prepare, broadcast, and return dial intent.
+        One-step verified delivery - prepare, broadcast, and return dial intent.
 
-        This is the main method for the "Verified Call" button UX.
+        This is the main method for the "Verified Delivery" button UX.
 
         Args:
             destination_id: Organization identifier
-            destination_commitment: Organization's commitment
+            destination_commitment: Organization commitment
             phone_number: Phone number to dial
-            metadata: Optional call metadata
+            metadata: Optional delivery metadata
 
         Returns:
             Result with dial intent and verification status
         """
-        proof = await self.prepare_verified_call(
-            destination_id,
-            destination_commitment,
-            metadata
+        proof = await self.prepare_verified_delivery(
+            destination_id, destination_commitment, metadata
         )
 
-        return await self.broadcast_and_call(proof, phone_number)
+        return await self.broadcast_and_deliver(proof, phone_number)
 
-    def get_pending_proof(self, proof_id: str) -> Optional[OutboundCallProof]:
+    def get_pending_proof(self, proof_id: str) -> Optional[OutboundDeliveryProof]:
         """Get a pending proof by ID."""
         return self._pending_proofs.get(proof_id)
 
@@ -187,7 +179,8 @@ class OutboundCaller:
         """Remove expired pending proofs."""
         now = int(time.time())
         expired = [
-            pid for pid, proof in self._pending_proofs.items()
+            pid
+            for pid, proof in self._pending_proofs.items()
             if now - proof.timestamp > proof.ttl
         ]
         for pid in expired:
@@ -196,25 +189,22 @@ class OutboundCaller:
 
 class ContactCenterVerifier:
     """
-    Verifier for organization contact centers to verify incoming customer calls.
+    Verifier for organization contact centers to verify incoming customer deliveries.
 
-    Integrates with the org's node to look up proofs by sender commitment.
+    Integrates with the org node to look up proofs by sender commitment.
     """
 
     def __init__(self, org_node_url: str):
         self.org_node_url = org_node_url
 
-    async def verify_incoming_caller(
-        self,
-        caller_commitment: str,
-        sender_id: Optional[str] = None,
-        timeout: int = 30
+    async def verify_incoming_sender(
+        self, sender_commitment: str, sender_id: Optional[str] = None, timeout: int = 30
     ) -> Dict[str, Any]:
         """
         Verify an incoming sender against broadcast proofs.
 
         Args:
-            caller_commitment: The sender's commitment (from customer record)
+            sender_commitment: The sender's commitment (from customer record)
             sender_id: Optional sender ID for additional matching
             timeout: How long to wait for proof (seconds)
 
@@ -233,9 +223,9 @@ class ContactCenterVerifier:
                 async with session.get(
                     lookup_url,
                     params={
-                        "commitment": caller_commitment,
-                        "since": int(start_time - 300)  # Last 5 minutes
-                    }
+                        "commitment": sender_commitment,
+                        "since": int(start_time - 300),  # Last 5 minutes
+                    },
                 ) as resp:
                     if resp.status == 200:
                         data = await resp.json()
@@ -244,10 +234,10 @@ class ContactCenterVerifier:
                             proof = data["proofs"][0]
                             return {
                                 "verified": True,
-                                "caller_commitment": caller_commitment,
+                                "sender_commitment": sender_commitment,
                                 "proof_timestamp": proof.get("timestamp"),
                                 "metadata": proof.get("metadata", {}),
-                                "confidence": "high"
+                                "confidence": "high",
                             }
 
                 # Wait and retry
@@ -256,15 +246,12 @@ class ContactCenterVerifier:
         # No proof found within timeout
         return {
             "verified": False,
-            "caller_commitment": caller_commitment,
+            "sender_commitment": sender_commitment,
             "reason": "no_proof_found",
-            "confidence": "none"
+            "confidence": "none",
         }
 
-    async def lookup_customer_commitment(
-        self,
-        customer_id: str
-    ) -> Optional[str]:
+    async def lookup_customer_commitment(self, customer_id: str) -> Optional[str]:
         """
         Look up a customer's commitment from the org's registration database.
 

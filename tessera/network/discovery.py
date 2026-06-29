@@ -14,6 +14,7 @@ from dataclasses import dataclass, field
 @dataclass
 class PeerInfo:
     """Information about a peer node."""
+
     peer_id: str
     host: str
     port: int
@@ -29,7 +30,7 @@ class PeerInfo:
             "port": self.port,
             "node_type": self.node_type,
             "last_seen": self.last_seen,
-            "connected": self.connected
+            "connected": self.connected,
         }
 
 
@@ -45,11 +46,7 @@ class NodeDiscovery:
     """
 
     def __init__(
-        self,
-        node_id: str,
-        node_type: str,
-        max_peers: int = 50,
-        min_peers: int = 3
+        self, node_id: str, node_type: str, max_peers: int = 50, min_peers: int = 3
     ):
         self.node_id = node_id
         self.node_type = node_type
@@ -73,14 +70,11 @@ class NodeDiscovery:
         self._connect_callback = connect_fn
         self._disconnect_callback = disconnect_fn
 
-    def add_seed_node(self, peer_id: str, host: str, port: int, node_type: str = "core"):
+    def add_seed_node(
+        self, peer_id: str, host: str, port: int, node_type: str = "core"
+    ):
         """Add a seed node for initial bootstrap."""
-        peer = PeerInfo(
-            peer_id=peer_id,
-            host=host,
-            port=port,
-            node_type=node_type
-        )
+        peer = PeerInfo(peer_id=peer_id, host=host, port=port, node_type=node_type)
         self.seed_nodes.append(peer)
         self.peers[peer_id] = peer
 
@@ -95,10 +89,7 @@ class NodeDiscovery:
 
         if peer_id not in self.peers:
             self.peers[peer_id] = PeerInfo(
-                peer_id=peer_id,
-                host=host,
-                port=port,
-                node_type=node_type
+                peer_id=peer_id, host=host, port=port, node_type=node_type
             )
             return True
         else:
@@ -134,18 +125,13 @@ class NodeDiscovery:
 
     def get_disconnected_peers(self) -> List[PeerInfo]:
         """Get list of disconnected peers to try connecting."""
-        return [
-            p for p in self.peers.values()
-            if not p.connected and p.failures < 5
-        ]
+        return [p for p in self.peers.values() if not p.connected and p.failures < 5]
 
     def get_peers_for_exchange(self, limit: int = 10) -> List[dict]:
         """Get peer list for peer exchange protocol."""
         # Prefer recently seen, connected peers
         peers = sorted(
-            self.peers.values(),
-            key=lambda p: (p.connected, p.last_seen),
-            reverse=True
+            self.peers.values(), key=lambda p: (p.connected, p.last_seen), reverse=True
         )
         return [p.to_dict() for p in peers[:limit]]
 
@@ -158,7 +144,7 @@ class NodeDiscovery:
                     peer_id=peer_id,
                     host=peer_data.get("host", ""),
                     port=peer_data.get("port", 0),
-                    node_type=peer_data.get("node_type", "unknown")
+                    node_type=peer_data.get("node_type", "unknown"),
                 )
 
     def _prune_worst_peer(self):
@@ -231,9 +217,7 @@ class NodeDiscovery:
             if self._connect_callback:
                 try:
                     success = await self._connect_callback(
-                        seed.peer_id,
-                        seed.host,
-                        seed.port
+                        seed.peer_id, seed.host, seed.port
                     )
                     if success:
                         self.mark_connected(seed.peer_id)
@@ -256,9 +240,7 @@ class NodeDiscovery:
             if self._connect_callback:
                 try:
                     success = await self._connect_callback(
-                        peer.peer_id,
-                        peer.host,
-                        peer.port
+                        peer.peer_id, peer.host, peer.port
                     )
                     if success:
                         self.mark_connected(peer.peer_id)
@@ -287,7 +269,7 @@ class NodeDiscovery:
             "connected_peers": len(self.get_connected_peers()),
             "seed_nodes": len(self.seed_nodes),
             "max_peers": self.max_peers,
-            "min_peers": self.min_peers
+            "min_peers": self.min_peers,
         }
 
 
@@ -328,9 +310,7 @@ class SeedNodeRegistry:
 
 
 def create_discovery_for_network(
-    node_id: str,
-    node_type: str,
-    network: str = "mainnet"
+    node_id: str, node_type: str, network: str = "mainnet"
 ) -> NodeDiscovery:
     """Create a NodeDiscovery instance configured for a network."""
     discovery = NodeDiscovery(node_id, node_type)
@@ -338,9 +318,7 @@ def create_discovery_for_network(
     seeds = SeedNodeRegistry.get_seeds(network)
     for seed in seeds:
         discovery.add_seed_node(
-            peer_id=seed["peer_id"],
-            host=seed["host"],
-            port=seed["port"]
+            peer_id=seed["peer_id"], host=seed["host"], port=seed["port"]
         )
 
     return discovery

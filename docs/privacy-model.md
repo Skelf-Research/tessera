@@ -1,8 +1,7 @@
 # Privacy Model
 
 Tessera composes three independent privacy mechanisms. The formal guarantees
-live in the paper (`../../tessera-paper-msg/spec/metadata_privacy.md`,
-`formal/security_proofs.md`); this page is the engineer-facing summary.
+live in [`../research.md`](../research.md); this page is the engineer-facing summary.
 
 ## Adversaries we defend against
 
@@ -20,8 +19,7 @@ the sender's device and the recipient runs the verifier honestly).
 ## Mechanism 1 — sender authentication without witness leak
 
 Schnorr / Fiat–Shamir in the ROM gives perfect honest-verifier zero-knowledge
-on the witness `x` (Theorem 2 in
-[`../../tessera-paper-msg/formal/security_proofs.md`](../../tessera-paper-msg/formal/security_proofs.md)).
+on the witness `x` (Theorem 2 in [`../research.md`](../research.md)).
 The proof `π = (R, s)` reveals nothing about `x` beyond the truth of
 "`∃ x: Y = xG`", and `Y` itself is the per-recipient blinded pseudonym `Y'`,
 not the long-term key.
@@ -115,5 +113,4 @@ Tessera has 0 leaks and 0 gaps.
 
 - [`authentication.md`](authentication.md) — the per-recipient pseudonym mechanism.
 - [`commitment-registration.md`](commitment-registration.md) — replay defence.
-- [`../../tessera-paper-msg/spec/metadata_privacy.md`](../../tessera-paper-msg/spec/metadata_privacy.md)
-  — full DP proof.
+- [`../research.md`](../research.md) — full DP proof.

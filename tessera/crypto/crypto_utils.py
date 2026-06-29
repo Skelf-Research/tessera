@@ -18,42 +18,42 @@ from ..utils.validation import InputValidator
 
 class CryptoUtils:
     """Utility class for cryptographic operations."""
-    
+
     @staticmethod
     def generate_keypair():
         """Generate a key pair using SECP256k1."""
         private_key = ecdsa.SigningKey.generate(curve=SECP256k1)
         public_key = private_key.get_verifying_key()
-        
+
         # Get private key value as integer
-        private_int = int.from_bytes(private_key.to_string(), 'big')
+        private_int = int.from_bytes(private_key.to_string(), "big")
         public_bytes = public_key.to_string()
-        
+
         return private_int, public_bytes, private_key
-    
+
     @staticmethod
     def hash_data(*args):
         """Hash multiple data elements together."""
         hasher = hashlib.sha256()
         for data in args:
             if isinstance(data, str):
-                hasher.update(data.encode('utf-8'))
+                hasher.update(data.encode("utf-8"))
             elif isinstance(data, bytes):
                 hasher.update(data)
             elif isinstance(data, int):
-                hasher.update(data.to_bytes(32, byteorder='big'))
+                hasher.update(data.to_bytes(32, byteorder="big"))
             else:
-                hasher.update(str(data).encode('utf-8'))
+                hasher.update(str(data).encode("utf-8"))
         return hasher.digest()
 
 
 class ZKProver:
     """Implements Schnorr-based zero-knowledge proof generation."""
-    
+
     def __init__(self):
         self.curve = SECP256k1
         self.order = SECP256k1.order
-    
+
     def generate_proof(self, private_key_int, public_key_bytes, metadata=None):
         """
         Generate a Schnorr zero-knowledge proof.
@@ -72,7 +72,9 @@ class ZKProver:
         try:
             # Validate inputs
             if not isinstance(private_key_int, int) or private_key_int <= 0:
-                raise ProofError("Invalid private key: must be positive integer", "generation")
+                raise ProofError(
+                    "Invalid private key: must be positive integer", "generation"
+                )
 
             if private_key_int >= self.order:
                 raise ProofError("Private key out of valid range", "generation")
@@ -92,16 +94,16 @@ class ZKProver:
             # Compute challenge c = H(R || Y || metadata)
             c_hash = CryptoUtils.hash_data(R, public_key_bytes, metadata or "")
             # Convert hash to integer mod order
-            c = int.from_bytes(c_hash, byteorder='big') % self.order
+            c = int.from_bytes(c_hash, byteorder="big") % self.order
 
             # Compute response s = r + c*x mod q
             s = (r + c * private_key_int) % self.order
 
             return {
-                'R': R,
-                's': s,
-                'public_key': public_key_bytes,
-                'metadata': metadata
+                "R": R,
+                "s": s,
+                "public_key": public_key_bytes,
+                "metadata": metadata,
             }
 
         except Exception as e:
@@ -112,11 +114,11 @@ class ZKProver:
 
 class ZKVerifier:
     """Implements Schnorr-based zero-knowledge proof verification."""
-    
+
     def __init__(self):
         self.curve = SECP256k1
         self.order = SECP256k1.order
-    
+
     def verify_proof(self, proof):
         """
         Verify a Schnorr zero-knowledge proof.
@@ -134,10 +136,10 @@ class ZKVerifier:
             # Validate proof structure
             validated_proof = InputValidator.validate_proof_structure(proof)
 
-            R = validated_proof['R']
-            s = validated_proof['s']
-            Y = validated_proof['public_key']
-            metadata = validated_proof.get('metadata', "")
+            R = validated_proof["R"]
+            s = validated_proof["s"]
+            Y = validated_proof["public_key"]
+            metadata = validated_proof.get("metadata", "")
 
             # Additional validation for elliptic curve operations
             # Support both 64-byte and 65-byte formats
@@ -152,27 +154,27 @@ class ZKVerifier:
                 if len(R) == 65:  # Uncompressed with prefix
                     R_point = ecdsa.ellipticcurve.Point(
                         self.curve.curve,
-                        int.from_bytes(R[1:33], 'big'),  # Skip prefix byte
-                        int.from_bytes(R[33:], 'big')
+                        int.from_bytes(R[1:33], "big"),  # Skip prefix byte
+                        int.from_bytes(R[33:], "big"),
                     )
                 else:  # 64-byte format
                     R_point = ecdsa.ellipticcurve.Point(
                         self.curve.curve,
-                        int.from_bytes(R[:32], 'big'),
-                        int.from_bytes(R[32:], 'big')
+                        int.from_bytes(R[:32], "big"),
+                        int.from_bytes(R[32:], "big"),
                     )
 
                 if len(Y) == 65:  # Uncompressed with prefix
                     Y_point = ecdsa.ellipticcurve.Point(
                         self.curve.curve,
-                        int.from_bytes(Y[1:33], 'big'),
-                        int.from_bytes(Y[33:], 'big')
+                        int.from_bytes(Y[1:33], "big"),
+                        int.from_bytes(Y[33:], "big"),
                     )
                 else:  # 64-byte format
                     Y_point = ecdsa.ellipticcurve.Point(
                         self.curve.curve,
-                        int.from_bytes(Y[:32], 'big'),
-                        int.from_bytes(Y[32:], 'big')
+                        int.from_bytes(Y[:32], "big"),
+                        int.from_bytes(Y[32:], "big"),
                     )
             except Exception:
                 # Invalid point coordinates
@@ -184,7 +186,7 @@ class ZKVerifier:
 
             # Compute challenge c = H(R || Y || metadata)
             c_hash = CryptoUtils.hash_data(R, Y, metadata or "")
-            c = int.from_bytes(c_hash, byteorder='big') % self.order
+            c = int.from_bytes(c_hash, byteorder="big") % self.order
 
             # Compute g^s
             gs_point = self.curve.generator * s
@@ -195,9 +197,7 @@ class ZKVerifier:
             # Compute R' = g^s * Y^(-c)
             # Y^(-c) is the negation of Y^c
             Y_neg_c_point = ecdsa.ellipticcurve.Point(
-                self.curve.curve,
-                Yc_point.x(),
-                -Yc_point.y() % self.curve.curve.p()
+                self.curve.curve, Yc_point.x(), -Yc_point.y() % self.curve.curve.p()
             )
 
             # R' = g^s * Y^(-c)
@@ -264,9 +264,9 @@ class SecureEncryption:
             ciphertext = aesgcm.encrypt(nonce, plaintext, additional_data)
 
             return {
-                'nonce': nonce,
-                'ciphertext': ciphertext,
-                'additional_data': additional_data
+                "nonce": nonce,
+                "ciphertext": ciphertext,
+                "additional_data": additional_data,
             }
 
         except Exception as e:
@@ -292,19 +292,23 @@ class SecureEncryption:
         try:
             # Validate inputs
             if not isinstance(encrypted_data, dict):
-                raise EncryptionError("Encrypted data must be a dictionary", "validation")
+                raise EncryptionError(
+                    "Encrypted data must be a dictionary", "validation"
+                )
 
             if not isinstance(key, bytes):
                 raise EncryptionError("Key must be bytes", "validation")
 
-            required_fields = ['nonce', 'ciphertext']
+            required_fields = ["nonce", "ciphertext"]
             for field in required_fields:
                 if field not in encrypted_data:
-                    raise EncryptionError(f"Missing required field: {field}", "validation")
+                    raise EncryptionError(
+                        f"Missing required field: {field}", "validation"
+                    )
 
-            nonce = encrypted_data['nonce']
-            ciphertext = encrypted_data['ciphertext']
-            additional_data = encrypted_data.get('additional_data', b"")
+            nonce = encrypted_data["nonce"]
+            ciphertext = encrypted_data["ciphertext"]
+            additional_data = encrypted_data.get("additional_data", b"")
 
             # Validate field types
             if not isinstance(nonce, bytes):
@@ -318,7 +322,9 @@ class SecureEncryption:
 
             # Validate nonce length for GCM
             if len(nonce) != 12:
-                raise EncryptionError(f"Invalid nonce length: {len(nonce)} (expected 12)", "validation")
+                raise EncryptionError(
+                    f"Invalid nonce length: {len(nonce)} (expected 12)", "validation"
+                )
 
             if len(ciphertext) == 0:
                 raise EncryptionError("Ciphertext cannot be empty", "validation")
@@ -336,7 +342,9 @@ class SecureEncryption:
             return plaintext
 
         except InvalidTag:
-            raise EncryptionError("Authentication failed: data may have been tampered with", "decrypt")
+            raise EncryptionError(
+                "Authentication failed: data may have been tampered with", "decrypt"
+            )
         except Exception as e:
             if isinstance(e, EncryptionError):
                 raise

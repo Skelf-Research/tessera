@@ -37,7 +37,9 @@ class KeyManager:
         self._cache_expiry: Dict[str, float] = {}
         self._cache_ttl = 3600  # 1 hour cache TTL
 
-    def generate_identity_keypair(self, identity_id: str, metadata: dict = None) -> Tuple[bytes, bytes]:
+    def generate_identity_keypair(
+        self, identity_id: str, metadata: dict = None
+    ) -> Tuple[bytes, bytes]:
         """
         Generate a new identity keypair.
 
@@ -53,13 +55,18 @@ class KeyManager:
         """
         try:
             # Validate identity ID
-            identity_id = InputValidator.sanitize_string(identity_id, 100, "identity_id")
+            identity_id = InputValidator.sanitize_string(
+                identity_id, 100, "identity_id"
+            )
 
             if self.key_exists(identity_id):
-                raise IdentityError(f"Identity {identity_id} already exists", "generation")
+                raise IdentityError(
+                    f"Identity {identity_id} already exists", "generation"
+                )
 
             # Generate cryptographically secure keypair
             from ecdsa import SigningKey, SECP256k1
+
             private_key = SigningKey.generate(curve=SECP256k1)
             public_key = private_key.get_verifying_key()
 
@@ -69,14 +76,14 @@ class KeyManager:
 
             # Prepare key entry
             key_entry = {
-                'private_key': private_key_bytes,
-                'public_key': public_key_bytes,
-                'created_at': int(time.time()),
-                'key_type': 'identity',
-                'algorithm': 'ECDSA-SECP256k1',
-                'metadata': metadata or {},
-                'version': 1,
-                'status': 'active'
+                "private_key": private_key_bytes,
+                "public_key": public_key_bytes,
+                "created_at": int(time.time()),
+                "key_type": "identity",
+                "algorithm": "ECDSA-SECP256k1",
+                "metadata": metadata or {},
+                "version": 1,
+                "status": "active",
             }
 
             # Store securely
@@ -87,7 +94,9 @@ class KeyManager:
         except Exception as e:
             if isinstance(e, IdentityError):
                 raise
-            raise IdentityError(f"Failed to generate identity keypair: {e}", "generation")
+            raise IdentityError(
+                f"Failed to generate identity keypair: {e}", "generation"
+            )
 
     def get_identity_keys(self, identity_id: str) -> Optional[Tuple[bytes, bytes]]:
         """
@@ -103,12 +112,14 @@ class KeyManager:
             IdentityError: If key retrieval fails
         """
         try:
-            identity_id = InputValidator.sanitize_string(identity_id, 100, "identity_id")
+            identity_id = InputValidator.sanitize_string(
+                identity_id, 100, "identity_id"
+            )
 
             # Check cache first
             if self._is_cached(identity_id):
                 key_entry = self._key_cache[identity_id]
-                return key_entry['private_key'], key_entry['public_key']
+                return key_entry["private_key"], key_entry["public_key"]
 
             # Load from storage
             key_entry = self._load_key(identity_id)
@@ -116,16 +127,18 @@ class KeyManager:
                 return None
 
             # Validate key entry
-            if key_entry['key_type'] != 'identity':
-                raise IdentityError(f"Key {identity_id} is not an identity key", "retrieval")
+            if key_entry["key_type"] != "identity":
+                raise IdentityError(
+                    f"Key {identity_id} is not an identity key", "retrieval"
+                )
 
-            if key_entry['status'] != 'active':
+            if key_entry["status"] != "active":
                 raise IdentityError(f"Key {identity_id} is not active", "retrieval")
 
             # Cache the key
             self._cache_key(identity_id, key_entry)
 
-            return key_entry['private_key'], key_entry['public_key']
+            return key_entry["private_key"], key_entry["public_key"]
 
         except Exception as e:
             if isinstance(e, IdentityError):
@@ -145,7 +158,9 @@ class KeyManager:
         keys = self.get_identity_keys(identity_id)
         return keys[1] if keys else None
 
-    def derive_encryption_key(self, identity_id: str, purpose: str, salt: bytes = None) -> bytes:
+    def derive_encryption_key(
+        self, identity_id: str, purpose: str, salt: bytes = None
+    ) -> bytes:
         """
         Derive an encryption key from identity key for specific purpose.
 
@@ -186,7 +201,9 @@ class KeyManager:
                 raise
             raise IdentityError(f"Failed to derive encryption key: {e}", "derivation")
 
-    def rotate_keys(self, identity_id: str, keep_backup: bool = True) -> Tuple[bytes, bytes]:
+    def rotate_keys(
+        self, identity_id: str, keep_backup: bool = True
+    ) -> Tuple[bytes, bytes]:
         """
         Rotate keys for an identity.
 
@@ -209,13 +226,13 @@ class KeyManager:
             # Create backup if requested
             if keep_backup:
                 backup_id = f"{identity_id}.backup.{int(time.time())}"
-                old_key_entry['status'] = 'backup'
+                old_key_entry["status"] = "backup"
                 self._store_key(backup_id, old_key_entry)
 
             # Generate new keypair
-            metadata = old_key_entry.get('metadata', {})
-            metadata['rotated_from'] = identity_id
-            metadata['rotation_time'] = int(time.time())
+            metadata = old_key_entry.get("metadata", {})
+            metadata["rotated_from"] = identity_id
+            metadata["rotation_time"] = int(time.time())
 
             # Remove old key from cache and storage
             self._invalidate_cache(identity_id)
@@ -246,18 +263,20 @@ class KeyManager:
         try:
             identities = []
             for key_id in self.storage.list_keys():
-                if '.backup.' in key_id:
+                if ".backup." in key_id:
                     continue  # Skip backup keys
 
                 key_entry = self._load_key(key_id)
-                if key_entry and key_entry.get('key_type') == 'identity':
-                    identities.append({
-                        'identity_id': key_id,
-                        'created_at': key_entry.get('created_at'),
-                        'algorithm': key_entry.get('algorithm'),
-                        'status': key_entry.get('status'),
-                        'metadata': key_entry.get('metadata', {})
-                    })
+                if key_entry and key_entry.get("key_type") == "identity":
+                    identities.append(
+                        {
+                            "identity_id": key_id,
+                            "created_at": key_entry.get("created_at"),
+                            "algorithm": key_entry.get("algorithm"),
+                            "status": key_entry.get("status"),
+                            "metadata": key_entry.get("metadata", {}),
+                        }
+                    )
 
             return identities
 
@@ -283,8 +302,10 @@ class KeyManager:
             if not key_entry:
                 return False
 
-            if key_entry.get('status') == 'active' and not force:
-                raise IdentityError("Cannot delete active identity without force=True", "deletion")
+            if key_entry.get("status") == "active" and not force:
+                raise IdentityError(
+                    "Cannot delete active identity without force=True", "deletion"
+                )
 
             # Remove from cache
             self._invalidate_cache(identity_id)
@@ -312,9 +333,11 @@ class KeyManager:
 
     def _is_cached(self, key_id: str) -> bool:
         """Check if a key is cached and not expired."""
-        return (key_id in self._key_cache and
-                key_id in self._cache_expiry and
-                time.time() < self._cache_expiry[key_id])
+        return (
+            key_id in self._key_cache
+            and key_id in self._cache_expiry
+            and time.time() < self._cache_expiry[key_id]
+        )
 
     def _invalidate_cache(self, key_id: str):
         """Remove a key from cache."""
@@ -325,7 +348,8 @@ class KeyManager:
         """Remove expired entries from cache."""
         current_time = time.time()
         expired_keys = [
-            key_id for key_id, expiry in self._cache_expiry.items()
+            key_id
+            for key_id, expiry in self._cache_expiry.items()
             if current_time >= expiry
         ]
         for key_id in expired_keys:
@@ -341,8 +365,9 @@ class KeyRotationManager:
         self.key_manager = key_manager
         self.rotation_policies: Dict[str, dict] = {}
 
-    def set_rotation_policy(self, identity_id: str, max_age_days: int,
-                          auto_rotate: bool = False):
+    def set_rotation_policy(
+        self, identity_id: str, max_age_days: int, auto_rotate: bool = False
+    ):
         """
         Set rotation policy for an identity.
 
@@ -352,9 +377,9 @@ class KeyRotationManager:
             auto_rotate: Whether to automatically rotate when threshold is reached
         """
         self.rotation_policies[identity_id] = {
-            'max_age_days': max_age_days,
-            'auto_rotate': auto_rotate,
-            'last_check': int(time.time())
+            "max_age_days": max_age_days,
+            "auto_rotate": auto_rotate,
+            "last_check": int(time.time()),
         }
 
     def check_rotation_needed(self, identity_id: str) -> bool:
@@ -371,13 +396,13 @@ class KeyRotationManager:
             return False
 
         policy = self.rotation_policies[identity_id]
-        max_age_seconds = policy['max_age_days'] * 24 * 3600
+        max_age_seconds = policy["max_age_days"] * 24 * 3600
 
         key_entry = self.key_manager._load_key(identity_id)
         if not key_entry:
             return False
 
-        key_age = int(time.time()) - key_entry.get('created_at', 0)
+        key_age = int(time.time()) - key_entry.get("created_at", 0)
         return key_age >= max_age_seconds
 
     def rotate_if_needed(self, identity_id: str) -> bool:
@@ -394,12 +419,12 @@ class KeyRotationManager:
             return False
 
         policy = self.rotation_policies.get(identity_id, {})
-        if not policy.get('auto_rotate', False):
+        if not policy.get("auto_rotate", False):
             return False
 
         try:
             self.key_manager.rotate_keys(identity_id)
-            policy['last_check'] = int(time.time())
+            policy["last_check"] = int(time.time())
             return True
         except Exception:
             return False
@@ -417,11 +442,15 @@ class KeyRotationManager:
             key_entry = self.key_manager._load_key(identity_id)
 
             status[identity_id] = {
-                'needs_rotation': needs_rotation,
-                'auto_rotate': policy.get('auto_rotate', False),
-                'max_age_days': policy.get('max_age_days'),
-                'key_age_days': (int(time.time()) - key_entry.get('created_at', 0)) // (24 * 3600) if key_entry else None,
-                'last_check': policy.get('last_check')
+                "needs_rotation": needs_rotation,
+                "auto_rotate": policy.get("auto_rotate", False),
+                "max_age_days": policy.get("max_age_days"),
+                "key_age_days": (
+                    (int(time.time()) - key_entry.get("created_at", 0)) // (24 * 3600)
+                    if key_entry
+                    else None
+                ),
+                "last_check": policy.get("last_check"),
             }
 
         return status

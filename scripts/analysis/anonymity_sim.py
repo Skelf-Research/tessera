@@ -34,8 +34,8 @@ from pathlib import Path
 
 from tessera.network.decentralized import BloomFilter
 
-PAPER = Path(__file__).resolve().parents[3] / "tessera-paper-msg"
-DEFAULT_RESULTS = PAPER / "results"
+RESULTS_DIR = Path(__file__).resolve().parents[2] / "results"
+DEFAULT_RESULTS = RESULTS_DIR
 
 
 def bucket_of(commitment: bytes, num_buckets: int) -> int:
@@ -83,23 +83,31 @@ def bloom_fpr_empirical(m_bits, k_hashes, n_items, trials):
 
 
 def run(args):
-    bucket_rows = [bucket_anonymity(n, args.num_buckets, args.k_threshold)
-                   for n in args.user_sweep]
+    bucket_rows = [
+        bucket_anonymity(n, args.num_buckets, args.k_threshold) for n in args.user_sweep
+    ]
 
     # Real subscription params: m=1024 bits, k=3, n ~ time_window/10 = 60 fingerprints.
     real = {"m_bits": 1024, "k_hashes": 3, "n_items": 60}
-    real["analytic_fpr"] = analytic_fpr(**{k: real[k] for k in ("m_bits", "k_hashes", "n_items")})
-    real["empirical_fpr"] = bloom_fpr_empirical(real["m_bits"], real["k_hashes"],
-                                                real["n_items"], args.fpr_trials)
+    real["analytic_fpr"] = analytic_fpr(
+        **{k: real[k] for k in ("m_bits", "k_hashes", "n_items")}
+    )
+    real["empirical_fpr"] = bloom_fpr_empirical(
+        real["m_bits"], real["k_hashes"], real["n_items"], args.fpr_trials
+    )
 
     fpr_sweep = []
     for m in [512, 1024, 2048, 4096]:
         for n in [30, 60, 120]:
-            fpr_sweep.append({
-                "m_bits": m, "k_hashes": 3, "n_items": n,
-                "analytic_fpr": analytic_fpr(m, 3, n),
-                "empirical_fpr": bloom_fpr_empirical(m, 3, n, args.fpr_trials),
-            })
+            fpr_sweep.append(
+                {
+                    "m_bits": m,
+                    "k_hashes": 3,
+                    "n_items": n,
+                    "analytic_fpr": analytic_fpr(m, 3, n),
+                    "empirical_fpr": bloom_fpr_empirical(m, 3, n, args.fpr_trials),
+                }
+            )
 
     return {
         "experiment": "E2_anonymity",
@@ -118,24 +126,32 @@ def run(args):
 def print_report(r):
     print("\nE2 — bucket k-anonymity (B = %d)" % r["params"]["num_buckets"])
     print("=" * 78)
-    print(f"{'users':>9}{'E[/bucket]':>12}{'min':>7}{'p5':>7}{'median':>8}{'max':>7}"
-          f"{'<k frac':>10}")
+    print(
+        f"{'users':>9}{'E[/bucket]':>12}{'min':>7}{'p5':>7}{'median':>8}{'max':>7}"
+        f"{'<k frac':>10}"
+    )
     print("-" * 78)
     for row in r["bucket_anonymity"]:
-        print(f"{row['num_users']:>9}{row['expected_per_bucket']:>12.1f}"
-              f"{row['min_anonymity_set']:>7}{row['p5_anonymity_set']:>7}"
-              f"{row['median_anonymity_set']:>8}{row['max_anonymity_set']:>7}"
-              f"{row['frac_buckets_below_threshold']:>10.2f}")
+        print(
+            f"{row['num_users']:>9}{row['expected_per_bucket']:>12.1f}"
+            f"{row['min_anonymity_set']:>7}{row['p5_anonymity_set']:>7}"
+            f"{row['median_anonymity_set']:>8}{row['max_anonymity_set']:>7}"
+            f"{row['frac_buckets_below_threshold']:>10.2f}"
+        )
     print("-" * 78)
     rp = r["bloom_real_params"]
-    print(f"\nBloom FPR @ real params (m={rp['m_bits']} bits, k={rp['k_hashes']}, "
-          f"n={rp['n_items']}): analytic={rp['analytic_fpr']:.4f}, "
-          f"empirical={rp['empirical_fpr']:.4f}")
+    print(
+        f"\nBloom FPR @ real params (m={rp['m_bits']} bits, k={rp['k_hashes']}, "
+        f"n={rp['n_items']}): analytic={rp['analytic_fpr']:.4f}, "
+        f"empirical={rp['empirical_fpr']:.4f}"
+    )
     print("\nBloom FPR sweep (k=3):")
     print(f"{'m_bits':>8}{'n_items':>9}{'analytic':>11}{'empirical':>11}")
     for s in r["bloom_fpr_sweep"]:
-        print(f"{s['m_bits']:>8}{s['n_items']:>9}{s['analytic_fpr']:>11.4f}"
-              f"{s['empirical_fpr']:>11.4f}")
+        print(
+            f"{s['m_bits']:>8}{s['n_items']:>9}{s['analytic_fpr']:>11.4f}"
+            f"{s['empirical_fpr']:>11.4f}"
+        )
 
 
 def write_outputs(r):
@@ -143,12 +159,29 @@ def write_outputs(r):
     (DEFAULT_RESULTS / "e2_anonymity.json").write_text(json.dumps(r, indent=2))
     with (DEFAULT_RESULTS / "e2_bucket_anonymity.csv").open("w", newline="") as f:
         w = csv.writer(f)
-        w.writerow(["num_users", "expected_per_bucket", "min", "p5", "median", "max",
-                    "frac_below_threshold"])
+        w.writerow(
+            [
+                "num_users",
+                "expected_per_bucket",
+                "min",
+                "p5",
+                "median",
+                "max",
+                "frac_below_threshold",
+            ]
+        )
         for row in r["bucket_anonymity"]:
-            w.writerow([row["num_users"], row["expected_per_bucket"], row["min_anonymity_set"],
-                        row["p5_anonymity_set"], row["median_anonymity_set"],
-                        row["max_anonymity_set"], row["frac_buckets_below_threshold"]])
+            w.writerow(
+                [
+                    row["num_users"],
+                    row["expected_per_bucket"],
+                    row["min_anonymity_set"],
+                    row["p5_anonymity_set"],
+                    row["median_anonymity_set"],
+                    row["max_anonymity_set"],
+                    row["frac_buckets_below_threshold"],
+                ]
+            )
     print(f"\nwrote {DEFAULT_RESULTS / 'e2_anonymity.json'}")
 
 
@@ -156,8 +189,9 @@ def main():
     ap = argparse.ArgumentParser(description="Tessera spatial-anonymity analysis (E2)")
     ap.add_argument("--num-buckets", type=int, default=64)
     ap.add_argument("--k-threshold", type=int, default=20)
-    ap.add_argument("--user-sweep", type=int, nargs="+",
-                    default=[1000, 10000, 50000, 100000])
+    ap.add_argument(
+        "--user-sweep", type=int, nargs="+", default=[1000, 10000, 50000, 100000]
+    )
     ap.add_argument("--fpr-trials", type=int, default=50000)
     args = ap.parse_args()
 

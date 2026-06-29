@@ -14,7 +14,10 @@ import tempfile
 import shutil
 from pathlib import Path
 
-from tessera.network.async_node import AsyncDecentralizedNode, AsyncPrivacyPreservingBroadcaster
+from tessera.network.async_node import (
+    AsyncDecentralizedNode,
+    AsyncPrivacyPreservingBroadcaster,
+)
 from tessera.network.decentralized import NodeType, Subscription, make_routing_fields
 
 
@@ -32,7 +35,7 @@ async def core_node(temp_data_dir):
     node = AsyncDecentralizedNode(
         node_id="test-core-1",
         node_type=NodeType.CORE,
-        data_dir=f"{temp_data_dir}/core1"
+        data_dir=f"{temp_data_dir}/core1",
     )
     await node.initialize()
     yield node
@@ -45,7 +48,7 @@ async def org_node(temp_data_dir):
     node = AsyncDecentralizedNode(
         node_id="test-org-1",
         node_type=NodeType.ORGANIZATION,
-        data_dir=f"{temp_data_dir}/org1"
+        data_dir=f"{temp_data_dir}/org1",
     )
     await node.initialize()
     yield node
@@ -58,7 +61,7 @@ async def customer_node(temp_data_dir):
     node = AsyncDecentralizedNode(
         node_id="test-customer-1",
         node_type=NodeType.CUSTOMER,
-        data_dir=f"{temp_data_dir}/customer1"
+        data_dir=f"{temp_data_dir}/customer1",
     )
     await node.initialize()
     yield node
@@ -268,7 +271,7 @@ class TestNodePersistence:
         node1 = AsyncDecentralizedNode(
             node_id="persist-test",
             node_type=NodeType.CORE,
-            data_dir=f"{temp_data_dir}/persist"
+            data_dir=f"{temp_data_dir}/persist",
         )
         await node1.initialize()
 
@@ -282,7 +285,7 @@ class TestNodePersistence:
         node2 = AsyncDecentralizedNode(
             node_id="persist-test",
             node_type=NodeType.CORE,
-            data_dir=f"{temp_data_dir}/persist"
+            data_dir=f"{temp_data_dir}/persist",
         )
         await node2.initialize()
 
@@ -345,7 +348,7 @@ class TestEndToEndFlow:
         core = AsyncDecentralizedNode(
             node_id="e2e-core",
             node_type=NodeType.CORE,
-            data_dir=f"{temp_data_dir}/e2e-core"
+            data_dir=f"{temp_data_dir}/e2e-core",
         )
         await core.initialize()
 
@@ -376,7 +379,7 @@ class TestEndToEndFlow:
         core = AsyncDecentralizedNode(
             node_id="multidev-core",
             node_type=NodeType.CORE,
-            data_dir=f"{temp_data_dir}/multidev-core"
+            data_dir=f"{temp_data_dir}/multidev-core",
         )
         await core.initialize()
 

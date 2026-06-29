@@ -3,14 +3,14 @@
 E3 — Traffic-analysis linkability simulation for Tessera cover traffic.
 
 Validates the metadata-privacy guarantee of Workstream C
-(see ../tessera-paper-msg/spec/metadata_privacy.md).
+(see docs/privacy-model.md and research.md).
 
 Adversary (worst case, the DP assumption): a global passive observer who knows every
-other input and must decide a single bit — did the *target* user place a call into a
+other input and must decide a single bit — did the *target* user place a delivery into a
 given bucket this round? It observes only the per-bucket message count C_b.
 
-  world0: target did NOT call  -> observable  C = R + D
-  world1: target DID call      -> observable  C = R + 1 + D
+  world0: target did NOT deliver  -> observable  C = R + D
+  world1: target DID deliver      -> observable  C = R + 1 + D
   (R = all other real proofs in the bucket; D = cover/dummy proofs)
 
 Because R is identical in both worlds, it cancels from the optimal test, so the
@@ -39,9 +39,9 @@ from pathlib import Path
 
 from tessera.sdk.traffic_manager import DPCoverTraffic
 
-PAPER = Path(__file__).resolve().parents[3] / "tessera-paper-msg"
-DEFAULT_RESULTS = PAPER / "results"
-DEFAULT_FIGURES = PAPER / "figures"
+RESULTS_DIR = Path(__file__).resolve().parents[2] / "results"
+DEFAULT_RESULTS = RESULTS_DIR
+DEFAULT_FIGURES = RESULTS_DIR / "figures"
 
 
 def auc_mann_whitney(world1, world0):
@@ -97,12 +97,24 @@ def run(args):
     rows = []
 
     # Baselines (deterministic under a knows-R adversary -> total break).
-    rows.append({"policy": "none", "epsilon": None, "empirical_auc": 1.0,
-                 "overhead_per_round": 0.0})
-    rows.append({"policy": "proportional", "epsilon": None, "rho": args.rho,
-                 "empirical_auc": 1.0,
-                 "overhead_per_round": args.rho * args.background_load * args.num_buckets,
-                 "note": "deterministic given R -> no privacy"})
+    rows.append(
+        {
+            "policy": "none",
+            "epsilon": None,
+            "empirical_auc": 1.0,
+            "overhead_per_round": 0.0,
+        }
+    )
+    rows.append(
+        {
+            "policy": "proportional",
+            "epsilon": None,
+            "rho": args.rho,
+            "empirical_auc": 1.0,
+            "overhead_per_round": args.rho * args.background_load * args.num_buckets,
+            "note": "deterministic given R -> no privacy",
+        }
+    )
 
     for eps in args.epsilons:
         rows.append(simulate_dp(eps, args.delta, args.num_buckets, args.samples, rng))
@@ -125,16 +137,22 @@ def run(args):
 def print_table(results):
     print("\nE3 — adversary linking power vs cover-traffic policy")
     print("=" * 74)
-    print(f"{'policy':<14}{'epsilon':>9}{'AUC':>10}{'AUC ceil':>10}{'overhead/round':>18}")
+    print(
+        f"{'policy':<14}{'epsilon':>9}{'AUC':>10}{'AUC ceil':>10}{'overhead/round':>18}"
+    )
     print("-" * 74)
     for r in results["rows"]:
         eps = "" if r.get("epsilon") is None else f"{r['epsilon']:.2f}"
         ceil = r.get("auc_ceiling_from_eps")
         ceil_s = "" if ceil is None else f"{ceil:.3f}"
-        print(f"{r['policy']:<14}{eps:>9}{r['empirical_auc']:>10.3f}{ceil_s:>10}"
-              f"{r['overhead_per_round']:>18.1f}")
+        print(
+            f"{r['policy']:<14}{eps:>9}{r['empirical_auc']:>10.3f}{ceil_s:>10}"
+            f"{r['overhead_per_round']:>18.1f}"
+        )
     print("-" * 74)
-    print("AUC 0.5 = adversary has no advantage (ideal); 1.0 = perfect linking (total break).")
+    print(
+        "AUC 0.5 = adversary has no advantage (ideal); 1.0 = perfect linking (total break)."
+    )
 
 
 def write_outputs(results, args):
@@ -143,10 +161,19 @@ def write_outputs(results, args):
     csv_path = DEFAULT_RESULTS / "e3_linkability.csv"
     with csv_path.open("w", newline="") as f:
         w = csv.writer(f)
-        w.writerow(["policy", "epsilon", "empirical_auc", "auc_ceiling", "overhead_per_round"])
+        w.writerow(
+            ["policy", "epsilon", "empirical_auc", "auc_ceiling", "overhead_per_round"]
+        )
         for r in results["rows"]:
-            w.writerow([r["policy"], r.get("epsilon", ""), r["empirical_auc"],
-                        r.get("auc_ceiling_from_eps", ""), r.get("overhead_per_round", "")])
+            w.writerow(
+                [
+                    r["policy"],
+                    r.get("epsilon", ""),
+                    r["empirical_auc"],
+                    r.get("auc_ceiling_from_eps", ""),
+                    r.get("overhead_per_round", ""),
+                ]
+            )
     print(f"\nwrote {DEFAULT_RESULTS / 'e3_linkability.json'}")
     print(f"wrote {csv_path}")
     if args.plot:
@@ -156,10 +183,13 @@ def write_outputs(results, args):
 def _maybe_plot(results):
     try:
         import matplotlib
+
         matplotlib.use("Agg")
         import matplotlib.pyplot as plt
     except ImportError:
-        print("matplotlib not installed; skipping plot (CSV written for external plotting).")
+        print(
+            "matplotlib not installed; skipping plot (CSV written for external plotting)."
+        )
         return
     dp = [r for r in results["rows"] if r["policy"] == "dp"]
     overhead = [r["overhead_per_round"] for r in dp]
@@ -184,11 +214,21 @@ def main():
     ap.add_argument("--samples", type=int, default=20000, help="samples per world")
     ap.add_argument("--num-buckets", type=int, default=64)
     ap.add_argument("--delta", type=float, default=1e-6)
-    ap.add_argument("--epsilons", type=float, nargs="+",
-                    default=[0.1, 0.25, 0.5, 1.0, 2.0, 4.0, 8.0])
-    ap.add_argument("--rho", type=float, default=0.3, help="proportional-baseline cover ratio")
-    ap.add_argument("--background-load", type=float, default=10.0,
-                    help="assumed real proofs/bucket (only for baseline overhead reporting)")
+    ap.add_argument(
+        "--epsilons",
+        type=float,
+        nargs="+",
+        default=[0.1, 0.25, 0.5, 1.0, 2.0, 4.0, 8.0],
+    )
+    ap.add_argument(
+        "--rho", type=float, default=0.3, help="proportional-baseline cover ratio"
+    )
+    ap.add_argument(
+        "--background-load",
+        type=float,
+        default=10.0,
+        help="assumed real proofs/bucket (only for baseline overhead reporting)",
+    )
     ap.add_argument("--seed", type=int, default=12345)
     ap.add_argument("--plot", action="store_true")
     args = ap.parse_args()
